@@ -1,0 +1,64 @@
+import Link from "next/link";
+import { CheckCircle, Circle, Clock3 } from "lucide-react";
+import DifficultyBadge from "./DifficultyBadge";
+import type { HomeProblem } from "@/lib/types";
+
+interface ProblemCardProps {
+  problem: HomeProblem;
+}
+
+export default function ProblemCard({ problem }: ProblemCardProps) {
+  const status =
+    problem.id === 101 || problem.id === 103
+      ? "passed"
+      : problem.id === 104
+      ? "attempted"
+      : "todo";
+  const tags =
+    problem.knowledgePoints && problem.knowledgePoints.length > 0
+      ? problem.knowledgePoints
+      : [problem.category];
+  const compactDescription =
+    problem.description && problem.description.length > 130
+      ? `${problem.description.slice(0, 130)}...`
+      : problem.description;
+
+  return (
+    <Link
+      href={`/problem/${problem.id}`}
+      className="group block bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-200"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <DifficultyBadge difficulty={problem.difficulty} />
+          <span className="text-xs text-outline">#{problem.id}</span>
+        </div>
+        {status === "passed" ? (
+          <CheckCircle className="w-[18px] h-[18px] text-emerald-500" aria-label="已通过" />
+        ) : status === "attempted" ? (
+          <Clock3 className="w-[18px] h-[18px] text-amber-500" aria-label="尝试过" />
+        ) : (
+          <Circle className="w-[18px] h-[18px] text-outline/40" aria-label="未做" />
+        )}
+      </div>
+      <h3 className="text-base font-semibold text-on-surface group-hover:text-primary transition-colors mb-2">
+        {problem.title}
+      </h3>
+      {compactDescription && (
+        <p className="text-xs text-on-surface-variant leading-relaxed mb-3 line-clamp-2">
+          {compactDescription}
+        </p>
+      )}
+      <div className="flex flex-wrap gap-1.5">
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className="bg-surface-container text-on-surface-variant text-[11px] px-2 py-0.5 rounded-full border border-outline-variant/30"
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    </Link>
+  );
+}
