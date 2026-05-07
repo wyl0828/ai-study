@@ -35,7 +35,7 @@ export default function CodeEditor({
         <div className="flex items-center">
           <div className="flex items-center gap-2 text-gray-200 px-4 py-2 border-r border-[#30363d] border-t-2 border-t-blue-500 bg-[#0d1117]">
             <Code className="w-4 h-4 text-blue-400" />
-            <span className="font-mono text-xs tracking-wide">Solution.java</span>
+            <span className="font-mono text-xs tracking-wide">解题代码.java</span>
           </div>
         </div>
         <div className="flex gap-2 mr-4">
@@ -71,7 +71,7 @@ export default function CodeEditor({
           value={code}
           loading={
             <div className="h-full w-full bg-[#0d1117] text-[#8b949e] font-mono text-xs flex items-center justify-center">
-              Loading Monaco Editor...
+              正在加载代码编辑器...
             </div>
           }
           onChange={(v) => onChange(v || "")}

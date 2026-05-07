@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FileWarning, ArrowRight } from "lucide-react";
 import type { MistakeCard } from "@/lib/types";
+import { errorTypeName, knowledgePoint, problemTitle } from "@/lib/i18n";
 
 interface MistakeCardsProps {
   mistakes: MistakeCard[];
@@ -17,7 +18,7 @@ export default function MistakeCards({ mistakes }: MistakeCardsProps) {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {mistakes.map((m) => {
-          const isError = m.errorType === "LOGIC_ERROR";
+          const isError = m.errorType === "LOGIC_ERROR" || m.errorType === "逻辑错误";
           return (
             <div
               key={m.id}
@@ -31,12 +32,12 @@ export default function MistakeCards({ mistakes }: MistakeCardsProps) {
                       : "bg-amber-50 text-amber-700"
                   }`}
                 >
-                  {m.errorType}
+                  {errorTypeName(m.errorType)}
                 </span>
                 <span className="text-xs text-outline">#{m.problemId}</span>
               </div>
               <h3 className="text-sm font-semibold text-on-surface mb-2">
-                {m.problemTitle}
+                {problemTitle(m.problemTitle)}
               </h3>
               <div className="space-y-2 text-xs text-on-surface-variant leading-relaxed">
                 <div>
@@ -50,7 +51,7 @@ export default function MistakeCards({ mistakes }: MistakeCardsProps) {
               </div>
               <div className="mt-3 pt-3 border-t border-outline-variant/20 flex items-center justify-between">
                 <span className="text-xs text-on-surface-variant">
-                  {m.knowledgePoint}
+                  {knowledgePoint(m.knowledgePoint)}
                 </span>
                 <Link
                   href={`/problem/${m.problemId}`}

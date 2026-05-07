@@ -1,4 +1,10 @@
 import type { ProblemDetail } from "@/lib/types";
+import {
+  formatText,
+  knowledgePoint,
+  problemDescription,
+  problemTitle,
+} from "@/lib/i18n";
 import DifficultyBadge from "./DifficultyBadge";
 
 interface ProblemDescriptionProps {
@@ -19,12 +25,14 @@ export default function ProblemDescription({
 
         {/* 题目标题 */}
         <h1 className="text-xl font-bold text-on-surface mb-4 tracking-tight">
-          {problem.title}
+          {problemTitle(problem.title)}
         </h1>
 
         {/* 题目描述 */}
         <div className="text-sm text-on-surface-variant space-y-3 leading-relaxed">
-          <div className="whitespace-pre-wrap">{problem.description}</div>
+          <div className="whitespace-pre-wrap">
+            {problemDescription(problem.description)}
+          </div>
         </div>
 
         {/* 输入输出格式 */}
@@ -35,7 +43,7 @@ export default function ProblemDescription({
                 输入格式
               </h3>
               <div className="bg-surface-container rounded-lg p-3 border border-outline-variant/40 text-xs font-mono text-on-surface leading-loose">
-                {problem.inputFormat}
+                {formatText(problem.inputFormat)}
               </div>
             </div>
           )}
@@ -45,7 +53,7 @@ export default function ProblemDescription({
                 输出格式
               </h3>
               <div className="bg-surface-container rounded-lg p-3 border border-outline-variant/40 text-xs font-mono text-on-surface leading-loose">
-                {problem.outputFormat}
+                {formatText(problem.outputFormat)}
               </div>
             </div>
           )}
@@ -89,7 +97,7 @@ export default function ProblemDescription({
                   key={kp}
                   className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded-full font-medium"
                 >
-                  {kp}
+                  {knowledgePoint(kp)}
                 </span>
               ))}
             </div>

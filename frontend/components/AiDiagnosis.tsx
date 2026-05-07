@@ -11,6 +11,12 @@ import {
   Circle,
 } from "lucide-react";
 import type { AgentAnalyzeVO } from "@/lib/types";
+import {
+  agentStepName,
+  errorTypeName,
+  knowledgePoint,
+  trainingPlanTitle,
+} from "@/lib/i18n";
 
 interface AiDiagnosisProps {
   diagnosis: AgentAnalyzeVO | null;
@@ -57,10 +63,10 @@ export default function AiDiagnosis({
       {/* 错误类型标签 */}
       <div className="flex flex-wrap gap-2">
         <span className="bg-red-50 text-red-700 border border-red-200 text-xs font-semibold px-2.5 py-1 rounded-full">
-          {diagnosis.errorType}
+          {errorTypeName(diagnosis.errorType)}
         </span>
         <span className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold px-2.5 py-1 rounded-full">
-          {diagnosis.knowledgePoint}
+          {knowledgePoint(diagnosis.knowledgePoint)}
         </span>
       </div>
 
@@ -97,7 +103,7 @@ export default function AiDiagnosis({
         <div className="flex items-center gap-2 bg-surface-container rounded-lg border border-outline-variant/40 p-3">
           <BookOpen className="w-4 h-4 text-primary" />
           <span className="text-sm text-on-surface">
-            推荐训练：{diagnosis.trainingPlanTitle}
+            推荐训练：{trainingPlanTitle(diagnosis.trainingPlanTitle)}
           </span>
         </div>
       )}
@@ -112,7 +118,7 @@ export default function AiDiagnosis({
       {diagnosis.steps?.length > 0 && (
         <details className="group">
           <summary className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide cursor-pointer hover:text-on-surface transition-colors">
-            Agent 执行步骤 ({diagnosis.steps.length})
+            诊断执行步骤 ({diagnosis.steps.length})
           </summary>
           <div className="mt-2 space-y-1">
             {diagnosis.steps.map((step, i) => (
@@ -127,7 +133,7 @@ export default function AiDiagnosis({
                 ) : (
                   <Circle className="w-3.5 h-3.5 text-on-surface-variant" />
                 )}
-                <span className="font-medium">{step.stepName}</span>
+                <span className="font-medium">{agentStepName(step.stepName)}</span>
                 {step.durationMs != null && (
                   <span className="text-outline">{step.durationMs}ms</span>
                 )}

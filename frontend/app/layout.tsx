@@ -3,7 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
-  title: "AI Interview Coach",
+  title: "AI 面试教练",
   description: "面向 Java 后端求职者的 AI 面试训练系统",
 };
 

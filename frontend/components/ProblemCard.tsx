@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CheckCircle, Circle, Clock3 } from "lucide-react";
 import DifficultyBadge from "./DifficultyBadge";
 import type { HomeProblem } from "@/lib/types";
+import { knowledgePoint, problemDescription, problemTitle } from "@/lib/i18n";
 
 interface ProblemCardProps {
   problem: HomeProblem;
@@ -18,10 +19,13 @@ export default function ProblemCard({ problem }: ProblemCardProps) {
     problem.knowledgePoints && problem.knowledgePoints.length > 0
       ? problem.knowledgePoints
       : [problem.category];
+  const chineseDescription = problem.description
+    ? problemDescription(problem.description)
+    : undefined;
   const compactDescription =
-    problem.description && problem.description.length > 130
-      ? `${problem.description.slice(0, 130)}...`
-      : problem.description;
+    chineseDescription && chineseDescription.length > 72
+      ? `${chineseDescription.slice(0, 72)}...`
+      : chineseDescription;
 
   return (
     <Link
@@ -42,7 +46,7 @@ export default function ProblemCard({ problem }: ProblemCardProps) {
         )}
       </div>
       <h3 className="text-base font-semibold text-on-surface group-hover:text-primary transition-colors mb-2">
-        {problem.title}
+        {problemTitle(problem.title)}
       </h3>
       {compactDescription && (
         <p className="text-xs text-on-surface-variant leading-relaxed mb-3 line-clamp-2">
@@ -55,7 +59,7 @@ export default function ProblemCard({ problem }: ProblemCardProps) {
             key={tag}
             className="bg-surface-container text-on-surface-variant text-[11px] px-2 py-0.5 rounded-full border border-outline-variant/30"
           >
-            {tag}
+            {knowledgePoint(tag)}
           </span>
         ))}
       </div>

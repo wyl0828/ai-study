@@ -2,6 +2,7 @@
 
 import { BarChart3 } from "lucide-react";
 import type { UserWeakness } from "@/lib/types";
+import { categoryName, knowledgePoint } from "@/lib/i18n";
 
 interface WeaknessListProps {
   weaknesses: UserWeakness[];
@@ -42,10 +43,10 @@ export default function WeaknessList({ weaknesses }: WeaknessListProps) {
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-on-surface">
-                    {w.knowledgePoint}
+                    {knowledgePoint(w.knowledgePoint)}
                   </div>
                   <div className="text-xs text-on-surface-variant">
-                    {w.category} &middot; 关联题目 {w.relatedProblemCount} 道
+                    {categoryName(w.category)} &middot; 关联题目 {w.relatedProblemCount} 道
                   </div>
                 </div>
               </div>

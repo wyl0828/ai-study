@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { History, CheckCircle, XCircle } from "lucide-react";
+import { problemTitle } from "@/lib/i18n";
 
 interface Submission {
   problemId: number;
@@ -65,7 +66,7 @@ export default function SubmissionHistory({
                       href={`/problem/${s.problemId}`}
                       className="text-on-surface hover:text-primary font-medium"
                     >
-                      #{s.problemId} {s.problemTitle}
+                      #{s.problemId} {problemTitle(s.problemTitle)}
                     </Link>
                   </td>
                   <td className="px-5 py-3">

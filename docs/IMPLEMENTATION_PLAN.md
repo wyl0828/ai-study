@@ -66,7 +66,9 @@ Agent 收到任务
 - Phase 2 Agent Workflow 后端已完成：`AgentRun`、`AgentStep`、AI 诊断、三层提示、弱点记忆、错题卡、训练计划均已接入 MySQL。
 - 当前真实暴露的 Controller：`ProblemController`、`SubmissionController`、`AgentController`。
 - 当前真实暴露的 Agent 接口：`POST /api/agent/analyze`、`GET /api/submissions/{submissionId}/diagnosis/stream`。
-- Dashboard 读取接口、单独 hint 查询、accepted-code review 尚未暴露为 REST 接口，留到后续阶段。
+- Phase 3 前端核心页面已完成：`/`、`/problem/[id]`、`/dashboard` 均已按 `stitch_front_end_interface_design/mvp/` HTML 原型做紧凑 MVP 风格还原，并完成中文化。
+- 当前做题页提交失败后会自动调用同步 `POST /api/agent/analyze` 展示测试结果、AI 诊断和三层提示；后端 SSE 接口已保留，但前端暂未接入 SSE 流式展示。
+- Dashboard 当前使用 `frontend/lib/mock.ts` 展示弱点、错题、提交记录和训练计划；Dashboard 读取接口、单独 hint 查询、accepted-code review 尚未暴露为 REST 接口，留到后续阶段。
 - 最新接口文档以 `docs/API.md` 为准。
 
 ## 3. 项目结构
@@ -86,10 +88,20 @@ interview-coach/
 │   │   ├── CodeEditor.tsx
 │   │   ├── TestResult.tsx
 │   │   ├── HintPanel.tsx
-│   │   ├── DiagnosisStream.tsx
-│   │   └── WeaknessChart.tsx
+│   │   ├── AiDiagnosis.tsx
+│   │   ├── ResultPanel.tsx
+│   │   ├── ProblemCard.tsx
+│   │   ├── ProblemDescription.tsx
+│   │   ├── ProblemWorkspace.tsx
+│   │   ├── WeaknessList.tsx
+│   │   ├── MistakeCards.tsx
+│   │   ├── SubmissionHistory.tsx
+│   │   └── TrainingPlan.tsx
 │   └── lib/
-│       └── api.ts
+│       ├── api.ts
+│       ├── i18n.ts
+│       ├── mock.ts
+│       └── types.ts
 │
 ├── backend/
 │   └── src/main/java/com/interview/coach/
@@ -350,6 +362,8 @@ handler：全局异常处理和统一响应处理
 
 ### 阶段 3：前端页面，Day 8-12
 
+状态：已完成核心页面，并通过本地构建验证。
+
 目标：做出能演示的前端，有题目列表、代码编辑器、测试结果和 AI 提示面板。
 
 任务：
@@ -379,7 +393,11 @@ handler：全局异常处理和统一响应处理
 - `frontend/components/CodeEditor.tsx`
 - `frontend/components/HintPanel.tsx`
 - `frontend/components/TestResult.tsx`
-- `frontend/components/DiagnosisStream.tsx`
+- `frontend/components/AiDiagnosis.tsx`
+- `frontend/components/ResultPanel.tsx`
+- `frontend/components/ProblemWorkspace.tsx`
+- `frontend/components/ProblemCard.tsx`
+- `frontend/lib/i18n.ts`
 
 验收标准：
 
@@ -390,9 +408,20 @@ handler：全局异常处理和统一响应处理
 - 测试失败后能展示 AI 诊断和分层提示。
 - Dashboard 能展示弱点和训练计划。
 
+本阶段实际落地说明：
+
+- 首页 `/` 已实现题库标题区、难度筛选、分类筛选、搜索框、统计行和三列题目卡片。
+- 首页数据仍从 `GET /api/problems` 获取，并在 8 道 MVP 题范围内并行请求 `GET /api/problems/{id}` 补齐描述和知识点，不新增后端接口。
+- 做题页 `/problem/[id]` 已实现固定视口高度三栏布局：左侧题目描述、中间 Monaco Editor、右侧测试结果 / AI 诊断 / 分层提示。
+- Monaco 容器已改为深色 loading 背景，避免编辑器加载前出现大面积浅色空白。
+- 当前提交流程为：`POST /api/submissions` 判题，失败后自动调用同步 `POST /api/agent/analyze` 获取诊断结果；SSE 前端接入留到后续增强。
+- Dashboard `/dashboard` 已实现统计卡、薄弱点排行、最近提交表格、错题卡片、训练计划和 AI 建议展示，当前数据来自 `frontend/lib/mock.ts`。
+- 前端页面已完成中文化，题目标题、难度、知识点、按钮、空状态、Dashboard 文案均按“国内互联网产品 + LeetCode 中文站”风格处理。
+- 已运行 `npm run build`，Next.js 编译、类型检查和页面生成通过。
+
 ### 阶段 4：训练计划与错题本，Day 13-16
 
-状态：部分完成。Phase 2 已完成后端持久化闭环；Dashboard 查询接口和前端展示尚未完成。
+状态：部分完成。Phase 2 已完成后端持久化闭环；Dashboard 前端展示已完成 mock 版；Dashboard 查询接口和真实数据接入尚未完成。
 
 目标：实现学习闭环，让项目不只是一次性 AI 分析。
 
@@ -407,14 +436,16 @@ handler：全局异常处理和统一响应处理
    - `GET /api/users/{userId}/training-plans/latest`
    - `POST /api/users/{userId}/training-plans/generate`
    - `GET /api/users/{userId}/mistakes`
-6. 待实现：Dashboard 页面。
+6. 已完成 mock 版：Dashboard 页面展示弱点、错题、最近提交和训练计划。
+7. 待实现：Dashboard 真实数据接入，替换当前 mock 数据。
 
 验收标准：
 
 - 已完成：提交失败并触发 Agent 诊断后能更新薄弱点。
 - 已完成：能生成并保存 3 天训练计划。
 - 待完成：能通过 REST API 查看错题卡片。
-- 待完成：Dashboard 能体现用户训练闭环。
+- 已完成 mock 版：Dashboard 能展示用户训练闭环的产品形态。
+- 待完成真实闭环：Dashboard 从 MySQL 持久化数据读取弱点、错题卡和最新训练计划。
 
 ### 阶段 5：打磨与演示准备，Day 17-20
 
@@ -776,20 +807,21 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 
 ### 前端验证
 
-状态：前端仍处于后续阶段，以下为 Phase 3/4 完成后的验证清单。
+状态：Phase 3 核心页面已完成，2026-05-07 已运行 `npm run build` 并通过。
 
-- 打开首页，确认题目列表展示。
-- 进入做题页，确认 Monaco Editor 可用。
+- 打开首页，确认题目列表、筛选、搜索和卡片跳转可用。
+- 进入做题页，确认 Monaco Editor 可用且首屏为三栏布局。
 - 提交代码，确认测试结果展示。
-- 触发 Agent 诊断，确认 SSE 流式输出 Agent 步骤。
-- Dashboard 查询接口和页面完成后，再确认弱点、错题卡和训练计划展示。
+- 提交失败后，确认同步 `POST /api/agent/analyze` 返回的 AI 诊断和分层提示能展示。
+- 打开 Dashboard，确认 mock 弱点、错题卡、最近提交和训练计划展示。
+- 后续接入 Dashboard 查询接口后，再补充真实数据流验证。
 
 ### 演示验证
 
 完整走一遍：
 
 ```text
-选择 Two Sum -> 写 bug 代码 -> 提交失败 -> Agent 调用判题 Tool -> Observation -> 错误分类 -> 分层提示 -> 更新弱点 -> 生成训练计划
+选择“两数之和” -> 写 bug 代码 -> 提交失败 -> Agent 调用判题 Tool -> Observation -> 错误分类 -> 分层提示 -> 更新弱点 -> 生成训练计划
 ```
 
 ## 8. 关键风险和应对
@@ -803,7 +835,7 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 | 兼容模型先输出 thinking 导致 JSON text 超出 token | 默认 `AI_MAX_TOKENS=3000`，Prompt 要求 compact JSON |
 | 模型返回负数 `weaknessScoreDelta` | `LearningTrackerImpl` 对空值或小于等于 0 的 delta 兜底为 `5` |
 | AI 分类不准 | 准备 10 个固定错误样例调 Prompt |
-| 前端做不完 | 优先完成做题页，Dashboard 用列表代替图表 |
+| 前端做不完 | 已完成核心页面；后续优先把 Dashboard mock 数据替换为真实查询接口 |
 | 题库太多拖慢进度 | MVP 先做 10 道题，README 写可扩展到 30 道 |
 | Piston 测试用例封装复杂 | 第一版使用固定 Java Main 模板拼接测试输入 |
 
@@ -812,17 +844,17 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 推荐面试演示流程：
 
 1. 打开首页，展示题目列表。
-2. 选择 Two Sum。
+2. 选择“两数之和”。
 3. 解释项目不是刷题平台，也不是 AI 聊天壳，而是 Java 代码诊断 Agent。
 4. 在 Monaco Editor 中写一段有 bug 的 Java 代码。
 5. 点击提交，展示 Piston 返回测试失败结果。
-6. 打开 Agent 诊断面板，展示 SSE 步骤流。
+6. 打开 Agent 诊断面板，展示测试结果、AI 错误诊断和三层提示；当前前端使用同步 `POST /api/agent/analyze`，后端 SSE 能力可作为接口层演示。
 7. 展示错误分类：例如 `BOUNDARY_ERROR`、`HashMap`。
 8. 展示 Level 1、Level 2、Level 3 分层提示。
 9. 修改代码后重新提交并通过。
 10. 通过数据库或后端日志展示 `agent_run`、`agent_step`、`ai_diagnosis`、`hint_record`、`user_weakness`、`mistake_card`、`training_plan`。
 11. 讲解后端设计：Piston 封装、Agent Tool、Observation、Memory、SSE、MySQL、Redis。
-12. 说明下一步会补 Dashboard 查询接口和前端展示。
+12. 说明下一步会补 Dashboard 查询接口，将 mock 弱点、错题卡和训练计划替换为真实 MySQL 数据。
 
 ## 10. 简历准备
 

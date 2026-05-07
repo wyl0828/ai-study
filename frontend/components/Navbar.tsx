@@ -17,7 +17,7 @@ export default function Navbar() {
       <div className="flex items-center gap-6">
         <Link href="/" className="flex items-center gap-2 text-primary font-bold text-lg">
           <Terminal className="w-[22px] h-[22px]" />
-          AI Interview Coach
+          AI 面试教练
         </Link>
         <nav className="hidden md:flex gap-6 ml-8">
           {links.map((link) => {

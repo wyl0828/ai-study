@@ -1,3 +1,5 @@
+import { difficultyName } from "@/lib/i18n";
+
 interface DifficultyBadgeProps {
   difficulty: string;
 }
@@ -9,19 +11,13 @@ const colorMap: Record<string, string> = {
 };
 
 export default function DifficultyBadge({ difficulty }: DifficultyBadgeProps) {
-  const labelMap: Record<string, string> = {
-    EASY: "简单",
-    MEDIUM: "中等",
-    HARD: "困难",
-  };
-
   return (
     <span
       className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${
         colorMap[difficulty] || "bg-gray-100 text-gray-800"
       }`}
     >
-      {labelMap[difficulty] || difficulty}
+      {difficultyName(difficulty)}
     </span>
   );
 }

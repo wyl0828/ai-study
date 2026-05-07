@@ -65,7 +65,7 @@ export default function DashboardPage() {
                 <h3 className="text-sm font-semibold text-on-surface">AI 教练建议</h3>
               </div>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                你的 HashMap 和链表基础较弱，建议先完成 Day 1 和 Day 2 的训练。每天完成 2 道题并理解错误原因，比刷 10 道题更有效。完成后系统会自动更新你的薄弱点画像。
+                你的 HashMap 和链表基础较弱，建议先完成第 1 天和第 2 天训练。每天完成 2 道题并理解错误原因，比泛泛刷 10 道题更有效。完成后系统会自动更新你的薄弱点画像。
               </p>
             </div>
           </div>

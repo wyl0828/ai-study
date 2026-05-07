@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Search, SearchX } from "lucide-react";
 import type { HomeProblem } from "@/lib/types";
+import { categoryName, problemDescription, problemTitle } from "@/lib/i18n";
 import ProblemCard from "./ProblemCard";
 
 interface HomeClientProps {
@@ -18,10 +19,6 @@ const difficulties = [
 
 const categoryLabels: Record<string, string> = {
   ALL: "全部分类",
-  HashMap: "哈希表",
-  LinkedList: "链表",
-  Tree: "树",
-  DynamicProgramming: "动态规划",
 };
 
 export default function HomeClient({ problems }: HomeClientProps) {
@@ -38,7 +35,20 @@ export default function HomeClient({ problems }: HomeClientProps) {
     return problems.filter((p) => {
       if (difficulty !== "ALL" && p.difficulty !== difficulty) return false;
       if (category !== "ALL" && p.category !== category) return false;
-      if (search && !p.title.toLowerCase().includes(search.toLowerCase()))
+      const keyword = search.trim().toLowerCase();
+      if (
+        keyword &&
+        ![
+          p.title,
+          problemTitle(p.title),
+          p.description ? problemDescription(p.description) : "",
+          p.category,
+          categoryName(p.category),
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(keyword)
+      )
         return false;
       return true;
     });
@@ -90,7 +100,7 @@ export default function HomeClient({ problems }: HomeClientProps) {
                   : "bg-surface-container text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container-high"
               }`}
             >
-              {categoryLabels[c] || c}
+              {categoryLabels[c] || categoryName(c)}
             </button>
           ))}
         </div>
@@ -101,7 +111,7 @@ export default function HomeClient({ problems }: HomeClientProps) {
             <Search className="w-[18px] h-[18px] text-outline absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="搜索题目..."
+              placeholder="搜索算法题..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 pr-4 py-1.5 text-sm border border-outline-variant/40 rounded-lg bg-surface-container-lowest focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 w-56"

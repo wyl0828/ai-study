@@ -2,6 +2,7 @@
 
 import { Sparkles, RefreshCw } from "lucide-react";
 import type { TrainingPlan as TrainingPlanType } from "@/lib/types";
+import { problemTitle } from "@/lib/i18n";
 
 interface TrainingPlanProps {
   plan: TrainingPlanType;
@@ -56,7 +57,7 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
 
         {Object.entries(grouped).map(([day, items]) => {
           const dayNum = Number(day);
-          const title = dayTitles[dayNum] || `Day ${day}`;
+          const title = dayTitles[dayNum] || `第 ${day} 天训练`;
           const reviewFocus = items[0]?.reviewFocus;
 
           return (
@@ -66,7 +67,7 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
                   {day}
                 </span>
                 <span className="text-sm font-semibold text-on-surface">
-                  Day {day} &mdash; {title}
+                  第 {day} 天 &mdash; {title}
                 </span>
               </div>
               <div className="ml-8 space-y-3">
@@ -77,7 +78,7 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium text-on-surface">
-                        #{item.problemId} {item.problemTitle}
+                        #{item.problemId} {problemTitle(item.problemTitle)}
                       </span>
                       <span
                         className={`text-xs font-medium ${
