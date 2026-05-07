@@ -60,6 +60,15 @@ Agent 收到任务
 | 流式输出 | SSE | Agent 执行步骤和诊断结果流式返回 |
 | Trace | AgentStep 记录 | 记录 Tool 输入摘要、输出摘要、状态和耗时 |
 
+### 当前落地状态快照
+
+- Phase 1 后端骨架、题目接口、Piston 判题和提交持久化已完成。
+- Phase 2 Agent Workflow 后端已完成：`AgentRun`、`AgentStep`、AI 诊断、三层提示、弱点记忆、错题卡、训练计划均已接入 MySQL。
+- 当前真实暴露的 Controller：`ProblemController`、`SubmissionController`、`AgentController`。
+- 当前真实暴露的 Agent 接口：`POST /api/agent/analyze`、`GET /api/submissions/{submissionId}/diagnosis/stream`。
+- Dashboard 读取接口、单独 hint 查询、accepted-code review 尚未暴露为 REST 接口，留到后续阶段。
+- 最新接口文档以 `docs/API.md` 为准。
+
 ## 3. 项目结构
 
 ```text
@@ -87,8 +96,7 @@ interview-coach/
 │       ├── controller/
 │       │   ├── ProblemController.java
 │       │   ├── SubmissionController.java
-│       │   ├── AgentController.java
-│       │   └── UserLearningController.java
+│       │   └── AgentController.java
 │       ├── service/
 │       │   ├── ProblemService.java
 │       │   ├── SubmissionService.java
@@ -105,7 +113,6 @@ interview-coach/
 │       │       └── TrainingPlanServiceImpl.java
 │       ├── agent/
 │       │   ├── InterviewCoachAgent.java
-│       │   ├── AgentState.java
 │       │   ├── AgentContext.java
 │       │   ├── AgentStep.java
 │       │   └── tool/
@@ -125,6 +132,8 @@ interview-coach/
 │       │   ├── Problem.java
 │       │   ├── TestCase.java
 │       │   ├── Submission.java
+│       │   ├── AgentRun.java
+│       │   ├── AgentStepEntity.java
 │       │   ├── AiDiagnosis.java
 │       │   ├── HintRecord.java
 │       │   ├── UserWeakness.java
@@ -136,15 +145,21 @@ interview-coach/
 │       │   ├── ProblemMapper.java
 │       │   ├── TestCaseMapper.java
 │       │   ├── SubmissionMapper.java
+│       │   ├── AgentRunMapper.java
+│       │   ├── AgentStepMapper.java
 │       │   ├── AiDiagnosisMapper.java
+│       │   ├── HintRecordMapper.java
 │       │   ├── UserWeaknessMapper.java
 │       │   ├── TrainingPlanMapper.java
+│       │   ├── TrainingPlanItemMapper.java
 │       │   └── MistakeCardMapper.java
 │       ├── dto/
 │       ├── vo/
 │       ├── enums/
 │       ├── config/
-│       │   ├── AiConfig.java
+│       │   ├── AiProperties.java
+│       │   ├── PistonProperties.java
+│       │   ├── SseConfig.java
 │       │   ├── RedisConfig.java
 │       │   └── CorsConfig.java
 │       ├── handler/
@@ -180,7 +195,7 @@ Controller -> Service -> Mapper -> MySQL
 controller：接收 HTTP 请求，调用 service，返回 VO
 service：业务接口
 service/impl：业务实现和流程编排
-agent：Agent 编排器、状态、上下文、步骤记录和 AI-native 逻辑
+agent：Agent 编排器、上下文、步骤记录和 AI-native 逻辑
 agent/tool：代码执行、错误分类、提示生成、弱点更新、训练计划等 Tool
 integration/piston：Piston 代码执行 API 接入
 integration/ai：Anthropic 兼容模型 API 接入
@@ -188,7 +203,7 @@ entity：数据库实体
 mapper：MyBatis-Plus 数据访问
 dto：请求参数和内部命令对象
 vo：响应结果对象
-enums：状态、难度、语言、错误类型、提示等级枚举
+enums：Agent 状态、提交状态、难度、语言、错误类型、提示等级枚举
 config：配置类
 handler：全局异常处理和统一响应处理
 ```
@@ -255,11 +270,13 @@ handler：全局异常处理和统一响应处理
 
 ### 阶段 2：Agent Workflow 核心，Day 4-7
 
+状态：已完成并通过本地验证。
+
 目标：把项目从“AI 分析接口”升级为可解释的 Agent Workflow。后端维护 Agent 状态机，代码执行、错误分类、提示生成、弱点更新和训练计划都封装为 Tool，LLM 只负责需要语义判断的节点。
 
 任务：
 
-1. 实现 `AiConfig`，配置 Anthropic 兼容 API 地址、模型名、API Key。
+1. 实现 `AiProperties`，配置 Anthropic 兼容 API 地址、模型名、API Key、最大 token 和 Anthropic version。
 2. 在 `integration/ai` 下实现 `AnthropicCompatibleClient`，封装模型调用和结构化 JSON 输出解析。
 3. 定义 Agent 核心模型：
    - `AgentState`：`PLANNING`、`CODE_EXECUTION`、`OBSERVATION`、`ERROR_CLASSIFICATION`、`HINT_GENERATION`、`MEMORY_UPDATE`、`TRAINING_PLAN`、`COMPLETED`、`FAILED`。
@@ -273,11 +290,9 @@ handler：全局异常处理和统一响应处理
    - `WeaknessTrackerTool`：调用 `LearningTracker`，更新弱点和错题卡。
    - `TrainingPlannerTool`：调用 `TrainingPlanService` 或 LLM，生成训练建议。
 6. 实现 `InterviewCoachAgent` 编排器，按状态机执行 Tool，并记录每一步 `AgentStep`。
-7. 实现 `AgentService` 和 `AgentServiceImpl`，作为业务入口调用 `InterviewCoachAgent`，并负责诊断结果持久化。
+7. 实现 `AgentService` 和 `AgentServiceImpl`，作为业务入口创建 `AgentRun`、组装 `AgentContext` 并调用 `InterviewCoachAgent`。
 8. 实现 `AgentController`：
    - `POST /api/agent/analyze`
-   - `POST /api/agent/review`
-   - `POST /api/agent/hint`
    - `GET /api/submissions/{submissionId}/diagnosis/stream`
 9. 实现 SSE 步骤流：
    - 推送 Planning、Tool 调用、Observation、错误分类、提示生成、弱点更新、最终结果。
@@ -286,11 +301,14 @@ handler：全局异常处理和统一响应处理
    - 记录每次提交的错误类型。
    - 更新用户薄弱点。
    - 创建错题卡片。
+11. 实现 `TrainingPlanService` 和 `TrainingPlanServiceImpl`：
+   - 保存 3 天训练计划。
+   - 保存训练计划 item。
 
 关键文件：
 
 - `backend/src/main/java/com/interview/coach/agent/InterviewCoachAgent.java`
-- `backend/src/main/java/com/interview/coach/agent/AgentState.java`
+- `backend/src/main/java/com/interview/coach/enums/AgentState.java`
 - `backend/src/main/java/com/interview/coach/agent/AgentContext.java`
 - `backend/src/main/java/com/interview/coach/agent/AgentStep.java`
 - `backend/src/main/java/com/interview/coach/agent/tool/Tool.java`
@@ -315,6 +333,20 @@ handler：全局异常处理和统一响应处理
 - AI 诊断结果能保存到 `ai_diagnosis`。
 - 用户薄弱点能更新到 `user_weakness`。
 - Agent Step 至少能在日志或数据库中看到每一步状态和耗时。
+
+本阶段实际落地说明：
+
+- 已新增 Phase 2 表：`agent_run`、`agent_step`、`ai_diagnosis`、`hint_record`、`user_weakness`、`mistake_card`、`training_plan`、`training_plan_item`。
+- 已实现 `AnthropicCompatibleClient`，使用 Anthropic-compatible `/v1/messages` 协议，并从模型返回文本中提取 JSON。
+- 已实现 `AiProperties`，配置前缀为 `coach.ai.*`，环境变量包括 `AI_BASE_URL`、`AI_API_KEY`、`AI_MODEL`、`AI_MAX_TOKENS`、`AI_ANTHROPIC_VERSION`。
+- 当前 `AI_MAX_TOKENS` 默认值为 `3000`，用于兼容会先返回 thinking block 的模型。
+- 已实现 `Tool<I, O>`、`InterviewCoachAgent`、`AgentContext`、`AgentStep` 和 5 个 Tool。
+- `CodeExecutionTool` 调用 `SubmissionService.rejudge(...)`，由 `SubmissionService` 复用 `JudgeService` 完成重新判题，不直接调用 Piston。
+- `LearningTrackerImpl` 会插入 `AiDiagnosis`、3 条 `HintRecord`、更新或创建 `UserWeakness`、插入 `MistakeCard`。
+- `weaknessScoreDelta` 为空或小于等于 0 时按默认 `+5` 处理，避免模型返回负数导致弱点分下降；弱点分最高封顶 `100`。
+- `TrainingPlannerTool` 当前使用确定性 fallback 生成 3 天训练计划，并调用 `TrainingPlanService.savePlan(...)` 持久化。
+- SSE 事件名为 `agent_step`、`done`、`error`。
+- 已使用 `mimo-v2.5-pro` 兼容 Anthropic 接口完成真实流式诊断验证：Two Sum 重复元素 bug 被分类为 `LOGIC_ERROR` / HashMap 相关知识点，三层提示和训练计划均成功生成并落库。
 
 ### 阶段 3：前端页面，Day 8-12
 
@@ -360,33 +392,29 @@ handler：全局异常处理和统一响应处理
 
 ### 阶段 4：训练计划与错题本，Day 13-16
 
+状态：部分完成。Phase 2 已完成后端持久化闭环；Dashboard 查询接口和前端展示尚未完成。
+
 目标：实现学习闭环，让项目不只是一次性 AI 分析。
 
 任务：
 
-1. 完善 `LearningTracker`。
-2. 每次提交后更新用户弱点画像。
-3. 实现 `TrainingPlanService`：
-   - 根据弱点推荐题目。
-   - 生成 3 天训练计划。
-4. 实现错题卡片：
-   - 题目。
-   - 用户错误。
-   - 错误类型。
-   - 正确思路。
-5. 实现用户学习接口：
+1. 已完成：`LearningTracker` 在 Agent 诊断流程中持久化诊断、提示、弱点和错题卡。
+2. 已完成：每次 Agent 成功诊断失败提交后更新用户弱点画像。
+3. 已完成基础版：`TrainingPlanService` 保存 3 天训练计划和计划 item。
+4. 已完成基础版：错题卡片持久化字段包括题目、提交、AgentRun、错误类型、知识点、错误摘要和正确思路。
+5. 待实现：用户学习查询接口：
    - `GET /api/users/{userId}/weaknesses`
    - `GET /api/users/{userId}/training-plans/latest`
    - `POST /api/users/{userId}/training-plans/generate`
    - `GET /api/users/{userId}/mistakes`
-6. 完善 Dashboard 页面。
+6. 待实现：Dashboard 页面。
 
 验收标准：
 
-- 提交失败后能更新薄弱点。
-- 能生成 3 天训练计划。
-- 能查看错题卡片。
-- Dashboard 能体现用户训练闭环。
+- 已完成：提交失败并触发 Agent 诊断后能更新薄弱点。
+- 已完成：能生成并保存 3 天训练计划。
+- 待完成：能通过 REST API 查看错题卡片。
+- 待完成：Dashboard 能体现用户训练闭环。
 
 ### 阶段 5：打磨与演示准备，Day 17-20
 
@@ -454,8 +482,6 @@ POST /api/submissions
 
 ```http
 POST /api/agent/analyze
-POST /api/agent/review
-POST /api/agent/hint
 GET /api/submissions/{submissionId}/diagnosis/stream
 ```
 
@@ -471,31 +497,25 @@ GET /api/submissions/{submissionId}/diagnosis/stream
 
 ```json
 {
-  "agentRunId": "run_1001",
-  "errorType": "BOUNDARY_ERROR",
-  "knowledgePoint": "HashMap",
-  "specificError": "未处理重复元素导致查询失败",
-  "hints": [
-    {
-      "level": 1,
-      "content": "你可能遗漏了某些边界情况。"
-    },
-    {
-      "level": 2,
-      "content": "重点检查 HashMap 中 key 的判断逻辑。"
-    },
-    {
-      "level": 3,
-      "content": "遍历数组时，先判断 target - nums[i] 是否存在，再写入当前值。"
-    }
-  ],
-  "confidence": 0.86,
+  "agentRunId": 1,
+  "submissionId": 1001,
+  "errorType": "LOGIC_ERROR",
+  "knowledgePoint": "HashMap Lookup in Array Traversal",
+  "specificError": "Self-matching due to incorrect map operation order",
+  "diagnosis": "Code adds current element before checking, allowing same-element pairing.",
+  "hintLevel1": "Consider the order of inserting elements into the map and checking for complements.",
+  "hintLevel2": "The error is self-matching due to adding current element before lookup.",
+  "hintLevel3": "For each element, first check if its complement exists in the map, then add it.",
+  "trainingPlanTitle": "3-day recovery plan: HashMap Lookup in Array Traversal",
   "steps": [
     {
-      "stepName": "CODE_EXECUTION",
-      "toolName": "CodeExecutionTool",
+      "stepName": "PLANNING",
+      "toolName": null,
       "status": "SUCCESS",
-      "durationMs": 1320
+      "inputSummary": "Prepare agent context",
+      "outputSummary": "Context ready",
+      "durationMs": 8,
+      "errorMessage": null
     }
   ]
 }
@@ -504,23 +524,19 @@ GET /api/submissions/{submissionId}/diagnosis/stream
 SSE 示例：
 
 ```text
-event: agent_step
-data: {"step":"PLANNING","message":"正在判断需要调用哪些工具"}
+event:agent_step
+data:{"stepName":"PLANNING","toolName":null,"status":"RUNNING","inputSummary":"Prepare agent context","outputSummary":null,"durationMs":null,"errorMessage":null}
 
-event: agent_step
-data: {"step":"CODE_EXECUTION","message":"正在执行 Java 测试用例"}
+event:agent_step
+data:{"stepName":"ERROR_CLASSIFICATION","toolName":"ErrorClassifierTool","status":"SUCCESS","inputSummary":"Classify execution observation","outputSummary":"Diagnosis ready","durationMs":23548,"errorMessage":null}
 
-event: agent_step
-data: {"step":"OBSERVATION","message":"检测到 2/5 个用例失败"}
-
-event: agent_step
-data: {"step":"ERROR_CLASSIFICATION","message":"正在分类错误类型"}
-
-event: done
-data: {"errorType":"BOUNDARY_ERROR","knowledgePoint":"HashMap","confidence":0.86}
+event:done
+data:{"agentRunId":1,"submissionId":1001,"errorType":"LOGIC_ERROR","knowledgePoint":"HashMap Lookup in Array Traversal","hintLevel1":"...","hintLevel2":"...","hintLevel3":"...","trainingPlanTitle":"3-day recovery plan: HashMap Lookup in Array Traversal","steps":[...]}
 ```
 
 ### 5.4 用户学习接口
+
+状态：后端已有持久化表和部分服务基础，但当前尚未暴露 REST Controller。
 
 ```http
 GET /api/users/{userId}/weaknesses
@@ -560,9 +576,15 @@ GET /api/users/{userId}/mistakes
   "specificError": "未处理重复元素导致覆盖",
   "diagnosis": "错误原因说明",
   "suggestion": "改进建议",
-  "confidence": 0.86
+  "confidence": 0.86,
+  "weaknessScoreDelta": 5
 }
 ```
+
+约束：
+
+- `weaknessScoreDelta` 对失败提交必须为 `1` 到 `10` 的正数。
+- 后端会把空值或小于等于 0 的 delta 兜底为 `5`，并将弱点分封顶为 `100`。
 
 ### 6.2 HintGeneratorTool System Prompt
 
@@ -584,6 +606,8 @@ GET /api/users/{userId}/mistakes
 ```
 
 ### 6.3 TrainingPlannerTool System Prompt
+
+当前实现说明：`TrainingPlannerTool` 目前使用确定性 fallback 计划，不调用 LLM。保留下面的 prompt 作为后续升级到 AI 训练计划时的设计参考。
 
 ```text
 你是 AI Interview Coach Agent 中的 TrainingPlannerTool。根据 WeaknessTrackerTool 维护的用户薄弱点记忆，生成 3 天训练计划。
@@ -612,7 +636,7 @@ GET /api/users/{userId}/mistakes
 
 ## 7. 验证方式
 
-### 本地 Phase 1 启动方式
+### 本地 Phase 1/2 启动方式
 
 MySQL 和 Redis 可以使用本机服务；Piston 使用 Docker 容器。
 
@@ -656,7 +680,7 @@ curl.exe http://localhost:2000/api/v2/runtimes
 6. 启动后端。IDEA 运行配置需要包含：
 
 ```text
-MYSQL_USERNAME=root;MYSQL_PASSWORD=123456;REDIS_HOST=localhost;REDIS_PORT=6379;PISTON_BASE_URL=http://localhost:2000/api/v2
+MYSQL_USERNAME=root;MYSQL_PASSWORD=123456;REDIS_HOST=localhost;REDIS_PORT=6379;PISTON_BASE_URL=http://localhost:2000/api/v2;AI_BASE_URL=<anthropic-compatible-base-url>;AI_MODEL=<model>;AI_API_KEY=<your-api-key>;AI_MAX_TOKENS=3000
 ```
 
 也可以用 PowerShell 启动：
@@ -668,6 +692,10 @@ $env:MYSQL_PASSWORD="123456"
 $env:REDIS_HOST="localhost"
 $env:REDIS_PORT="6379"
 $env:PISTON_BASE_URL="http://localhost:2000/api/v2"
+$env:AI_BASE_URL="<anthropic-compatible-base-url>"
+$env:AI_MODEL="<model>"
+$env:AI_API_KEY="<your-api-key>"
+$env:AI_MAX_TOKENS="3000"
 mvn spring-boot:run
 ```
 
@@ -678,13 +706,15 @@ mvn spring-boot:run
 - 提交一段错误 Java 代码，确认返回失败用例。
 - 提交一段编译错误代码，确认返回编译错误。
 
-Phase 1 已验证接口：
+Phase 1/2 已验证接口：
 
 ```http
 GET http://localhost:8080/api/problems
 GET http://localhost:8080/api/problems/101
 GET http://localhost:8080/api/problems/101/template
 POST http://localhost:8080/api/submissions
+POST http://localhost:8080/api/agent/analyze
+GET http://localhost:8080/api/submissions/{submissionId}/diagnosis/stream
 ```
 
 Two Sum 正确提交示例：
@@ -724,14 +754,35 @@ Two Sum 正确提交示例：
 - 用 DP 初始化错误测试动态规划错误分类。
 - 检查 AI 是否输出合法 JSON。
 - 检查 AI 是否没有直接给完整答案。
+- 检查 `user_weakness.weakness_score` 对失败提交增加，不能因为模型返回负数而下降。
+- 检查 `agent_run.status = SUCCESS` 且 `current_state = COMPLETED`。
+- 检查 `agent_step` 至少包含 `PLANNING`、`CODE_EXECUTION`、`OBSERVATION`、`ERROR_CLASSIFICATION`、`HINT_GENERATION`、`MEMORY_UPDATE`、`TRAINING_PLAN`、`COMPLETED`。
+- 检查 `ai_diagnosis`、`hint_record`、`user_weakness`、`mistake_card`、`training_plan` 均有最新记录。
+
+已验证的 Two Sum bug：
+
+```text
+代码在循环中先 map.put(nums[i], i)，再检查 complement。
+重复元素或当前元素自匹配时会输出 0 0。
+```
+
+期望 Agent 结果：
+
+```text
+errorType: LOGIC_ERROR 或 BOUNDARY_ERROR
+knowledgePoint: HashMap 相关
+hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
+```
 
 ### 前端验证
+
+状态：前端仍处于后续阶段，以下为 Phase 3/4 完成后的验证清单。
 
 - 打开首页，确认题目列表展示。
 - 进入做题页，确认 Monaco Editor 可用。
 - 提交代码，确认测试结果展示。
 - 触发 Agent 诊断，确认 SSE 流式输出 Agent 步骤。
-- 打开 Dashboard，确认弱点和训练计划展示。
+- Dashboard 查询接口和页面完成后，再确认弱点、错题卡和训练计划展示。
 
 ### 演示验证
 
@@ -749,6 +800,8 @@ Two Sum 正确提交示例：
 | 本地 Piston HTTP/2 请求返回 400 | `PistonClient` 使用 HTTP/1.1 请求工厂访问本地 Piston |
 | Piston API 不稳定 | 后端保留 `JudgeService` 抽象，后期可替换为 Docker 沙箱或其他判题服务；演示前准备固定样例 |
 | AI 响应慢 | 使用 SSE 流式输出 Agent 步骤，前端展示当前执行到哪个 Tool |
+| 兼容模型先输出 thinking 导致 JSON text 超出 token | 默认 `AI_MAX_TOKENS=3000`，Prompt 要求 compact JSON |
+| 模型返回负数 `weaknessScoreDelta` | `LearningTrackerImpl` 对空值或小于等于 0 的 delta 兜底为 `5` |
 | AI 分类不准 | 准备 10 个固定错误样例调 Prompt |
 | 前端做不完 | 优先完成做题页，Dashboard 用列表代替图表 |
 | 题库太多拖慢进度 | MVP 先做 10 道题，README 写可扩展到 30 道 |
@@ -767,9 +820,9 @@ Two Sum 正确提交示例：
 7. 展示错误分类：例如 `BOUNDARY_ERROR`、`HashMap`。
 8. 展示 Level 1、Level 2、Level 3 分层提示。
 9. 修改代码后重新提交并通过。
-10. 展示 AI Code Review。
-11. 打开 Dashboard，展示薄弱点和 3 天训练计划。
-12. 讲解后端设计：Piston 封装、Agent Tool、Observation、Memory、SSE、MySQL、Redis。
+10. 通过数据库或后端日志展示 `agent_run`、`agent_step`、`ai_diagnosis`、`hint_record`、`user_weakness`、`mistake_card`、`training_plan`。
+11. 讲解后端设计：Piston 封装、Agent Tool、Observation、Memory、SSE、MySQL、Redis。
+12. 说明下一步会补 Dashboard 查询接口和前端展示。
 
 ## 10. 简历准备
 

@@ -34,8 +34,42 @@ Use these documents as the source of truth:
 
 - `docs/AI-Interview-Coach.md`: project design, database tables, API design, Agent workflow, resume packaging, interview talking points
 - `docs/IMPLEMENTATION_PLAN.md`: implementation phases, directory structure, acceptance criteria, prompts, risks, demo script
+- `docs/API.md`: current implemented REST/SSE API surface
 
 If this file conflicts with those documents, prefer this file for engineering constraints and MVP discipline, then update the docs only when the user explicitly asks.
+
+## Current Implementation Status
+
+As of Phase 2, the backend has a demoable Agent workflow:
+
+```text
+POST /api/submissions
+  -> persist and judge Java submission through Piston
+
+GET /api/submissions/{submissionId}/diagnosis/stream
+  -> create AgentRun
+  -> emit AgentStep events through SSE
+  -> rejudge submission through CodeExecutionTool
+  -> classify error through AI
+  -> generate layered hints through AI
+  -> persist diagnosis, hint records, weakness memory, and mistake card
+  -> create deterministic 3-day training plan
+  -> emit final AgentAnalyzeVO
+```
+
+Current implemented controllers:
+
+- `ProblemController`
+- `SubmissionController`
+- `AgentController`
+
+Not yet exposed as REST controllers:
+
+- user weakness list
+- mistake card list
+- latest training plan detail
+- single-hint lookup
+- accepted-code review
 
 ## Fixed Technical Stack
 
@@ -143,7 +177,7 @@ Use Java-backend-style package responsibilities:
 - `config`: framework, API, Redis, CORS, MyBatis-Plus, and SSE configuration
 - `handler`: global exception handling and unified API response handling
 
-Code execution must go through an abstraction. Do not call Piston directly from controllers.
+Code execution must go through an abstraction. Do not call Piston directly from controllers or Agent tools.
 
 Controllers should stay thin:
 
@@ -207,7 +241,7 @@ Agent concepts:
 - `AgentContext` carries submission, problem, execution result, diagnosis, hints, weakness update, and training plan data.
 - `AgentStep` records each step name, tool name, status, input summary, output summary, duration, and error message.
 - `Tool` implementations must have clear inputs and outputs and should call service-layer abstractions instead of controllers.
-- `CodeExecutionTool` must call `JudgeService`, not Piston directly.
+- `CodeExecutionTool` must call a service-layer execution abstraction such as `SubmissionService.rejudge(...)`, which in turn uses `JudgeService`; it must not call Piston directly.
 - LLM calls belong only in tools that need semantic judgment, such as error classification, hint generation, code review, or training plan generation.
 - Tool outputs that affect business state must be converted into structured data before persistence.
 
@@ -271,10 +305,13 @@ MySQL stores durable training data:
 - knowledge points
 - test cases
 - submissions
+- agent runs
+- agent steps
 - AI diagnoses
 - hint records
 - user weaknesses
 - training plans
+- training plan items
 - mistake cards
 
 Redis may be used for:
@@ -300,6 +337,12 @@ SSE is for server-to-browser updates such as:
 - "generating layered hints"
 - "updating weakness memory"
 - final structured diagnosis summary
+
+Current SSE event names:
+
+- `agent_step`: `AgentStepVO`
+- `done`: `AgentAnalyzeVO`
+- `error`: `ApiResponse<Void>`
 
 Do not use WebSocket for v1 unless the user explicitly asks. SSE is simpler and easier to explain.
 

@@ -55,6 +55,35 @@ public class SubmissionServiceImpl implements SubmissionService {
         return toSubmissionResultVO(submission, judgeResult);
     }
 
+    @Override
+    public Submission getSubmissionOrThrow(Long submissionId) {
+        Submission submission = submissionMapper.selectById(submissionId);
+        if (submission == null) {
+            throw new BusinessException(404, "submission not found");
+        }
+        return submission;
+    }
+
+    @Override
+    @Transactional
+    public JudgeResult rejudge(Long submissionId) {
+        Submission submission = getSubmissionOrThrow(submissionId);
+        if (!LanguageEnum.isJava(submission.getLanguage())) {
+            JudgeResult result = new JudgeResult();
+            result.setStatus(SubmissionStatusEnum.UNSUPPORTED_LANGUAGE);
+            result.setErrorMessage("Phase 1 supports Java only");
+            return result;
+        }
+        Problem problem = problemService.getEnabledProblem(submission.getProblemId());
+        List<TestCase> testCases = listTestCases(problem.getId());
+        if (testCases.isEmpty()) {
+            throw new BusinessException(500, "problem has no test cases");
+        }
+        JudgeResult judgeResult = judgeService.judgeJava(submission.getCode(), toJudgeCases(testCases));
+        updateSubmission(submission, judgeResult);
+        return judgeResult;
+    }
+
     private SubmissionResultVO unsupportedLanguageResult(SubmitCodeRequest request) {
         Submission submission = new Submission();
         LocalDateTime now = LocalDateTime.now();

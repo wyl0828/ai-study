@@ -15,4 +15,6 @@ public interface ProblemService {
     ProblemTemplateVO getProblemTemplate(Long id);
 
     Problem getEnabledProblem(Long id);
+
+    List<String> listKnowledgePointNames(Long problemId);
 }
