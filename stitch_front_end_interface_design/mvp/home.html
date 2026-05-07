@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Interview Coach - 题目列表</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: "#005a90",
+        "primary-container": "#0073b7",
+        "on-primary": "#ffffff",
+        "on-primary-container": "#ebf3ff",
+        surface: "#faf8ff",
+        "surface-container-lowest": "#ffffff",
+        "surface-container-low": "#f2f3ff",
+        "surface-container": "#eaedff",
+        "surface-container-high": "#e2e7ff",
+        "on-surface": "#131b2e",
+        "on-surface-variant": "#404750",
+        secondary: "#515f74",
+        "secondary-container": "#d5e3fc",
+        "on-secondary-container": "#57657a",
+        outline: "#707882",
+        "outline-variant": "#c0c7d2",
+        "surface-variant": "#dae2fd",
+        background: "#faf8ff",
+        error: "#ba1a1a",
+        "error-container": "#ffdad6"
+      },
+      fontFamily: {
+        sans: ["Inter", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"]
+      }
+    }
+  }
+}
+</script>
+<style>
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #c0c7d2; border-radius: 10px; }
+</style>
+</head>
+<body class="bg-background text-on-surface min-h-screen font-sans">
+
+<!-- 顶部导航栏 -->
+<header class="bg-surface/80 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30 flex justify-between items-center w-full px-6 h-14 shadow-sm">
+  <div class="flex items-center gap-6">
+    <a href="home.html" class="flex items-center gap-2 text-primary font-bold text-lg">
+      <span class="material-symbols-outlined text-[22px]">terminal</span>
+      AI Interview Coach
+    </a>
+    <nav class="hidden md:flex gap-6 ml-8">
+      <a href="home.html" class="text-primary border-b-2 border-primary pb-0.5 text-sm font-semibold">题目</a>
+      <a href="dashboard.html" class="text-on-surface-variant hover:text-primary transition-colors text-sm font-medium">仪表盘</a>
+    </nav>
+  </div>
+  <div class="flex items-center gap-3">
+    <button class="p-1.5 rounded-full hover:bg-surface-variant text-on-surface-variant transition-colors">
+      <span class="material-symbols-outlined text-[20px]">notifications</span>
+    </button>
+    <div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-sm font-medium cursor-pointer">
+      D
+    </div>
+  </div>
+</header>
+
+<!-- 主内容 -->
+<main class="max-w-6xl mx-auto px-6 py-8">
+
+  <!-- 页面标题 -->
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-on-surface tracking-tight">算法题库</h1>
+    <p class="text-sm text-on-surface-variant mt-1">Java 后端面试高频题目，AI 教练实时诊断你的代码</p>
+  </div>
+
+  <!-- 筛选栏 -->
+  <div class="flex flex-wrap items-center gap-3 mb-6">
+    <!-- 难度筛选 -->
+    <div class="flex items-center gap-1.5">
+      <button class="px-3 py-1.5 rounded-full text-xs font-semibold bg-primary text-on-primary">全部</button>
+      <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors">简单</button>
+      <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors">中等</button>
+      <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors">困难</button>
+    </div>
+    <div class="h-5 w-px bg-outline-variant/40"></div>
+    <!-- 分类筛选 -->
+    <div class="flex items-center gap-1.5">
+      <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-surface-container text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container-high transition-colors">全部分类</button>
+      <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-surface-container text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container-high transition-colors">哈希表</button>
+      <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-surface-container text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container-high transition-colors">链表</button>
+      <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-surface-container text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container-high transition-colors">树</button>
+      <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-surface-container text-on-surface-variant border border-outline-variant/40 hover:bg-surface-container-high transition-colors">动态规划</button>
+    </div>
+    <!-- 搜索 -->
+    <div class="ml-auto">
+      <div class="relative">
+        <span class="material-symbols-outlined text-[18px] text-outline absolute left-3 top-1/2 -translate-y-1/2">search</span>
+        <input type="text" placeholder="搜索算法题..." class="pl-9 pr-4 py-1.5 text-sm border border-outline-variant/40 rounded-lg bg-surface-container-lowest focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 w-56"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- 统计信息 -->
+  <div class="flex items-center gap-4 mb-4 text-xs text-on-surface-variant">
+    <span>共 8 道题</span>
+    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>已通过 2</span>
+    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span>尝试过 1</span>
+  </div>
+
+  <!-- 题目卡片网格 -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+    <!-- 题目 101: Two Sum - 已通过 -->
+    <a href="problem.html" class="group block bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-200">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="bg-emerald-50 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full">简单</span>
+          <span class="text-xs text-outline">#101</span>
+        </div>
+        <span class="material-symbols-outlined text-emerald-500 text-[18px]" title="已通过">check_circle</span>
+      </div>
+      <h3 class="text-base font-semibold text-on-surface group-hover:text-primary transition-colors mb-2">两数之和</h3>
+      <p class="text-xs text-on-surface-variant leading-relaxed mb-3 line-clamp-2">给定一个整数数组和一个目标值，找出和为目标值的两个整数的下标。</p>
+      <div class="flex flex-wrap gap-1.5">
+        <span class="bg-surface-container text-on-surface-variant text-[11px] px-2 py-0.5 rounded-full border border-outline-variant/30">数组</span>
+        <span class="bg-surface-container text-on-surface-variant text-[11px] px-2 py-0.5 rounded-full border border-outline-variant/30">哈希表</span>
+      </div>
+    </a>
+
+    <!-- 题目 102: Valid Anagram - 未做 -->
+    <a href="problem.html" class="group block bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-200">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="bg-emerald-50 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full">简单</span>
+          <span class="text-xs text-outline">#102</span>
+        </div>
+        <span class="material-symbols-outlined text-outline/40 text-[18px]" title="未做">radio_button_unchecked</span>
+      </div>
+      <h3 class="text-base font-semibold text-on-surface group-hover:text-primary transition-colors mb-2">有效字母异位词</h3>
+      <p class="text-xs text-on-surface-variant leading-relaxed mb-3 line-clamp-2">给定两个字符串，判断它们是否互为字母异位词。</p>
+      <div class="flex flex-wrap gap-1.5">
+        <span class="bg-surface-container text-on-surface-variant text-[11px] px-2 py-0.5 rounded-full border border-outline-variant/30">哈希表</span>
+      </div>
+    </a>
+
+    <!-- 题目 103: Reverse Linked List - 已通过 -->
+    <a href="problem.html" class="group block bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-200">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="bg-emerald-50 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full">简单</span>
+          <span class="text-xs text-outline">#103</span>
+        </div>
+        <span class="material-symbols-outlined text-emerald-500 text-[18px]" title="已通过">check_circle</span>
+      </div>
+      <h3 class="text-base font-semibold text-on-surface group-hover:text-primary transition-colors mb-2">反转链表</h3>
+      <p class="text-xs text-on-surface-variant leading-relaxed mb-3 line-clamp-2">给定一个链表，反转链表并输出节点值。</p>
+      <div class="flex flex-wrap gap-1.5">
+        <span class="bg-surface-container text-on-surface-variant text-[11px] px-2 py-0.5 rounded-full border border-outline-variant/30">链表</span>
+      </div>
+    </a>
+
+    <!-- 题目 104: Merge Two Sorted Lists - 尝试过 -->
+    <a href="problem.html" class="group block bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-200">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="bg-emerald-50 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full">简单</span>
+          <span class="text-xs text-outline">#104</span>
+        </div>
+        <span class="material-symbols-outlined text-amber-500 text-[18px]" title="尝试过">pending</span>
+      </div>
+      <h3 class="text-base font-semibold text-on-surface group-hover:text-primary transition-colors mb-2">合并两个有序链表</h3>
+      <p class="text-xs text-on-surface-variant leading-relaxed mb-3 line-clamp-2">给定两个有序链表，合并为一个有序链表并输出。</p>
+      <div class="flex flex-wrap gap-1.5">
+        <span class="bg-surface-container text-on-surface-variant text-[11px] px-2 py-0.5 rounded-full border border-outline-variant/30">链表</span>
+      </div>
+    </a>
+
+    <!-- 题目 105: Maximum Depth of Binary Tree - 未做 -->
+    <a href="problem.html" class="group block bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-200">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="bg-emerald-50 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full">简单</span>
+          <span class="text-xs text-outline">#105</span>
+        </div>
+        <span class="material-symbols-outlined text-outline/40 text-[18px]" title="未做">radio_button_unchecked</span>
+      </div>
+      <h3 class="text-base font-semibold text-on-surface group-hover:text-primary transition-colors mb-2">二叉树的最大深度</h3>
+      <p class="text-xs text-on-surface-variant leading-relaxed mb-3 line-clamp-2">给定一棵二叉树，计算其最大深度。</p>
+      <div class="flex flex-wrap gap-1.5">
+        <span class="bg-surface-container text-on-surface-variant text-[11px] px-2 py-0.5 rounded-full border border-outline-variant/30">树</span>
+      </div>
+    </a>
+
+    <!-- 题目 106: Binary Tree Level Order - 未做 -->
+    <a href="problem.html" class="group block bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-200">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="bg-amber-50 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">中等</span>
+          <span class="text-xs text-outline">#106</span>
+        </div>
+        <span class="material-symbols-outlined text-outline/40 text-[18px]" title="未做">radio_button_unchecked</span>
+      </div>
+      <h3 class="text-base font-semibold text-on-surface group-hover:text-primary transition-colors mb-2">二叉树的层序遍历</h3>
+      <p class="text-xs text-on-surface-variant leading-relaxed mb-3 line-clamp-2">给定一棵二叉树，按层序遍历输出每一层的节点值。</p>
+      <div class="flex flex-wrap gap-1.5">
+        <span class="bg-surface-container text-on-surface-variant text-[11px] px-2 py-0.5 rounded-full border border-outline-variant/30">树</span>
+        <span class="bg-surface-container text-on-surface-variant text-[11px] px-2 py-0.5 rounded-full border border-outline-variant/30">BFS</span>
+      </div>
+    </a>
+
+    <!-- 题目 107: Climbing Stairs - 未做 -->
+    <a href="problem.html" class="group block bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-200">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="bg-emerald-50 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full">简单</span>
+          <span class="text-xs text-outline">#107</span>
+        </div>
+        <span class="material-symbols-outlined text-outline/40 text-[18px]" title="未做">radio_button_unchecked</span>
+      </div>
+      <h3 class="text-base font-semibold text-on-surface group-hover:text-primary transition-colors mb-2">爬楼梯</h3>
+      <p class="text-xs text-on-surface-variant leading-relaxed mb-3 line-clamp-2">每次可以爬 1 或 2 个台阶，计算到达第 n 阶有多少种不同的方法。</p>
+      <div class="flex flex-wrap gap-1.5">
+        <span class="bg-surface-container text-on-surface-variant text-[11px] px-2 py-0.5 rounded-full border border-outline-variant/30">动态规划</span>
+      </div>
+    </a>
+
+    <!-- 题目 108: Longest Increasing Subsequence - 未做 -->
+    <a href="problem.html" class="group block bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-200">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="bg-amber-50 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-full">中等</span>
+          <span class="text-xs text-outline">#108</span>
+        </div>
+        <span class="material-symbols-outlined text-outline/40 text-[18px]" title="未做">radio_button_unchecked</span>
+      </div>
+      <h3 class="text-base font-semibold text-on-surface group-hover:text-primary transition-colors mb-2">最长递增子序列</h3>
+      <p class="text-xs text-on-surface-variant leading-relaxed mb-3 line-clamp-2">给定一个整数数组，返回最长严格递增子序列的长度。</p>
+      <div class="flex flex-wrap gap-1.5">
+        <span class="bg-surface-container text-on-surface-variant text-[11px] px-2 py-0.5 rounded-full border border-outline-variant/30">动态规划</span>
+        <span class="bg-surface-container text-on-surface-variant text-[11px] px-2 py-0.5 rounded-full border border-outline-variant/30">二分查找</span>
+      </div>
+    </a>
+
+  </div>
+</main>
+</body>
+</html>

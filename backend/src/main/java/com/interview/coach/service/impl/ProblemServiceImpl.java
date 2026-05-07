@@ -86,7 +86,8 @@ public class ProblemServiceImpl implements ProblemService {
         return vo;
     }
 
-    private List<String> listKnowledgePointNames(Long problemId) {
+    @Override
+    public List<String> listKnowledgePointNames(Long problemId) {
         List<ProblemKnowledgePoint> relations = problemKnowledgePointMapper.selectList(
                 new LambdaQueryWrapper<ProblemKnowledgePoint>()
                         .eq(ProblemKnowledgePoint::getProblemId, problemId)

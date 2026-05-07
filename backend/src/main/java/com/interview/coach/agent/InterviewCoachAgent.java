@@ -1,0 +1,172 @@
+package com.interview.coach.agent;
+
+import com.interview.coach.agent.tool.CodeExecutionTool;
+import com.interview.coach.agent.tool.ErrorClassifierTool;
+import com.interview.coach.agent.tool.HintGeneratorTool;
+import com.interview.coach.agent.tool.TrainingPlannerTool;
+import com.interview.coach.agent.tool.WeaknessTrackerTool;
+import com.interview.coach.entity.AgentRun;
+import com.interview.coach.entity.AgentStepEntity;
+import com.interview.coach.enums.AgentRunStatusEnum;
+import com.interview.coach.enums.AgentState;
+import com.interview.coach.enums.AgentStepStatusEnum;
+import com.interview.coach.handler.BusinessException;
+import com.interview.coach.mapper.AgentRunMapper;
+import com.interview.coach.mapper.AgentStepMapper;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.function.Consumer;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+@Component
+@RequiredArgsConstructor
+public class InterviewCoachAgent {
+
+    private final CodeExecutionTool codeExecutionTool;
+
+    private final ErrorClassifierTool errorClassifierTool;
+
+    private final HintGeneratorTool hintGeneratorTool;
+
+    private final WeaknessTrackerTool weaknessTrackerTool;
+
+    private final TrainingPlannerTool trainingPlannerTool;
+
+    private final AgentStepMapper agentStepMapper;
+
+    private final AgentRunMapper agentRunMapper;
+
+    public AgentContext run(AgentContext context, Consumer<AgentStep> stepSink) {
+        Consumer<AgentStep> sink = stepSink == null ? step -> { } : stepSink;
+        try {
+            runStep(context, AgentState.PLANNING, null, "Prepare agent context", "Context ready", sink, () -> context);
+            runStep(context, AgentState.CODE_EXECUTION, codeExecutionTool.name(), "submissionId=" + context.getSubmissionId(),
+                    "Execution observation ready", sink,
+                    () -> codeExecutionTool.execute(context.getSubmissionId(), context));
+            runStep(context, AgentState.OBSERVATION, null, "Read execution result", "Observation captured", sink, () -> context.getObservation());
+            runStep(context, AgentState.ERROR_CLASSIFICATION, errorClassifierTool.name(), "Classify execution observation",
+                    "Diagnosis ready", sink,
+                    () -> errorClassifierTool.execute(context, context));
+            runStep(context, AgentState.HINT_GENERATION, hintGeneratorTool.name(), "Generate layered hints",
+                    "Hints ready", sink,
+                    () -> hintGeneratorTool.execute(context, context));
+            runStep(context, AgentState.MEMORY_UPDATE, weaknessTrackerTool.name(), "Persist diagnosis and weakness memory",
+                    "Learning memory updated", sink,
+                    () -> weaknessTrackerTool.execute(context, context));
+            runStep(context, AgentState.TRAINING_PLAN, trainingPlannerTool.name(), "Create short training plan",
+                    "Training plan ready", sink,
+                    () -> trainingPlannerTool.execute(context, context));
+            runStep(context, AgentState.COMPLETED, null, "Finalize agent run", "Agent run completed", sink, () -> context);
+            markRunSuccess(context);
+            return context;
+        } catch (RuntimeException ex) {
+            markRunFailed(context, ex.getMessage());
+            if (ex instanceof BusinessException businessException) {
+                throw businessException;
+            }
+            throw new BusinessException(500, "agent analysis failed");
+        }
+    }
+
+    private Object runStep(AgentContext context, AgentState state, String toolName, String inputSummary,
+            String fallbackOutputSummary, Consumer<AgentStep> sink, StepAction action) {
+        markRunState(context, state);
+        AgentStep step = new AgentStep();
+        step.setState(state);
+        step.setToolName(toolName);
+        step.setStatus(AgentStepStatusEnum.RUNNING);
+        step.setInputSummary(inputSummary);
+        step.setStartedAt(LocalDateTime.now());
+        persistStartedStep(context, step);
+        sink.accept(step);
+        try {
+            Object output = action.execute();
+            step.setStatus(AgentStepStatusEnum.SUCCESS);
+            step.setOutputSummary(summarize(output, fallbackOutputSummary));
+            step.setFinishedAt(LocalDateTime.now());
+            step.setDurationMs(Duration.between(step.getStartedAt(), step.getFinishedAt()).toMillis());
+            updateStep(step);
+            context.getSteps().add(step);
+            sink.accept(step);
+            return output;
+        } catch (RuntimeException ex) {
+            step.setStatus(AgentStepStatusEnum.FAILED);
+            step.setErrorMessage(ex.getMessage());
+            step.setFinishedAt(LocalDateTime.now());
+            step.setDurationMs(Duration.between(step.getStartedAt(), step.getFinishedAt()).toMillis());
+            updateStep(step);
+            context.getSteps().add(step);
+            sink.accept(step);
+            throw ex;
+        }
+    }
+
+    private void persistStartedStep(AgentContext context, AgentStep step) {
+        AgentStepEntity entity = toEntity(context.getAgentRunId(), step);
+        agentStepMapper.insert(entity);
+        step.setId(entity.getId());
+    }
+
+    private void updateStep(AgentStep step) {
+        AgentStepEntity entity = toEntity(null, step);
+        entity.setId(step.getId());
+        agentStepMapper.updateById(entity);
+    }
+
+    private AgentStepEntity toEntity(Long agentRunId, AgentStep step) {
+        AgentStepEntity entity = new AgentStepEntity();
+        entity.setAgentRunId(agentRunId);
+        entity.setStepName(step.getState().name());
+        entity.setToolName(step.getToolName());
+        entity.setStatus(step.getStatus().name());
+        entity.setInputSummary(step.getInputSummary());
+        entity.setOutputSummary(step.getOutputSummary());
+        entity.setDurationMs(step.getDurationMs());
+        entity.setErrorMessage(step.getErrorMessage());
+        entity.setStartedAt(step.getStartedAt());
+        entity.setFinishedAt(step.getFinishedAt());
+        entity.setCreatedAt(step.getStartedAt());
+        return entity;
+    }
+
+    private void markRunState(AgentContext context, AgentState state) {
+        AgentRun run = new AgentRun();
+        run.setId(context.getAgentRunId());
+        run.setStatus(AgentRunStatusEnum.RUNNING.name());
+        run.setCurrentState(state.name());
+        run.setUpdatedAt(LocalDateTime.now());
+        agentRunMapper.updateById(run);
+    }
+
+    private void markRunSuccess(AgentContext context) {
+        AgentRun run = new AgentRun();
+        run.setId(context.getAgentRunId());
+        run.setStatus(AgentRunStatusEnum.SUCCESS.name());
+        run.setCurrentState(AgentState.COMPLETED.name());
+        run.setFinishedAt(LocalDateTime.now());
+        run.setUpdatedAt(LocalDateTime.now());
+        agentRunMapper.updateById(run);
+    }
+
+    private void markRunFailed(AgentContext context, String message) {
+        AgentRun run = new AgentRun();
+        run.setId(context.getAgentRunId());
+        run.setStatus(AgentRunStatusEnum.FAILED.name());
+        run.setCurrentState(AgentState.FAILED.name());
+        run.setErrorMessage(message);
+        run.setFinishedAt(LocalDateTime.now());
+        run.setUpdatedAt(LocalDateTime.now());
+        agentRunMapper.updateById(run);
+    }
+
+    private String summarize(Object output, String fallback) {
+        return output == null ? fallback : fallback;
+    }
+
+    @FunctionalInterface
+    private interface StepAction {
+
+        Object execute();
+    }
+}

@@ -29,3 +29,11 @@ piston:
   java-version: ${PISTON_JAVA_VERSION:15.0.2}
   compile-timeout-ms: ${PISTON_COMPILE_TIMEOUT_MS:10000}
   run-timeout-ms: ${PISTON_RUN_TIMEOUT_MS:3000}
+
+coach:
+  ai:
+    base-url: ${AI_BASE_URL:https://api.anthropic.com}
+    api-key: ${AI_API_KEY:}
+    model: ${AI_MODEL:claude-3-5-sonnet-latest}
+    max-tokens: ${AI_MAX_TOKENS:3000}
+    anthropic-version: ${AI_ANTHROPIC_VERSION:2023-06-01}
