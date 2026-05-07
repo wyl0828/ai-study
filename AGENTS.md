@@ -1,0 +1,367 @@
+# AGENTS.md
+
+## Project Identity
+
+This repository is for **AI Interview Coach Agent**, a Java code diagnosis and interview-training system built around an Agent Workflow.
+
+The project must not drift into a generic LeetCode clone, a generic AI chatbot, a broad education platform, or a Spring Boot wrapper around an LLM API. Its core value is the Agent-driven interview-training loop:
+
+```text
+agent task -> planner -> tool call -> observation -> error diagnosis -> layered hints -> weakness memory -> training plan
+```
+
+Primary audience:
+
+- Java backend job seekers
+- Student developers preparing for backend interviews
+- Interviewers reviewing this as a resume project
+
+Primary resume focus:
+
+- Spring Boot backend design
+- Code execution service integration
+- Agent Workflow, Tool Calling, Observation, and Memory design
+- MySQL data modeling
+- MyBatis-Plus mapper and SQL-layer design
+- Redis caching and temporary state
+- SSE streaming
+- Agent step / trace recording
+- Clear demo flow
+
+## Source Documents
+
+Use these documents as the source of truth:
+
+- `docs/AI-Interview-Coach.md`: project design, database tables, API design, Agent workflow, resume packaging, interview talking points
+- `docs/IMPLEMENTATION_PLAN.md`: implementation phases, directory structure, acceptance criteria, prompts, risks, demo script
+
+If this file conflicts with those documents, prefer this file for engineering constraints and MVP discipline, then update the docs only when the user explicitly asks.
+
+## Fixed Technical Stack
+
+Do not re-open these decisions unless the user explicitly asks.
+
+Frontend:
+
+- Next.js 14
+- Tailwind CSS
+- Monaco Editor
+- App Router
+
+Backend:
+
+- Spring Boot 3
+- Java 17
+- MySQL 8
+- MyBatis-Plus
+- Redis
+- Server-Sent Events
+
+AI:
+
+- Anthropic-compatible API
+- Structured JSON outputs whenever AI results are persisted or consumed by business logic
+- AI is used for error classification, layered hints, code review, and training plan generation
+
+Code execution:
+
+- Piston API for MVP
+- Java only for v1
+- Keep a replaceable execution abstraction so Docker sandbox support can be added later
+
+Default project structure:
+
+```text
+frontend/
+backend/
+data/
+docs/
+```
+
+Backend package structure:
+
+```text
+backend/src/main/java/com/interview/coach/
+├── controller/
+├── service/
+│   └── impl/
+├── agent/
+│   └── tool/
+├── integration/
+│   ├── piston/
+│   └── ai/
+├── entity/
+├── mapper/
+├── dto/
+├── vo/
+├── enums/
+├── config/
+├── handler/
+└── CoachApplication.java
+```
+
+## MVP Priority
+
+Always optimize for a demoable end-to-end loop before adding breadth.
+
+Priority order:
+
+1. Complete demo loop: submit Java code, run tests, diagnose error, show hints, record weakness, generate plan.
+2. AI diagnosis and three-level hint quality.
+3. Weakness tracking and training plan.
+4. Problem count, dashboard polish, charts, UI animations.
+
+The MVP should start with 5-10 problems. Do not spend early development time filling a 30-problem database if the training loop is not stable.
+
+## Backend Rules
+
+Spring Boot is the resume center of this project. Backend decisions should be easy to explain in an interview.
+
+Use clear service boundaries:
+
+- `ProblemService` for problem lookup and metadata
+- `SubmissionService` for submission lifecycle
+- `JudgeService` for code execution orchestration
+- `AgentService` for AI workflow orchestration
+- `LearningTracker` for weakness and mistake tracking
+- `TrainingPlanService` for training plan generation
+
+Use Java-backend-style package responsibilities:
+
+- `controller`: receive HTTP requests and return VO responses
+- `service`: business interfaces
+- `service/impl`: business implementations and orchestration
+- `agent`: Agent orchestration classes such as `InterviewCoachAgent`, `AgentState`, `AgentContext`, and `AgentStep`
+- `agent/tool`: Tool implementations such as `CodeExecutionTool`, `ErrorClassifierTool`, `HintGeneratorTool`, `WeaknessTrackerTool`, and `TrainingPlannerTool`
+- `integration/piston`: Piston API client and request/response adapters
+- `integration/ai`: Anthropic-compatible API client and model adapters
+- `entity`: MySQL table mapping objects
+- `mapper`: MyBatis-Plus mapper interfaces
+- `dto`: request DTOs and internal command objects
+- `vo`: response view objects
+- `enums`: status, difficulty, language, error type, and hint level enums
+- `config`: framework, API, Redis, CORS, MyBatis-Plus, and SSE configuration
+- `handler`: global exception handling and unified API response handling
+
+Code execution must go through an abstraction. Do not call Piston directly from controllers.
+
+Controllers should stay thin:
+
+- validate request shape
+- call service layer
+- receive DTOs
+- return VOs
+
+Services should own business decisions:
+
+- status transitions
+- test result parsing
+- Agent state transitions
+- Tool execution order
+- weakness updates
+- training plan generation
+- AI result persistence
+
+Persistence rules:
+
+- Use MyBatis-Plus as the default MySQL access layer.
+- Put database access interfaces under a `mapper` package.
+- Put table mapping classes under an `entity` package, not `model`.
+- Prefer `BaseMapper<T>` for simple CRUD.
+- Use custom SQL only when query conditions or joins become clearer than wrapper code.
+- Keep SQL and persistence logic out of controllers.
+
+Use DTOs for API requests and VOs for API responses. Do not expose entity objects directly from controllers.
+
+## Frontend Rules
+
+Keep the frontend practical and simple. The user has limited frontend experience, so avoid unnecessary UI complexity.
+
+Required pages:
+
+- `/`: problem list
+- `/problem/[id]`: problem detail, code editor, test result, AI diagnosis, layered hints
+- `/dashboard`: weakness list, recent submissions, training plan, mistake cards
+
+Frontend priorities:
+
+1. The problem page must work first.
+2. Dashboard can start as simple lists.
+3. Charts are optional.
+4. UI animation is not a priority.
+
+Use Monaco Editor only where code editing is needed. Do not overbuild a complete IDE.
+
+## AI Agent Rules
+
+The Agent must behave like an interview coach, not an answer generator.
+
+The Agent must be implemented as an explainable workflow, not as a single prompt call. Prefer a simple state machine plus Tool chain for MVP:
+
+```text
+Planner -> CodeExecutionTool -> Observation -> ErrorClassifierTool -> HintGeneratorTool -> WeaknessTrackerTool -> TrainingPlannerTool
+```
+
+Agent concepts:
+
+- `AgentContext` carries submission, problem, execution result, diagnosis, hints, weakness update, and training plan data.
+- `AgentStep` records each step name, tool name, status, input summary, output summary, duration, and error message.
+- `Tool` implementations must have clear inputs and outputs and should call service-layer abstractions instead of controllers.
+- `CodeExecutionTool` must call `JudgeService`, not Piston directly.
+- LLM calls belong only in tools that need semantic judgment, such as error classification, hint generation, code review, or training plan generation.
+- Tool outputs that affect business state must be converted into structured data before persistence.
+
+AI must not directly provide full accepted Java solutions by default.
+
+Use layered hints:
+
+- Level 1: direction only
+- Level 2: related knowledge point and likely issue
+- Level 3: pseudocode or key idea, not full Java answer
+
+Persist AI outputs only after converting them to structured data. Prefer JSON fields such as:
+
+- `errorType`
+- `knowledgePoint`
+- `specificError`
+- `diagnosis`
+- `hintLevel1`
+- `hintLevel2`
+- `hintLevel3`
+- `confidence`
+- `weaknessScoreDelta`
+
+AI output should support the learning loop:
+
+```text
+failed submission -> tool observation -> diagnosis -> hints -> weakness update -> mistake card -> training plan
+```
+
+## Code Execution Rules
+
+Use Piston API for the MVP.
+
+The first version supports Java only. Do not add Python, JavaScript, C++, or multi-language execution unless the user explicitly changes scope.
+
+Keep execution replaceable:
+
+- define a service-level execution interface
+- implement a Piston-backed version first
+- leave Docker sandbox as a later extension
+
+Execution results should include enough information for AI diagnosis:
+
+- status
+- passed count
+- total count
+- compile error
+- runtime error
+- failed cases
+- expected output
+- actual output
+- runtime
+- memory
+
+## Data And Persistence Rules
+
+MySQL stores durable training data:
+
+- users
+- problems
+- knowledge points
+- test cases
+- submissions
+- AI diagnoses
+- hint records
+- user weaknesses
+- training plans
+- mistake cards
+
+Redis may be used for:
+
+- hot problem list cache
+- problem detail cache
+- temporary Agent context
+- user recent training state
+
+Do not rely on Redis as the only storage for anything needed in the resume demo.
+
+## SSE Rules
+
+Use SSE for AI diagnosis streaming.
+
+SSE is for server-to-browser updates such as:
+
+- "planning agent steps"
+- "running code execution tool"
+- "observing failed test cases"
+- "analyzing test result"
+- "classifying error type"
+- "generating layered hints"
+- "updating weakness memory"
+- final structured diagnosis summary
+
+Do not use WebSocket for v1 unless the user explicitly asks. SSE is simpler and easier to explain.
+
+## Testing And Verification
+
+Before claiming a feature is complete, verify it with the smallest meaningful test or manual flow.
+
+Backend verification:
+
+- problem list endpoint works
+- problem detail endpoint works
+- Java submission can be executed through Piston
+- compile error is returned correctly
+- wrong answer includes failed case information
+- submission is persisted
+
+AI verification:
+
+- a known Two Sum bug is classified as a hash map or boundary issue
+- a known recursion bug is classified as a tree or recursion issue
+- AI returns valid JSON for persisted outputs
+- hints do not reveal the full Java answer
+
+Frontend verification:
+
+- problem page loads
+- editor accepts code
+- submit button calls backend
+- test result is displayed
+- AI diagnosis stream is displayed
+- layered hints can be viewed
+
+Demo verification:
+
+```text
+select problem -> write buggy code -> submit -> run CodeExecutionTool -> observe failed test -> stream Agent steps -> view hints -> update weakness memory -> generate plan
+```
+
+## Do Not Do These In MVP
+
+Do not add:
+
+- multi-language judge support
+- full LeetCode-scale problem bank
+- Docker sandbox implementation
+- voice or video interview simulation
+- multi-agent collaboration
+- enterprise-grade permission system
+- complex charting as a blocker
+- decorative UI animation as a blocker
+- full accepted answer generation as the default AI behavior
+
+## Development Style
+
+Prefer simple, explainable implementations over clever abstractions.
+
+Add abstractions only when they protect a planned extension:
+
+- Piston now, Docker later
+- Anthropic-compatible API now, model provider swap later
+- list dashboard now, charts later
+
+Keep names aligned with the project docs. If a service or concept appears in `docs/IMPLEMENTATION_PLAN.md`, reuse that naming unless there is a strong reason not to.
+
+When in doubt, protect the demo loop.
