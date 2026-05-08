@@ -40,11 +40,14 @@ If this file conflicts with those documents, prefer this file for engineering co
 
 ## Current Implementation Status
 
-As of Phase 2, the backend has a demoable Agent workflow:
+As of Phase 4 plus the problem-draft enhancement, the project has a demoable end-to-end Agent workflow and real Dashboard data:
 
 ```text
 POST /api/submissions
   -> persist and judge Java submission through Piston
+
+POST /api/agent/analyze
+  -> run the Agent workflow synchronously for the current frontend demo flow
 
 GET /api/submissions/{submissionId}/diagnosis/stream
   -> create AgentRun
@@ -62,14 +65,21 @@ Current implemented controllers:
 - `ProblemController`
 - `SubmissionController`
 - `AgentController`
+- `UserController`
 
 Not yet exposed as REST controllers:
 
-- user weakness list
-- mistake card list
-- latest training plan detail
 - single-hint lookup
 - accepted-code review
+- manual training plan regeneration
+
+Current frontend status:
+
+- `/`, `/problem/[id]`, and `/dashboard` are implemented.
+- `/problem/[id]` submits Java code, displays test results, calls synchronous `POST /api/agent/analyze` for failed submissions, and displays AI diagnosis plus layered hints.
+- `/problem/[id]` has localStorage draft autosave through `frontend/lib/draft.ts`; page components must not access localStorage directly.
+- `/dashboard` reads real MySQL-backed learning data through `UserController`.
+- The backend SSE diagnosis endpoint exists, but the frontend still uses the synchronous analyze endpoint for the main demo flow.
 
 ## Fixed Technical Stack
 
@@ -226,6 +236,14 @@ Frontend priorities:
 
 Use Monaco Editor only where code editing is needed. Do not overbuild a complete IDE.
 
+Problem draft rules:
+
+- For v1, keep draft persistence in `frontend/lib/draft.ts` backed by localStorage.
+- Store only temporary browser-side state: code, last submission result, last AI diagnosis, and code snapshots.
+- Do not put durable training data in localStorage; submissions, diagnoses, hints, weaknesses, mistake cards, and training plans remain MySQL-backed.
+- `ProblemWorkspace.tsx`, `CodeEditor.tsx`, and result panels must not call localStorage directly.
+- Future backend draft APIs may replace the internals of `draft.ts` without changing page components.
+
 ## AI Agent Rules
 
 The Agent must behave like an interview coach, not an answer generator.
@@ -372,8 +390,11 @@ Frontend verification:
 - editor accepts code
 - submit button calls backend
 - test result is displayed
-- AI diagnosis stream is displayed
+- AI diagnosis and layered hints are displayed after a failed submission
+- backend SSE diagnosis stream remains available for API-level demonstration
 - layered hints can be viewed
+- draft code, last result, and last diagnosis can be restored after refresh
+- stale diagnosis warning appears after editing code that differs from the diagnosis snapshot
 
 Demo verification:
 

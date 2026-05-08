@@ -50,6 +50,7 @@ const {
   formatDraftTime,
   loadDraft,
   saveDraft,
+  shouldUseDraftForTemplate,
 } = require("./draft.ts");
 
 test.beforeEach(() => {
@@ -167,4 +168,33 @@ test("clears drafts and ignores write failures", () => {
 
 test("formats draft time as MM-DD HH:mm", () => {
   assert.equal(formatDraftTime("2026-05-08T09:06:00+08:00"), "05-08 09:06");
+});
+
+test("does not reuse an old Main-mode draft when backend template switches to Solution mode", () => {
+  const draft = {
+    userId: 1,
+    problemId: 103,
+    language: "java",
+    updatedAt: "2026-05-08T01:00:00.000Z",
+    code: "import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {}\n}",
+  };
+
+  const solutionTemplate =
+    "class Solution {\n    public ListNode reverseList(ListNode head) {\n        return null;\n    }\n}";
+
+  assert.equal(shouldUseDraftForTemplate(draft, solutionTemplate), false);
+});
+
+test("keeps drafts when their code mode matches the backend template", () => {
+  const solutionDraft = {
+    userId: 1,
+    problemId: 103,
+    language: "java",
+    updatedAt: "2026-05-08T01:00:00.000Z",
+    code: "class Solution { public ListNode reverseList(ListNode head) { return head; } }",
+  };
+  const solutionTemplate =
+    "class Solution {\n    public ListNode reverseList(ListNode head) {\n        return null;\n    }\n}";
+
+  assert.equal(shouldUseDraftForTemplate(solutionDraft, solutionTemplate), true);
 });

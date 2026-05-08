@@ -21,11 +21,13 @@ import com.interview.coach.vo.SubmissionResultVO;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SubmissionServiceImpl implements SubmissionService {
 
     private final ProblemService problemService;
@@ -50,7 +52,12 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
 
         Submission submission = createRunningSubmission(request);
-        JudgeResult judgeResult = judgeService.judgeJava(request.getCode(), toJudgeCases(testCases));
+        String wrappedCode = CodeWrapper.wrap(problem.getId(), request.getCode());
+        log.info("Prepared submit judge code: problemId={}, codeWrapped={}, containsMain={}",
+                problem.getId(), wrappedCode != request.getCode(), containsMainClass(wrappedCode));
+        JudgeResult judgeResult = judgeService.judgeJava(
+                wrappedCode,
+                toJudgeCases(testCases));
         updateSubmission(submission, judgeResult);
         return toSubmissionResultVO(submission, judgeResult);
     }
@@ -79,7 +86,12 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (testCases.isEmpty()) {
             throw new BusinessException(500, "problem has no test cases");
         }
-        JudgeResult judgeResult = judgeService.judgeJava(submission.getCode(), toJudgeCases(testCases));
+        String wrappedCode = CodeWrapper.wrap(submission.getProblemId(), submission.getCode());
+        log.info("Prepared rejudge code: problemId={}, codeWrapped={}, containsMain={}",
+                submission.getProblemId(), wrappedCode != submission.getCode(), containsMainClass(wrappedCode));
+        JudgeResult judgeResult = judgeService.judgeJava(
+                wrappedCode,
+                toJudgeCases(testCases));
         updateSubmission(submission, judgeResult);
         return judgeResult;
     }
@@ -109,6 +121,10 @@ public class SubmissionServiceImpl implements SubmissionService {
         return testCaseMapper.selectList(new LambdaQueryWrapper<TestCase>()
                 .eq(TestCase::getProblemId, problemId)
                 .orderByAsc(TestCase::getId));
+    }
+
+    private boolean containsMainClass(String code) {
+        return code != null && code.contains("public class Main");
     }
 
     private Submission createRunningSubmission(SubmitCodeRequest request) {

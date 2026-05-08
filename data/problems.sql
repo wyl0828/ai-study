@@ -59,30 +59,14 @@ public class Main {
 '统计两个字符串的字符出现次数，也可以遍历 s 时加一、遍历 t 时减一。',
 1, NOW(), NOW()),
 (103, '反转链表',
-'给定一个单链表，请将链表反转，并从新的头节点开始依次输出节点值。',
+'给定一个单链表的头节点 head，请反转链表，并返回反转后的头节点。',
 'EASY', 'LinkedList',
-'第 1 行输入链表长度 n，第 2 行输入 n 个整数。',
-'输出反转后的节点值，用空格分隔；当 n = 0 时输出空行。',
-'import java.util.*;
-
-public class Main {
-    static class ListNode {
-        int val;
-        ListNode next;
-        ListNode(int val) { this.val = val; }
-    }
-
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        int n = sc.nextInt();
-        ListNode dummy = new ListNode(0);
-        ListNode tail = dummy;
-        for (int i = 0; i < n; i++) {
-            tail.next = new ListNode(sc.nextInt());
-            tail = tail.next;
-        }
-
-        // TODO: 反转 dummy.next，并输出结果。
+'给定参数 head，无需处理标准输入。',
+'返回反转后的链表头节点，无需自行打印结果。',
+'class Solution {
+    public ListNode reverseList(ListNode head) {
+        // 请在这里实现反转链表逻辑
+        return null;
     }
 }',
 '使用 prev、cur、next 三个指针。移动 cur 的同时反转 cur.next 指向。',
@@ -241,11 +225,11 @@ ccac
 (103, '5
 1 2 3 4 5
 ', '5 4 3 2 1', 1, 1),
-(103, '1
-7
-', '7', 0, 1),
+(103, '2
+1 2
+', '2 1', 1, 1),
 (103, '0
-', '', 0, 1),
+', '', 1, 1),
 (104, '3
 1 2 4
 3
