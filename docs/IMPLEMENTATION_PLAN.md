@@ -578,6 +578,13 @@ GET /api/users/{userId}/mistakes
 GET /api/users/{userId}/submissions/recent
 ```
 
+联调注意事项：
+
+- 如果 Dashboard 请求 `/api/users/1/...` 返回 `No static resource api/users/...`，优先检查后端是否重启到了包含 `UserController` 的最新代码。
+- 如果其他工具或同学判断“后端没有 UserController”，检查他们看的是否是旧提交、远程仓库，或是否忽略了 untracked 新文件。
+- 完成提交或交付前，需要把 `UserController`、`UserLearningService`、`UserLearningServiceImpl`、Dashboard VO 和 `UserLearningServiceImplTest` 一起纳入版本控制。
+- 验证命令：`cd backend; mvn test` 和 `cd frontend; npm run build`。
+
 ## 6. Prompt 设计
 
 ### 6.1 ErrorClassifierTool System Prompt
@@ -817,6 +824,7 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 - 提交失败后，确认同步 `POST /api/agent/analyze` 返回的 AI 诊断和分层提示能展示。
 - 打开 Dashboard，确认统计、弱点、错题卡、最近提交和训练计划来自真实查询接口。
 - 首次无数据时，确认 Dashboard 显示空状态引导文案。
+- 若 Dashboard 接口返回 404 或 `No static resource api/users/...`，重启后端并确认新增后端文件已纳入版本控制。
 
 ### 演示验证
 

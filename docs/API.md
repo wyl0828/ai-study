@@ -624,7 +624,17 @@ GET /api/users/{userId}/submissions/recent
 
 前端加载时会并发请求统计、薄弱点、错题、最新训练计划和最近提交记录。无数据时显示空状态引导文案，不回退 mock 数据。
 
-### 8.3 尚未暴露的接口
+### 8.3 Dashboard 联调排查
+
+如果访问 `/api/users/{userId}/...` 返回类似 `No static resource api/users/...`，通常不是前端路径写错，而是当前运行的 `localhost:8080` 后端进程不是包含 `UserController` 的最新代码。处理顺序：
+
+1. 确认当前工作区存在 `backend/src/main/java/com/interview/coach/controller/UserController.java`。
+2. 确认 `backend/src/main/java/com/interview/coach/service/impl/UserLearningServiceImpl.java` 存在并实现 5 个查询方法。
+3. 重启 Spring Boot 后端，让新 Controller 被重新扫描注册。
+4. 如果别人从 git 或远程仓库检查代码，确认新增的 `UserController`、`UserLearningService`、Dashboard VO 和测试文件已经被加入版本控制，而不是停留在 untracked 状态。
+5. 重新请求 `GET http://localhost:8080/api/users/1/dashboard/stats`，成功时应返回统一 `ApiResponse` JSON。
+
+### 8.4 尚未暴露的接口
 
 以下增强能力当前尚未暴露为 REST Controller：
 

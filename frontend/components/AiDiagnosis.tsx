@@ -13,6 +13,7 @@ import {
 import type { AgentAnalyzeVO } from "@/lib/types";
 import {
   agentStepName,
+  diagnosisDisplay,
   errorTypeName,
   knowledgePoint,
   trainingPlanTitle,
@@ -58,6 +59,8 @@ export default function AiDiagnosis({
     );
   }
 
+  const display = diagnosisDisplay(diagnosis.diagnosis, diagnosis.specificError);
+
   return (
     <div className="p-5 space-y-4">
       {/* 错误类型标签 */}
@@ -78,13 +81,13 @@ export default function AiDiagnosis({
         </h3>
         <div className="bg-surface-container rounded-lg border border-outline-variant/40 p-4">
           <p className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-wrap">
-            {diagnosis.diagnosis}
+            {display.diagnosisText}
           </p>
         </div>
       </div>
 
       {/* 具体错误 */}
-      {diagnosis.specificError && (
+      {display.suggestionText && (
         <div className="space-y-3">
           <h3 className="text-sm font-semibold text-on-surface flex items-center gap-1.5">
             <Lightbulb className="w-[18px] h-[18px] text-primary" />
@@ -92,7 +95,7 @@ export default function AiDiagnosis({
           </h3>
           <div className="bg-primary/5 rounded-lg border border-primary/20 p-4">
             <p className="text-sm text-on-surface-variant leading-relaxed">
-              {diagnosis.specificError}
+              {display.suggestionText}
             </p>
           </div>
         </div>

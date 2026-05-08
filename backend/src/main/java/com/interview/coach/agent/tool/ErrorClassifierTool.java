@@ -40,6 +40,13 @@ public class ErrorClassifierTool implements Tool<AgentContext, AiDiagnosisResult
                 TIMEOUT, RUNTIME_ERROR, SYSTEM_ERROR, ACCEPTED_REVIEW.
                 All user-facing text fields must be natural Simplified Chinese.
                 You may keep technical terms such as Java, HashMap, containsKey, null.
+                diagnosis must locate the code problem and explain why tests fail.
+                specificError must be a concrete next-step improvement suggestion, not another diagnosis.
+                suggestion must describe the correct high-level repair direction for learning records.
+                Do not write interview-evaluation phrases like "候选人可能不了解".
+                Use product-style wording based on the current problem, category, submitted code, and failed cases.
+                If the submitted code only prints a default value, put that fact in diagnosis.
+                Put problem-specific repair steps in specificError without changing the problem topic.
                 knowledgePoint must be a normalized learning label, for example:
                 HashMap 基础查找, HashMap 冲突处理, HashMap 在两数之和中的应用,
                 HashMap 遍历逻辑, 链表指针边界, 二叉树递归出口, 动态规划状态设计.

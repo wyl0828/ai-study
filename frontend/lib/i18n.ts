@@ -231,3 +231,52 @@ export function trainingPlanText(text: string): string {
 export function learningText(text: string): string {
   return replaceKnownPhrases(text, { ...trainingPhraseMap, ...trainingCopyMap });
 }
+
+export function diagnosisDisplay(
+  diagnosis: string,
+  specificError: string
+): { diagnosisText: string; suggestionText: string } {
+  return {
+    diagnosisText: normalizeDiagnosisText(diagnosis),
+    suggestionText: normalizeSuggestionText(specificError),
+  };
+}
+
+function normalizeDiagnosisText(text: string): string {
+  const cleaned = productText(learningText(text));
+  if (isDefaultOutputText(cleaned)) {
+    return "当前代码未实现本题核心逻辑，仅返回默认值，因此无法通过测试用例。";
+  }
+  return cleaned;
+}
+
+function normalizeSuggestionText(text: string): string {
+  const cleaned = productText(learningText(text));
+  if (isDefaultOutputText(cleaned)) {
+    return "";
+  }
+  return cleaned;
+}
+
+function isDefaultOutputText(text: string): boolean {
+  const lower = text.toLowerCase();
+  return (
+    lower.includes("no solution") ||
+    lower.includes("hardcoded") ||
+    lower.includes("-1 -1") ||
+    text.includes("硬编码") ||
+    text.includes("默认值") ||
+    text.includes("默认结果") ||
+    text.includes("未实现真实求解逻辑")
+  );
+}
+
+function productText(text: string): string {
+  return text
+    .replace(
+      "候选人可能不了解如何使用 HashMap 优化两数之和查找。",
+      "当前提交可能没有正确使用 HashMap 来优化两数之和的查找过程。"
+    )
+    .replace("候选人可能不了解", "当前提交可能没有正确理解")
+    .replace("候选人", "当前提交");
+}
