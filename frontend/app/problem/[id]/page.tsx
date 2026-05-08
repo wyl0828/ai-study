@@ -7,18 +7,12 @@ interface ProblemPageProps {
 }
 
 export default async function ProblemPage({ params }: ProblemPageProps) {
-  const [{ data: problem }, { data: template }] = await Promise.all([
-    problemApi.detail(Number(params.id)),
-    problemApi.template(Number(params.id)),
-  ]);
+  const { data: problem } = await problemApi.detail(Number(params.id));
 
   return (
     <main className="h-[calc(100vh-56px)] flex overflow-hidden bg-background">
       <ProblemDescription problem={problem} />
-      <ProblemWorkspace
-        problemId={problem.id}
-        defaultCode={template.templateCode}
-      />
+      <ProblemWorkspace problemId={problem.id} />
     </main>
   );
 }

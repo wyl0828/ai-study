@@ -5,6 +5,11 @@ import {
   problemDescription,
   problemTitle,
 } from "@/lib/i18n";
+import {
+  displayExamples,
+  shouldShowIoFormat,
+  solutionModeHints,
+} from "@/lib/problemPresentation";
 import DifficultyBadge from "./DifficultyBadge";
 
 interface ProblemDescriptionProps {
@@ -14,6 +19,10 @@ interface ProblemDescriptionProps {
 export default function ProblemDescription({
   problem,
 }: ProblemDescriptionProps) {
+  const examples = displayExamples(problem);
+  const hints = solutionModeHints(problem.id);
+  const showIoFormat = shouldShowIoFormat(problem);
+
   return (
     <section className="w-[25%] min-w-[280px] max-w-[420px] h-full border-r border-outline-variant/30 flex flex-col overflow-y-auto bg-surface-container-lowest">
       <div className="p-5 flex-1">
@@ -36,52 +45,65 @@ export default function ProblemDescription({
         </div>
 
         {/* 输入输出格式 */}
-        <div className="mt-5 space-y-3">
-          {problem.inputFormat && (
-            <div>
-              <h3 className="text-sm font-semibold text-on-surface mb-2">
-                输入格式
-              </h3>
-              <div className="bg-surface-container rounded-lg p-3 border border-outline-variant/40 text-xs font-mono text-on-surface leading-loose">
-                {formatText(problem.inputFormat)}
+        {showIoFormat && (
+          <div className="mt-5 space-y-3">
+            {problem.inputFormat && (
+              <div>
+                <h3 className="text-sm font-semibold text-on-surface mb-2">
+                  输入格式
+                </h3>
+                <div className="bg-surface-container rounded-lg p-3 border border-outline-variant/40 text-xs font-mono text-on-surface leading-loose">
+                  {formatText(problem.inputFormat)}
+                </div>
               </div>
-            </div>
-          )}
-          {problem.outputFormat && (
-            <div>
-              <h3 className="text-sm font-semibold text-on-surface mb-2">
-                输出格式
-              </h3>
-              <div className="bg-surface-container rounded-lg p-3 border border-outline-variant/40 text-xs font-mono text-on-surface leading-loose">
-                {formatText(problem.outputFormat)}
+            )}
+            {problem.outputFormat && (
+              <div>
+                <h3 className="text-sm font-semibold text-on-surface mb-2">
+                  输出格式
+                </h3>
+                <div className="bg-surface-container rounded-lg p-3 border border-outline-variant/40 text-xs font-mono text-on-surface leading-loose">
+                  {formatText(problem.outputFormat)}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* 示例用例 */}
-        {problem.sampleCases?.filter((c) => c.sample).length > 0 && (
+        {examples.length > 0 && (
           <div className="mt-5 space-y-3">
-            {problem.sampleCases
-              .filter((c) => c.sample)
-              .map((c, i) => (
-                <div key={c.id}>
-                  <h3 className="text-sm font-semibold text-on-surface mb-2">
-                    示例 {i + 1}：
-                  </h3>
-                  <div className="bg-surface-container rounded-lg p-3 border border-outline-variant/40 font-mono text-xs text-on-surface leading-loose">
-                    <span className="text-secondary font-sans font-medium">
-                      输入：
-                    </span>
-                    {c.input}
-                    <br />
-                    <span className="text-secondary font-sans font-medium">
-                      输出：
-                    </span>
-                    {c.expectedOutput}
-                  </div>
+            {examples.map((example, i) => (
+              <div key={example.id}>
+                <h3 className="text-sm font-semibold text-on-surface mb-2">
+                  示例 {i + 1}：
+                </h3>
+                <div className="bg-surface-container rounded-lg p-3 border border-outline-variant/40 font-mono text-xs text-on-surface leading-loose">
+                  <span className="text-secondary font-sans font-medium">
+                    输入：
+                  </span>
+                  {example.input}
+                  <br />
+                  <span className="text-secondary font-sans font-medium">
+                    输出：
+                  </span>
+                  {example.output}
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {hints.length > 0 && (
+          <div className="mt-5">
+            <h3 className="text-sm font-semibold text-on-surface mb-2">
+              提示：
+            </h3>
+            <ul className="list-disc pl-5 text-sm text-on-surface-variant space-y-1 leading-relaxed">
+              {hints.map((hint) => (
+                <li key={hint}>{hint}</li>
               ))}
+            </ul>
           </div>
         )}
 

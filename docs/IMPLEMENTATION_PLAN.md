@@ -68,6 +68,7 @@ Agent 收到任务
 - 当前真实暴露的 Agent 接口：`POST /api/agent/analyze`、`GET /api/submissions/{submissionId}/diagnosis/stream`。
 - Phase 3 前端核心页面已完成：`/`、`/problem/[id]`、`/dashboard` 均已按 `stitch_front_end_interface_design/mvp/` HTML 原型做紧凑 MVP 风格还原，并完成中文化。
 - 当前做题页提交失败后会自动调用同步 `POST /api/agent/analyze` 展示测试结果、AI 诊断和三层提示；后端 SSE 接口已保留，但前端暂未接入 SSE 流式展示。
+- 做题页已完成 localStorage 草稿自动保存 v1：刷新后可恢复 Java 代码、上次判题结果和上次 AI 诊断；当前通过 `frontend/lib/draft.ts` 隔离存储实现，后续可替换为后端草稿接口。
 - Dashboard 已通过 `UserController` 接入真实 MySQL 学习数据，展示统计、薄弱点、错题卡、最近提交和最新训练计划；单独 hint 查询、accepted-code review 和手动重新生成训练计划留到后续阶段。
 - 最新接口文档以 `docs/API.md` 为准。
 
@@ -99,6 +100,7 @@ interview-coach/
 │   │   └── TrainingPlan.tsx
 │   └── lib/
 │       ├── api.ts
+│       ├── draft.ts
 │       ├── i18n.ts
 │       ├── mock.ts
 │       └── types.ts
@@ -397,6 +399,7 @@ handler：全局异常处理和统一响应处理
 - `frontend/components/ResultPanel.tsx`
 - `frontend/components/ProblemWorkspace.tsx`
 - `frontend/components/ProblemCard.tsx`
+- `frontend/lib/draft.ts`
 - `frontend/lib/i18n.ts`
 
 验收标准：
@@ -406,6 +409,7 @@ handler：全局异常处理和统一响应处理
 - Monaco Editor 能输入 Java 代码。
 - 点击提交后能展示测试结果。
 - 测试失败后能展示 AI 诊断和分层提示。
+- 刷新做题页后能恢复草稿代码、上次判题结果和上次 AI 诊断。
 - Dashboard 能展示弱点和训练计划。
 
 本阶段实际落地说明：
@@ -415,9 +419,12 @@ handler：全局异常处理和统一响应处理
 - 做题页 `/problem/[id]` 已实现固定视口高度三栏布局：左侧题目描述、中间 Monaco Editor、右侧测试结果 / AI 诊断 / 分层提示。
 - Monaco 容器已改为深色 loading 背景，避免编辑器加载前出现大面积浅色空白。
 - 当前提交流程为：`POST /api/submissions` 判题，失败后自动调用同步 `POST /api/agent/analyze` 获取诊断结果；SSE 前端接入留到后续增强。
+- 已新增 `frontend/lib/draft.ts` 作为草稿读写抽象层，页面组件不直接操作 `localStorage`；当前固定 demo 用户 `userId=1`，存储 key 为 `interview_coach_draft_${userId}_${problemId}`。
+- 草稿内容包括当前代码、上次判题结果、上次 AI 诊断和各自 `codeSnapshot`；当当前代码与诊断快照不一致时，诊断和提示面板会提示“该诊断基于上次提交，当前代码已修改，仅供参考”。
+- 已补充 `frontend/lib/draft.node-test.cjs`，覆盖草稿保存/读取、局部更新、显式清除旧诊断、JSON 损坏、核心字段缺失、写入失败静默降级和时间格式化。
 - Dashboard `/dashboard` 已实现统计卡、薄弱点排行、最近提交表格、错题卡片、训练计划和 AI 建议展示，当前数据来自 `/api/users/1/...` 用户学习查询接口。
 - 前端页面已完成中文化，题目标题、难度、知识点、按钮、空状态、Dashboard 文案均按“国内互联网产品 + LeetCode 中文站”风格处理。
-- 已运行 `npm run build`，Next.js 编译、类型检查和页面生成通过。
+- 已运行 `node --test .\lib\draft.node-test.cjs` 和 `npm run build`，草稿单测、Next.js 编译、类型检查和页面生成通过。
 
 ### 阶段 4：训练计划与错题本，Day 13-16
 
@@ -816,12 +823,14 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 
 ### 前端验证
 
-状态：Phase 4 Dashboard 真实数据接入已完成，2026-05-07 已运行 `npm run build` 并通过。
+状态：Phase 4 Dashboard 真实数据接入已完成；做题页草稿缓存已完成，2026-05-08 已运行 `node --test .\lib\draft.node-test.cjs` 和 `npm run build` 并通过。
 
 - 打开首页，确认题目列表、筛选、搜索和卡片跳转可用。
 - 进入做题页，确认 Monaco Editor 可用且首屏为三栏布局。
 - 提交代码，确认测试结果展示。
 - 提交失败后，确认同步 `POST /api/agent/analyze` 返回的 AI 诊断和分层提示能展示。
+- 刷新做题页，确认代码、上次判题结果和上次 AI 诊断可以从 localStorage 草稿恢复。
+- 修改已诊断代码，确认诊断和提示面板显示过期提示；重置代码后确认草稿、测试结果和诊断被清空。
 - 打开 Dashboard，确认统计、弱点、错题卡、最近提交和训练计划来自真实查询接口。
 - 首次无数据时，确认 Dashboard 显示空状态引导文案。
 - 若 Dashboard 接口返回 404 或 `No static resource api/users/...`，重启后端并确认新增后端文件已纳入版本控制。
