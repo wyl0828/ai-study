@@ -6,6 +6,21 @@ name = "ai-study"
 script = ""
 
 [[actions]]
-name = "运行"
+name = "推送"
 icon = "run"
 command = "git push origin main"
+
+[[actions]]
+name = "启动前端"
+icon = "tool"
+command = "cd frontend && npm run dev"
+
+[[actions]]
+name = "启动后端"
+icon = "tool"
+command = ".\\start-backend.ps1"
+
+[[actions]]
+name = "停止所有 Java 进程"
+icon = "tool"
+command = "taskkill /F /IM java.exe"

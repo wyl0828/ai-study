@@ -10,12 +10,17 @@ const problemTitleMap: Record<string, string> = {
 };
 
 const knowledgePointMap: Record<string, string> = {
-  HashMap: "哈希表",
+  HashMap: "HashMap",
   LinkedList: "链表",
   Tree: "二叉树",
   DynamicProgramming: "动态规划",
   "Array Traversal": "数组遍历",
-  "HashMap Lookup": "HashMap 查找",
+  "HashMap Lookup": "HashMap 基础查找",
+  "HashMap Lookup Order": "HashMap 基础查找",
+  "Handling Duplicate Values in HashMap": "HashMap 冲突处理",
+  "HashMap Lookup for Two Sum": "HashMap 在两数之和中的应用",
+  "Handling duplicate indices in HashMap lookup": "HashMap 冲突处理",
+  "HashMap Lookup in Array Traversal": "HashMap 遍历逻辑",
   "String Counting": "字符计数",
   "Linked List Pointer": "链表指针",
   "Binary Tree Recursion": "二叉树递归",
@@ -25,7 +30,7 @@ const knowledgePointMap: Record<string, string> = {
 };
 
 const categoryMap: Record<string, string> = {
-  HashMap: "哈希表",
+  HashMap: "HashMap",
   LinkedList: "链表",
   Tree: "二叉树",
   DynamicProgramming: "动态规划",
@@ -51,6 +56,8 @@ const descriptionMap: Record<string, string> = {
     "给定两个升序链表，请将它们合并为一个升序链表，并输出合并后的节点值。",
   "Given a binary tree in level-order form, compute its maximum depth. The token null means an empty node.":
     "给定一棵按层序表示的二叉树，计算它的最大深度。其中 null 表示空节点。",
+  "Given a binary tree in level-order form, compute its maximum depth. The token null means an empty child.":
+    "给定一棵按层序表示的二叉树，请计算它的最大深度。其中 null 表示空节点。",
   "Given a binary tree in level-order form, print each level from top to bottom.":
     "给定一棵按层序表示的二叉树，请从上到下按层输出每一层的节点值。",
   "You can climb 1 or 2 steps each move. Count how many distinct ways can reach the nth step.":
@@ -64,6 +71,27 @@ const formatMap: Record<string, string> = {
     "第 1 行输入数组长度 n，第 2 行输入 n 个整数，第 3 行输入目标值 target。",
   "Print two indices separated by one space, or -1 -1.":
     "输出两个下标，用空格分隔；若不存在答案，输出 -1 -1。",
+  "Line 1: s. Line 2: t.": "第 1 行输入字符串 s，第 2 行输入字符串 t。",
+  "Print true or false.": "输出 true 或 false。",
+  "Line 1: n. Line 2: n integers.":
+    "第 1 行输入长度 n，第 2 行输入 n 个整数。",
+  "Print reversed values separated by one space. Print an empty line for n = 0.":
+    "输出反转后的节点值，用空格分隔；当 n = 0 时输出空行。",
+  "Line 1: n. Line 2: n integers. Line 3: m. Line 4: m integers.":
+    "第 1 行输入长度 n，第 2 行输入 n 个整数，第 3 行输入长度 m，第 4 行输入 m 个整数。",
+  "Print merged values separated by one space.":
+    "输出合并后的节点值，用空格分隔。",
+  "Line 1: n. Line 2: n level-order tokens such as 3 9 20 null null 15 7.":
+    "第 1 行输入节点数量 n，第 2 行输入 n 个层序节点，例如 3 9 20 null null 15 7。",
+  "Print the maximum depth as an integer.":
+    "输出最大深度，结果为一个整数。",
+  "Line 1: n. Line 2: n level-order tokens. The token null means an empty child.":
+    "第 1 行输入节点数量 n，第 2 行输入 n 个层序节点，其中 null 表示空节点。",
+  "Print levels separated by semicolon. Values inside a level are separated by one space.":
+    "按层输出节点值，层与层之间用分号分隔，同一层内用空格分隔。",
+  "Line 1: n.": "第 1 行输入 n。",
+  "Print the number of ways.": "输出不同走法数量。",
+  "Print the LIS length.": "输出最长递增子序列的长度。",
 };
 
 const errorTypeMap: Record<string, string> = {
@@ -91,18 +119,81 @@ const agentStepMap: Record<string, string> = {
 
 const trainingPhraseMap: Record<string, string> = {
   "3-day recovery plan": "3 天专项训练",
-  "HashMap Lookup in Array Traversal": "数组遍历中的 HashMap 查找",
+  "HashMap Lookup": "HashMap 基础查找",
+  "HashMap Lookup Order": "HashMap 基础查找",
+  "HashMap Lookup in Array Traversal": "HashMap 遍历逻辑",
+  "Handling Duplicate Values in HashMap": "HashMap 冲突处理",
+  "HashMap Lookup for Two Sum": "HashMap 在两数之和中的应用",
+  "Handling duplicate indices in HashMap lookup": "HashMap 冲突处理",
   "Linked List Pointer": "链表指针",
   "Binary Tree Recursion": "二叉树递归",
   "Dynamic Programming State": "动态规划状态",
 };
+
+const trainingCopyMap: Record<string, string> = {
+  "Focus on the failed knowledge point, one adjacent topic, and a retry of the original problem.":
+    "围绕失败知识点、相邻题型和原题重做安排训练。",
+  "Repeat the failed knowledge point while the mistake is fresh.":
+    "趁错误记忆还清晰，先复盘本次失败的知识点。",
+  "Explain why the failed case breaks the submitted idea.":
+    "说明失败用例为什么会击穿当前思路。",
+  "Practice one adjacent topic from the same problem category.":
+    "练习同类题目中的相邻知识点。",
+  "Compare the category pattern with the original failed approach.":
+    "对比同类题型规律和原来的错误做法。",
+  "Review the mistake card and retry the original problem.":
+    "回顾错题卡后重新挑战原题。",
+  "Write the invariant or boundary condition before coding.":
+    "编码前先写出不变量或边界条件。",
+  "Checks complement after adding current element, causing self-match.":
+    "当前元素先写入 HashMap，随后查找互补值时可能匹配到自身。",
+  "Code checks for needed value after adding current element, causing self-match error.":
+    "代码先插入当前元素再查找目标差值，导致同一元素被重复使用。",
+  "No solution implemented; output is hardcoded to -1 -1.":
+    "未实现真实求解逻辑，结果被硬编码为 -1 -1。",
+  "Learn to implement HashMap for efficient pair finding in arrays.":
+    "需要掌握如何使用 HashMap 在数组中高效查找目标配对。",
+  "Check for complement before adding current element to map.":
+    "先判断互补值是否存在，再把当前元素写入 HashMap。",
+  "Add current element to map only after checking for needed value to ensure distinct indices.":
+    "先完成键存在性判断，再写入当前元素，确保两个下标不同。",
+  "No Two Sum algorithm implemented; prints placeholder output.":
+    "尚未实现两数之和查找逻辑，当前输出仍停留在占位结果。",
+  "Learn and implement Two Sum algorithm with HashMap to store complements and return indices.":
+    "复习两数之和的 HashMap 解法，用互补值查找返回正确下标。",
+  "Code allows self-pairing by not checking index distinctness.":
+    "代码没有校验两个下标必须不同，可能出现自配对。",
+  "Add condition to verify map.get(need) != i before printing results.":
+    "输出前校验命中的下标与当前下标不同，避免重复使用同一元素。",
+  "Check complement before inserting into HashMap to ensure distinct indices":
+    "先查找互补值，再写入当前元素，确保不会重复使用同一下标",
+  "checking self-match": "检查自匹配问题",
+  "placeholder output": "占位输出",
+  "containsKey": "键存在性判断",
+};
+
+function replaceKnownPhrases(text: string, phrases: Record<string, string>): string {
+  return Object.entries(phrases)
+    .sort(([a], [b]) => b.length - a.length)
+    .reduce((value, [source, target]) => value.replaceAll(source, target), text)
+    .replaceAll("Two Sum", "两数之和")
+    .replaceAll("Lookup", "查找")
+    .replaceAll("lookup", "查找")
+    .replaceAll("Handling", "处理")
+    .replaceAll("duplicate indices", "重复下标")
+    .replaceAll("Duplicate Values", "重复值")
+    .replaceAll("failed approach", "错误做法")
+    .replaceAll("failed case", "失败用例")
+    .replaceAll("failed knowledge point", "失败知识点")
+    .replace(": ", "：");
+}
 
 export function problemTitle(text: string): string {
   return problemTitleMap[text] || text;
 }
 
 export function knowledgePoint(text: string): string {
-  return knowledgePointMap[text] || text;
+  return replaceKnownPhrases(knowledgePointMap[text] || text, trainingPhraseMap);
 }
 
 export function categoryName(text: string): string {
@@ -130,9 +221,13 @@ export function agentStepName(text: string): string {
 }
 
 export function trainingPlanTitle(text: string): string {
-  const translated = Object.entries(trainingPhraseMap).reduce(
-    (value, [source, target]) => value.replace(source, target),
-    text
-  );
-  return translated.replace(": ", "：");
+  return replaceKnownPhrases(text, trainingPhraseMap);
+}
+
+export function trainingPlanText(text: string): string {
+  return replaceKnownPhrases(text, trainingCopyMap);
+}
+
+export function learningText(text: string): string {
+  return replaceKnownPhrases(text, { ...trainingPhraseMap, ...trainingCopyMap });
 }

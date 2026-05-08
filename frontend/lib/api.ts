@@ -13,7 +13,7 @@ import type {
   SubmissionHistoryVO,
 } from "./types";
 
-const API_BASE = typeof window === "undefined" ? "http://localhost:8080" : "";
+const API_BASE = "http://localhost:8080";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, init);

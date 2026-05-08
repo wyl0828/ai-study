@@ -38,9 +38,15 @@ public class ErrorClassifierTool implements Tool<AgentContext, AiDiagnosisResult
                 errorType, knowledgePoint, specificError, diagnosis, suggestion, confidence, weaknessScoreDelta.
                 errorType must be one of SYNTAX_ERROR, LOGIC_ERROR, BOUNDARY_ERROR, ALGORITHM_ERROR,
                 TIMEOUT, RUNTIME_ERROR, SYSTEM_ERROR, ACCEPTED_REVIEW.
+                All user-facing text fields must be natural Simplified Chinese.
+                You may keep technical terms such as Java, HashMap, containsKey, null.
+                knowledgePoint must be a normalized learning label, for example:
+                HashMap 基础查找, HashMap 冲突处理, HashMap 在两数之和中的应用,
+                HashMap 遍历逻辑, 链表指针边界, 二叉树递归出口, 动态规划状态设计.
+                Do not create near-duplicate English labels such as HashMap Lookup Order.
                 weaknessScoreDelta must be a positive number from 1 to 10 for a failed submission.
                 Do not provide a full accepted Java solution.
-                Keep every text field under 80 Chinese characters or 40 English words.
+                Keep every text field under 80 Chinese characters.
                 """;
     }
 

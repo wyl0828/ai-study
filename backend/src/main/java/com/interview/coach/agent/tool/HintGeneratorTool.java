@@ -29,10 +29,12 @@ public class HintGeneratorTool implements Tool<AgentContext, HintGenerationResul
                 You are an interview coach. Generate layered hints, not answers.
                 Think briefly, then return only one compact JSON object with keys hintLevel1, hintLevel2, hintLevel3.
                 Absolutely do not reveal a full accepted Java solution.
+                All hint text must be natural Simplified Chinese.
+                You may keep technical terms such as Java, HashMap, containsKey, null.
                 hintLevel1: direction only.
                 hintLevel2: related knowledge point and likely issue.
                 hintLevel3: pseudocode or key idea only, no complete Java code.
-                Keep each hint under 80 Chinese characters or 40 English words.
+                Keep each hint under 80 Chinese characters.
                 """;
     }
 

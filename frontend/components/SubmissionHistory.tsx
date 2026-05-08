@@ -28,6 +28,28 @@ function formatCreatedAt(createdAt: string | null) {
 export default function SubmissionHistory({
   submissions,
 }: SubmissionHistoryProps) {
+  const statusView = (status: string) => {
+    if (status === "ACCEPTED") {
+      return {
+        label: "已通过",
+        icon: <CheckCircle className="w-3 h-3" />,
+        className: "bg-emerald-50 text-emerald-700",
+      };
+    }
+    if (status === "RETRY" || status === "NEEDS_REVIEW") {
+      return {
+        label: "待重试",
+        icon: <XCircle className="w-3 h-3" />,
+        className: "bg-amber-50 text-amber-700",
+      };
+    }
+    return {
+      label: "未通过",
+      icon: <XCircle className="w-3 h-3" />,
+      className: "bg-red-50 text-red-700",
+    };
+  };
+
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
@@ -69,7 +91,7 @@ export default function SubmissionHistory({
               </tr>
             )}
             {submissions.map((s, i) => {
-              const isPassed = s.status === "ACCEPTED";
+              const status = statusView(s.status);
               return (
                 <tr
                   key={i}
@@ -89,18 +111,10 @@ export default function SubmissionHistory({
                   </td>
                   <td className="px-5 py-3">
                     <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1 w-fit ${
-                        isPassed
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-red-50 text-red-700"
-                      }`}
+                      className={`text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1 w-fit ${status.className}`}
                     >
-                      {isPassed ? (
-                        <CheckCircle className="w-3 h-3" />
-                      ) : (
-                        <XCircle className="w-3 h-3" />
-                      )}
-                      {isPassed ? "通过" : "未通过"}
+                      {status.icon}
+                      {status.label}
                     </span>
                   </td>
                   <td className="px-5 py-3 text-xs text-on-surface-variant font-mono">

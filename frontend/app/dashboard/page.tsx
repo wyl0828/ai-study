@@ -14,6 +14,8 @@ import WeaknessList from "@/components/WeaknessList";
 import SubmissionHistory from "@/components/SubmissionHistory";
 import MistakeCards from "@/components/MistakeCards";
 import TrainingPlan from "@/components/TrainingPlan";
+import { trainingPlanText } from "@/lib/i18n";
+import { aggregateWeaknesses } from "@/lib/learningView";
 
 const DEMO_USER_ID = 1;
 
@@ -65,7 +67,7 @@ export default function DashboardPage() {
         setSubmissions(submissionsResponse.data);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Dashboard 数据加载失败");
+          setError(err instanceof Error ? err.message : "仪表盘数据加载失败");
         }
       } finally {
         if (!cancelled) {
@@ -82,6 +84,7 @@ export default function DashboardPage() {
   }, []);
 
   const statValue = (value: number) => (loading ? "--" : value);
+  const weakPointCount = aggregateWeaknesses(weaknesses).length;
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
@@ -116,7 +119,7 @@ export default function DashboardPage() {
         <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4">
           <div className="text-xs text-on-surface-variant mb-1">薄弱知识点</div>
           <div className="text-2xl font-bold text-amber-600">
-            {statValue(stats.weakPointCount)}
+            {statValue(weakPointCount)}
           </div>
         </div>
         <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4">
@@ -149,7 +152,7 @@ export default function DashboardPage() {
               </div>
               <p className="text-xs text-on-surface-variant leading-relaxed">
                 {trainingPlan
-                  ? trainingPlan.summary
+                  ? trainingPlanText(trainingPlan.summary)
                   : "还没有学习数据，去做第一道题并触发 AI 诊断吧。"}
               </p>
             </div>

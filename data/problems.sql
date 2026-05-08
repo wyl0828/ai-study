@@ -4,23 +4,23 @@ INSERT INTO `user` (id, username, password_hash, email, created_at, updated_at) 
 (1, 'demo', 'demo-only-not-for-production', 'demo@example.com', NOW(), NOW());
 
 INSERT INTO knowledge_point (id, name, category, description) VALUES
-(1, 'Array Traversal', 'Array', 'Traverse arrays and handle index boundaries.'),
-(2, 'HashMap Lookup', 'HashMap', 'Use hash maps for complement and membership lookup.'),
-(3, 'String Counting', 'HashMap', 'Count characters or tokens with fixed arrays or maps.'),
-(4, 'Linked List Pointer', 'LinkedList', 'Move and reconnect linked list pointers safely.'),
-(5, 'Binary Tree Recursion', 'Tree', 'Use recursion with correct base cases on binary trees.'),
-(6, 'Binary Tree BFS', 'Tree', 'Use queues for level-order traversal.'),
-(7, 'Dynamic Programming State', 'DynamicProgramming', 'Define states, initialization, and transitions.'),
-(8, 'Binary Search Patience', 'DynamicProgramming', 'Use binary search over tails for LIS.');
+(1, '数组遍历', 'Array', '遍历数组并处理下标边界。'),
+(2, 'HashMap 基础查找', 'HashMap', '使用 HashMap 完成互补值查找和成员判断。'),
+(3, '字符计数', 'HashMap', '使用数组或 HashMap 统计字符出现次数。'),
+(4, '链表指针', 'LinkedList', '安全移动和重连链表指针。'),
+(5, '二叉树递归', 'Tree', '使用递归处理二叉树，并写清楚终止条件。'),
+(6, '二叉树层序遍历', 'Tree', '使用队列完成二叉树按层遍历。'),
+(7, '动态规划状态', 'DynamicProgramming', '定义状态、初始化和状态转移。'),
+(8, '二分优化', 'DynamicProgramming', '用二分维护递增序列的候选结尾。');
 
 INSERT INTO problem
 (id, title, description, difficulty, category, input_format, output_format, template_code, solution_outline, enabled, created_at, updated_at)
 VALUES
-(101, 'Two Sum',
-'Given n integers and a target, return the indices of two numbers whose sum is target. Return -1 -1 if no pair exists.',
+(101, '两数之和',
+'给定一个整数数组和一个目标值，请找出数组中和为目标值的两个元素下标。若不存在满足条件的组合，输出 -1 -1。',
 'EASY', 'HashMap',
-'Line 1: n. Line 2: n integers. Line 3: target.',
-'Print two indices separated by one space, or -1 -1.',
+'第 1 行输入数组长度 n，第 2 行输入 n 个整数，第 3 行输入目标值 target。',
+'输出两个下标，用空格分隔；若不存在答案，输出 -1 -1。',
 'import java.util.*;
 
 public class Main {
@@ -33,17 +33,17 @@ public class Main {
         }
         int target = sc.nextInt();
 
-        // TODO: print two indices, for example: System.out.println(i + " " + j);
+        // TODO: 输出两个下标，例如：System.out.println(i + " " + j);
         System.out.println("-1 -1");
     }
 }',
-'Use a HashMap from value to index. For each number, check target - nums[i] before inserting nums[i].',
+'使用 HashMap 记录数值到下标的映射。每遍历一个元素，先检查 target - nums[i] 是否已经出现，再插入当前元素。',
 1, NOW(), NOW()),
-(102, 'Valid Anagram',
-'Given two lowercase strings s and t, determine whether t is an anagram of s.',
+(102, '有效字母异位词',
+'给定两个只包含小写字母的字符串 s 和 t，判断 t 是否是 s 的字母异位词。',
 'EASY', 'HashMap',
-'Line 1: s. Line 2: t.',
-'Print true or false.',
+'第 1 行输入字符串 s，第 2 行输入字符串 t。',
+'输出 true 或 false。',
 'import java.util.*;
 
 public class Main {
@@ -52,17 +52,17 @@ public class Main {
         String s = sc.next();
         String t = sc.next();
 
-        // TODO: compare character counts.
+        // TODO: 比较两个字符串的字符计数。
         System.out.println(false);
     }
 }',
-'Count characters for both strings, or increment for s and decrement for t.',
+'统计两个字符串的字符出现次数，也可以遍历 s 时加一、遍历 t 时减一。',
 1, NOW(), NOW()),
-(103, 'Reverse Linked List',
-'Given a linked list, reverse it and print node values from new head to tail.',
+(103, '反转链表',
+'给定一个单链表，请将链表反转，并从新的头节点开始依次输出节点值。',
 'EASY', 'LinkedList',
-'Line 1: n. Line 2: n integers.',
-'Print reversed values separated by one space. Print an empty line for n = 0.',
+'第 1 行输入链表长度 n，第 2 行输入 n 个整数。',
+'输出反转后的节点值，用空格分隔；当 n = 0 时输出空行。',
 'import java.util.*;
 
 public class Main {
@@ -82,16 +82,16 @@ public class Main {
             tail = tail.next;
         }
 
-        // TODO: reverse dummy.next and print the result.
+        // TODO: 反转 dummy.next，并输出结果。
     }
 }',
-'Use prev, cur, and next pointers. Move cur forward while reversing cur.next.',
+'使用 prev、cur、next 三个指针。移动 cur 的同时反转 cur.next 指向。',
 1, NOW(), NOW()),
-(104, 'Merge Two Sorted Lists',
-'Given two sorted integer lists, merge them into one sorted list and print the values.',
+(104, '合并两个有序链表',
+'给定两个升序链表，请将它们合并为一个升序链表，并输出合并后的节点值。',
 'EASY', 'LinkedList',
-'Line 1: n. Line 2: n integers. Line 3: m. Line 4: m integers.',
-'Print merged values separated by one space.',
+'第 1 行输入链表 a 的长度 n，第 2 行输入 n 个整数，第 3 行输入链表 b 的长度 m，第 4 行输入 m 个整数。',
+'输出合并后的节点值，用空格分隔。',
 'import java.util.*;
 
 public class Main {
@@ -110,16 +110,16 @@ public class Main {
         int[] b = new int[m];
         for (int i = 0; i < m; i++) b[i] = sc.nextInt();
 
-        // TODO: merge the two sorted arrays or build linked lists first.
+        // TODO: 合并两个有序序列，也可以先构建链表再合并。
     }
 }',
-'Use a dummy node and advance the pointer with the smaller current value.',
+'使用哨兵节点，每次连接当前值更小的节点，并继续移动指针。',
 1, NOW(), NOW()),
-(105, 'Maximum Depth of Binary Tree',
-'Given a binary tree in level-order form, compute its maximum depth. The token null means an empty child.',
+(105, '二叉树的最大深度',
+'给定一棵按层序表示的二叉树，请计算它的最大深度。其中 null 表示空节点。',
 'EASY', 'Tree',
-'Line 1: n. Line 2: n level-order tokens such as 3 9 20 null null 15 7.',
-'Print the maximum depth as an integer.',
+'第 1 行输入节点数量 n，第 2 行输入 n 个层序节点，例如 3 9 20 null null 15 7。',
+'输出最大深度，结果为一个整数。',
 'import java.util.*;
 
 public class Main {
@@ -136,16 +136,16 @@ public class Main {
         String[] values = new String[n];
         for (int i = 0; i < n; i++) values[i] = sc.next();
 
-        // TODO: build the tree and print max depth.
+        // TODO: 构建二叉树并输出最大深度。
     }
 }',
-'Build the tree level by level, then use max(leftDepth, rightDepth) + 1 with null base case.',
+'先按层构建二叉树，再用左右子树深度较大值加一，空节点深度为 0。',
 1, NOW(), NOW()),
-(106, 'Binary Tree Level Order',
-'Given a binary tree in level-order form, print each level from top to bottom.',
+(106, '二叉树层序遍历',
+'给定一棵按层序表示的二叉树，请从上到下按层输出每一层的节点值。',
 'MEDIUM', 'Tree',
-'Line 1: n. Line 2: n level-order tokens. The token null means an empty child.',
-'Print levels separated by semicolon. Values inside a level are separated by one space.',
+'第 1 行输入节点数量 n，第 2 行输入 n 个层序节点，其中 null 表示空节点。',
+'按层输出节点值，层与层之间用分号分隔，同一层内用空格分隔。',
 'import java.util.*;
 
 public class Main {
@@ -162,16 +162,16 @@ public class Main {
         String[] values = new String[n];
         for (int i = 0; i < n; i++) values[i] = sc.next();
 
-        // TODO: build the tree, BFS by level, and print levels.
+        // TODO: 构建二叉树，按层遍历并输出每一层。
     }
 }',
-'Use a queue. For each level, process exactly queue.size() nodes before adding a semicolon.',
+'使用队列。每一层只处理当前队列长度对应的节点，再进入下一层。',
 1, NOW(), NOW()),
-(107, 'Climbing Stairs',
-'You can climb 1 or 2 steps each move. Count how many distinct ways can reach the nth step.',
+(107, '爬楼梯',
+'每次可以爬 1 个或 2 个台阶，计算到达第 n 阶共有多少种不同走法。',
 'EASY', 'DynamicProgramming',
-'Line 1: n.',
-'Print the number of ways.',
+'第 1 行输入台阶数 n。',
+'输出不同走法数量。',
 'import java.util.*;
 
 public class Main {
@@ -179,17 +179,17 @@ public class Main {
         Scanner sc = new Scanner(System.in);
         int n = sc.nextInt();
 
-        // TODO: dynamic programming.
+        // TODO: 使用动态规划计算走法数量。
         System.out.println(0);
     }
 }',
-'Let dp[i] be ways to reach step i. Initialize dp[0] = 1 and dp[1] = 1.',
+'令 dp[i] 表示到达第 i 阶的走法数，初始化 dp[0] = 1、dp[1] = 1。',
 1, NOW(), NOW()),
-(108, 'Longest Increasing Subsequence',
-'Given an integer array, return the length of the longest strictly increasing subsequence.',
+(108, '最长递增子序列',
+'给定一个整数数组，返回其中最长严格递增子序列的长度。',
 'MEDIUM', 'DynamicProgramming',
-'Line 1: n. Line 2: n integers.',
-'Print the LIS length.',
+'第 1 行输入数组长度 n，第 2 行输入 n 个整数。',
+'输出最长递增子序列的长度。',
 'import java.util.*;
 
 public class Main {
@@ -199,11 +199,11 @@ public class Main {
         int[] nums = new int[n];
         for (int i = 0; i < n; i++) nums[i] = sc.nextInt();
 
-        // TODO: O(n^2) DP is enough for the MVP cases.
+        // TODO: 对当前用例，使用 O(n^2) 动态规划即可。
         System.out.println(0);
     }
 }',
-'Use dp[i] as the LIS length ending at i, or maintain tails with binary search.',
+'令 dp[i] 表示以第 i 个元素结尾的最长递增子序列长度，也可以用二分维护候选结尾。',
 1, NOW(), NOW());
 
 INSERT INTO problem_knowledge_point (problem_id, knowledge_point_id) VALUES

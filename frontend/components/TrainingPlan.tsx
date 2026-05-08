@@ -2,7 +2,12 @@
 
 import { Sparkles, RefreshCw } from "lucide-react";
 import type { TrainingPlan as TrainingPlanType } from "@/lib/types";
-import { knowledgePoint, problemTitle, trainingPlanTitle } from "@/lib/i18n";
+import {
+  knowledgePoint,
+  problemTitle,
+  trainingPlanText,
+  trainingPlanTitle,
+} from "@/lib/i18n";
 
 interface TrainingPlanProps {
   plan: TrainingPlanType | null;
@@ -33,10 +38,11 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
   );
 
   const getStatus = (status: string) => {
-    if (status === "COMPLETED") {
+    const normalized = status.toUpperCase();
+    if (normalized === "COMPLETED") {
       return { label: "已通过", className: "text-emerald-600" };
     }
-    if (status === "RETRY" || status === "NEEDS_REVIEW") {
+    if (normalized === "RETRY" || normalized === "NEEDS_REVIEW") {
       return { label: "需要重做", className: "text-amber-600" };
     }
     return { label: "待完成", className: "text-primary" };
@@ -51,7 +57,7 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
         </div>
         <span className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-medium flex items-center gap-1">
           <RefreshCw className="w-3.5 h-3.5" />
-          Agent 生成
+          智能体生成
         </span>
       </div>
 
@@ -60,7 +66,7 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
           {trainingPlanTitle(plan.title)}
         </h3>
         <p className="text-xs text-on-surface-variant mb-5 leading-relaxed">
-          {plan.summary}
+          {trainingPlanText(plan.summary)}
         </p>
 
         {Object.entries(grouped).map(([day, items]) => {
@@ -99,7 +105,7 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
                       </span>
                     </div>
                     <p className="text-xs text-on-surface-variant">
-                      {item.reason}
+                      {trainingPlanText(item.reason)}
                     </p>
                   </div>
                 ))}
@@ -108,7 +114,7 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
                 <div className="ml-8 mt-2 p-2 bg-primary/5 rounded-lg border border-primary/15">
                   <p className="text-xs text-on-surface-variant">
                     <span className="font-medium text-primary">复习重点：</span>
-                    {reviewFocus}
+                    {trainingPlanText(reviewFocus)}
                   </p>
                 </div>
               )}

@@ -32,17 +32,17 @@ public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResul
         String problemTitle = context.getProblem().getTitle();
 
         TrainingPlanResult result = new TrainingPlanResult();
-        result.setTitle("3-day recovery plan: " + knowledgePoint);
-        result.setSummary("Focus on the failed knowledge point, one adjacent topic, and a retry of the original problem.");
+        result.setTitle("3 天专项训练：" + knowledgePoint);
+        result.setSummary("围绕失败知识点、相邻题型和原题重做安排训练。");
         result.getItems().add(item(1, knowledgePoint, problemTitle,
-                "Repeat the failed knowledge point while the mistake is fresh.",
-                "Explain why the failed case breaks the submitted idea."));
+                "趁错误记忆还清晰，先复盘本次失败的知识点。",
+                "说明失败用例为什么会击穿当前思路。"));
         result.getItems().add(item(2, category, null,
-                "Practice one adjacent topic from the same problem category.",
-                "Compare the category pattern with the original failed approach."));
+                "练习同类题目中的相邻知识点。",
+                "对比同类题型规律和原来的错误做法。"));
         result.getItems().add(item(3, knowledgePoint, problemTitle,
-                "Review the mistake card and retry the original problem.",
-                "Write the invariant or boundary condition before coding."));
+                "回顾错题卡后重新挑战原题。",
+                "编码前先写出不变量或边界条件。"));
         return result;
     }
 

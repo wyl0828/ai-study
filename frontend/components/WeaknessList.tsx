@@ -3,15 +3,14 @@
 import { BarChart3 } from "lucide-react";
 import type { UserWeakness } from "@/lib/types";
 import { errorTypeName, knowledgePoint } from "@/lib/i18n";
+import { aggregateWeaknesses } from "@/lib/learningView";
 
 interface WeaknessListProps {
   weaknesses: UserWeakness[];
 }
 
 export default function WeaknessList({ weaknesses }: WeaknessListProps) {
-  const sorted = [...weaknesses].sort(
-    (a, b) => b.weaknessScore - a.weaknessScore
-  );
+  const sorted = aggregateWeaknesses(weaknesses);
 
   const rankColors = [
     { bg: "bg-red-100 text-red-600", error: "text-error" },
