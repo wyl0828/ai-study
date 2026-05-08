@@ -8,6 +8,7 @@ import {
   Eye,
   EyeOff,
   Info,
+  AlertTriangle,
 } from "lucide-react";
 import type { AgentAnalyzeVO } from "@/lib/types";
 
@@ -15,6 +16,7 @@ interface HintPanelProps {
   diagnosis: AgentAnalyzeVO | null;
   isAnalyzing: boolean;
   isAccepted: boolean;
+  isDiagnosisStale: boolean;
 }
 
 const levels = [
@@ -48,6 +50,7 @@ export default function HintPanel({
   diagnosis,
   isAnalyzing,
   isAccepted,
+  isDiagnosisStale,
 }: HintPanelProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
@@ -87,6 +90,13 @@ export default function HintPanel({
 
   return (
     <div className="p-5 space-y-4">
+      {isDiagnosisStale && (
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>该诊断基于上次提交，当前代码已修改，仅供参考。</span>
+        </div>
+      )}
+
       {levels.map(({ key, label, num, numBg, contentBg, defaultOpen }) => {
         const hint = diagnosis[key as keyof AgentAnalyzeVO] as string;
         if (!hint) return null;

@@ -9,6 +9,7 @@ import {
   Lightbulb,
   BookOpen,
   Circle,
+  AlertTriangle,
 } from "lucide-react";
 import type { AgentAnalyzeVO } from "@/lib/types";
 import {
@@ -23,12 +24,14 @@ interface AiDiagnosisProps {
   diagnosis: AgentAnalyzeVO | null;
   isAnalyzing: boolean;
   isAccepted: boolean;
+  isDiagnosisStale: boolean;
 }
 
 export default function AiDiagnosis({
   diagnosis,
   isAnalyzing,
   isAccepted,
+  isDiagnosisStale,
 }: AiDiagnosisProps) {
   if (isAccepted) {
     return (
@@ -63,6 +66,13 @@ export default function AiDiagnosis({
 
   return (
     <div className="p-5 space-y-4">
+      {isDiagnosisStale && (
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>该诊断基于上次提交，当前代码已修改，仅供参考。</span>
+        </div>
+      )}
+
       {/* 错误类型标签 */}
       <div className="flex flex-wrap gap-2">
         <span className="bg-red-50 text-red-700 border border-red-200 text-xs font-semibold px-2.5 py-1 rounded-full">

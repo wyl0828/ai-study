@@ -1,15 +1,27 @@
 "use client";
 
 import Editor from "@monaco-editor/react";
-import { Code, RefreshCw, Play, Loader2 } from "lucide-react";
+import {
+  CheckCircle,
+  Code,
+  Info,
+  Loader2,
+  Play,
+  RefreshCw,
+  X,
+} from "lucide-react";
 
 interface CodeEditorProps {
   code: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
   onReset: () => void;
+  draftSavedAt: string | null;
+  onDismissDraftNotice: () => void;
   isSubmitting: boolean;
   isAnalyzing: boolean;
+  isCurrentCodeAccepted: boolean;
+  submitLabel?: string;
 }
 
 export default function CodeEditor({
@@ -17,16 +29,20 @@ export default function CodeEditor({
   onChange,
   onSubmit,
   onReset,
+  draftSavedAt,
+  onDismissDraftNotice,
   isSubmitting,
   isAnalyzing,
+  isCurrentCodeAccepted,
+  submitLabel,
 }: CodeEditorProps) {
-  const disabled = isSubmitting || isAnalyzing;
+  const disabled = isSubmitting || isAnalyzing || isCurrentCodeAccepted;
 
   const buttonLabel = isSubmitting
     ? "判题中..."
     : isAnalyzing
     ? "AI 分析中..."
-    : "提交代码";
+    : submitLabel ?? "提交代码";
 
   return (
     <div className="flex flex-col h-full">
@@ -45,7 +61,7 @@ export default function CodeEditor({
             className="text-xs px-3 py-1.5 rounded text-gray-400 hover:text-white hover:bg-[#21262d] transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCw className="w-4 h-4" />
-            重置
+            重置代码
           </button>
           <button
             onClick={onSubmit}
@@ -54,6 +70,8 @@ export default function CodeEditor({
           >
             {isSubmitting || isAnalyzing ? (
               <Loader2 className="w-4 h-4 animate-spin" />
+            ) : isCurrentCodeAccepted ? (
+              <CheckCircle className="w-4 h-4" />
             ) : (
               <Play className="w-4 h-4" />
             )}
@@ -61,6 +79,20 @@ export default function CodeEditor({
           </button>
         </div>
       </div>
+
+      {draftSavedAt && (
+        <div className="flex items-center gap-2 bg-[#161b22] text-[#c9d1d9] border-b border-[#30363d] px-4 py-2 text-xs shrink-0">
+          <Info className="w-4 h-4 text-blue-400" />
+          <span>草稿已自动保存于 {draftSavedAt}</span>
+          <button
+            onClick={onDismissDraftNotice}
+            className="ml-auto rounded p-0.5 text-[#8b949e] hover:bg-[#21262d] hover:text-white transition-colors"
+            aria-label="关闭草稿提示"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* 编辑器 - 铺满剩余空间 */}
       <div className="flex-1 min-h-0 bg-[#0d1117]">

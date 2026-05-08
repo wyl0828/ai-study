@@ -10,6 +10,8 @@ interface ResultPanelProps {
   submissionResult: SubmissionResult | null;
   diagnosis: AgentAnalyzeVO | null;
   isAnalyzing: boolean;
+  isDiagnosisStale: boolean;
+  isCurrentCodeAccepted: boolean;
   activeTab: "test" | "diagnosis" | "hint";
   onTabChange: (tab: "test" | "diagnosis" | "hint") => void;
 }
@@ -24,11 +26,11 @@ export default function ResultPanel({
   submissionResult,
   diagnosis,
   isAnalyzing,
+  isDiagnosisStale,
+  isCurrentCodeAccepted,
   activeTab,
   onTabChange,
 }: ResultPanelProps) {
-  const isAccepted = submissionResult?.status === "ACCEPTED";
-
   return (
     <div className="flex flex-col h-full bg-surface-container-lowest border-l border-outline-variant/30">
       {/* Tab 栏 */}
@@ -64,7 +66,8 @@ export default function ResultPanel({
           <AiDiagnosis
             diagnosis={diagnosis}
             isAnalyzing={isAnalyzing}
-            isAccepted={isAccepted}
+            isAccepted={isCurrentCodeAccepted}
+            isDiagnosisStale={isDiagnosisStale}
           />
         )}
 
@@ -72,7 +75,8 @@ export default function ResultPanel({
           <HintPanel
             diagnosis={diagnosis}
             isAnalyzing={isAnalyzing}
-            isAccepted={isAccepted}
+            isAccepted={isCurrentCodeAccepted}
+            isDiagnosisStale={isDiagnosisStale}
           />
         )}
       </div>
