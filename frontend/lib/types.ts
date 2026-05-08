@@ -98,14 +98,20 @@ export interface AgentStepVO {
   errorMessage: string | null;
 }
 
-// Dashboard mock 类型
+// Dashboard
+export interface DashboardStatsVO {
+  totalSubmissions: number;
+  passedProblems: number;
+  weakPointCount: number;
+  mistakeCount: number;
+}
+
 export interface UserWeakness {
   id: number;
   knowledgePoint: string;
-  category: string;
-  errorCount: number;
+  errorType: string;
+  wrongCount: number;
   weaknessScore: number;
-  relatedProblemCount: number;
 }
 
 export interface MistakeCard {
@@ -114,8 +120,8 @@ export interface MistakeCard {
   problemTitle: string;
   errorType: string;
   knowledgePoint: string;
-  userError: string;
-  correctApproach: string;
+  mistakeSummary: string;
+  correctIdea: string;
 }
 
 export interface TrainingPlan {
@@ -126,8 +132,18 @@ export interface TrainingPlan {
 
 export interface TrainingPlanItem {
   dayIndex: number;
-  problemId: number;
+  knowledgePoint: string;
   problemTitle: string;
   reason: string;
   reviewFocus: string;
+  status: string;
+}
+
+export interface SubmissionHistoryVO {
+  problemId: number;
+  problemTitle: string;
+  status: string;
+  passedCount: number;
+  totalCount: number;
+  createdAt: string | null;
 }

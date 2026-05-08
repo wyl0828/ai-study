@@ -2,13 +2,27 @@
 
 import { Sparkles, RefreshCw } from "lucide-react";
 import type { TrainingPlan as TrainingPlanType } from "@/lib/types";
-import { problemTitle } from "@/lib/i18n";
+import { knowledgePoint, problemTitle, trainingPlanTitle } from "@/lib/i18n";
 
 interface TrainingPlanProps {
-  plan: TrainingPlanType;
+  plan: TrainingPlanType | null;
 }
 
 export default function TrainingPlan({ plan }: TrainingPlanProps) {
+  if (!plan) {
+    return (
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-semibold text-on-surface">训练计划</h2>
+        </div>
+        <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-5 py-8 text-sm text-on-surface-variant">
+          还没有学习数据，去做第一道题并触发 AI 诊断吧。
+        </div>
+      </section>
+    );
+  }
+
   const grouped = plan.items.reduce<Record<number, typeof plan.items>>(
     (acc, item) => {
       if (!acc[item.dayIndex]) acc[item.dayIndex] = [];
@@ -18,17 +32,11 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
     {}
   );
 
-  const dayTitles: Record<number, string> = {
-    1: "哈希表基础",
-    2: "链表指针操作",
-    3: "树与递归",
-  };
-
-  const getStatus = (problemId: number) => {
-    if (problemId === 101 || problemId === 103) {
+  const getStatus = (status: string) => {
+    if (status === "COMPLETED") {
       return { label: "已通过", className: "text-emerald-600" };
     }
-    if (problemId === 104) {
+    if (status === "RETRY" || status === "NEEDS_REVIEW") {
       return { label: "需要重做", className: "text-amber-600" };
     }
     return { label: "待完成", className: "text-primary" };
@@ -41,15 +49,15 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
           <Sparkles className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-semibold text-on-surface">训练计划</h2>
         </div>
-        <button className="text-xs bg-primary text-on-primary px-3 py-1.5 rounded-lg font-medium hover:bg-primary-container transition-colors flex items-center gap-1">
+        <span className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-medium flex items-center gap-1">
           <RefreshCw className="w-3.5 h-3.5" />
-          重新生成
-        </button>
+          Agent 生成
+        </span>
       </div>
 
       <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5">
         <h3 className="text-base font-semibold text-on-surface mb-1">
-          {plan.title}
+          {trainingPlanTitle(plan.title)}
         </h3>
         <p className="text-xs text-on-surface-variant mb-5 leading-relaxed">
           {plan.summary}
@@ -57,7 +65,9 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
 
         {Object.entries(grouped).map(([day, items]) => {
           const dayNum = Number(day);
-          const title = dayTitles[dayNum] || `第 ${day} 天训练`;
+          const title = items[0]?.knowledgePoint
+            ? `${knowledgePoint(items[0].knowledgePoint)}专项`
+            : `第 ${day} 天训练`;
           const reviewFocus = items[0]?.reviewFocus;
 
           return (
@@ -78,14 +88,14 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium text-on-surface">
-                        #{item.problemId} {problemTitle(item.problemTitle)}
+                        {problemTitle(item.problemTitle)}
                       </span>
                       <span
                         className={`text-xs font-medium ${
-                          getStatus(item.problemId).className
+                          getStatus(item.status).className
                         }`}
                       >
-                        {getStatus(item.problemId).label}
+                        {getStatus(item.status).label}
                       </span>
                     </div>
                     <p className="text-xs text-on-surface-variant">

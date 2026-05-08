@@ -1,19 +1,88 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Lightbulb } from "lucide-react";
-import {
-  mockWeaknesses,
-  mockMistakes,
-  mockTrainingPlan,
-  mockSubmissionHistory,
-  mockStats,
-} from "@/lib/mock";
+import { userApi } from "@/lib/api";
+import type {
+  DashboardStatsVO,
+  MistakeCard as MistakeCardType,
+  SubmissionHistoryVO,
+  TrainingPlan as TrainingPlanType,
+  UserWeakness,
+} from "@/lib/types";
 import WeaknessList from "@/components/WeaknessList";
 import SubmissionHistory from "@/components/SubmissionHistory";
 import MistakeCards from "@/components/MistakeCards";
 import TrainingPlan from "@/components/TrainingPlan";
 
+const DEMO_USER_ID = 1;
+
+const emptyStats: DashboardStatsVO = {
+  totalSubmissions: 0,
+  passedProblems: 0,
+  weakPointCount: 0,
+  mistakeCount: 0,
+};
+
 export default function DashboardPage() {
+  const [stats, setStats] = useState<DashboardStatsVO>(emptyStats);
+  const [weaknesses, setWeaknesses] = useState<UserWeakness[]>([]);
+  const [mistakes, setMistakes] = useState<MistakeCardType[]>([]);
+  const [trainingPlan, setTrainingPlan] = useState<TrainingPlanType | null>(null);
+  const [submissions, setSubmissions] = useState<SubmissionHistoryVO[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDashboard() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [
+          statsResponse,
+          weaknessesResponse,
+          mistakesResponse,
+          planResponse,
+          submissionsResponse,
+        ] = await Promise.all([
+          userApi.stats(DEMO_USER_ID),
+          userApi.weaknesses(DEMO_USER_ID),
+          userApi.mistakes(DEMO_USER_ID),
+          userApi.latestPlan(DEMO_USER_ID),
+          userApi.recentSubmissions(DEMO_USER_ID),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        setStats(statsResponse.data);
+        setWeaknesses(weaknessesResponse.data);
+        setMistakes(mistakesResponse.data);
+        setTrainingPlan(planResponse.data);
+        setSubmissions(submissionsResponse.data);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Dashboard 数据加载失败");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadDashboard();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const statValue = (value: number) => (loading ? "--" : value);
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
       {/* 页面标题 */}
@@ -24,23 +93,37 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {error && (
+        <div className="mb-6 rounded-lg border border-error/20 bg-error/5 px-4 py-3 text-sm text-error">
+          {error}
+        </div>
+      )}
+
       {/* 统计概览卡片 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4">
           <div className="text-xs text-on-surface-variant mb-1">总提交次数</div>
-          <div className="text-2xl font-bold text-on-surface">{mockStats.totalSubmissions}</div>
+          <div className="text-2xl font-bold text-on-surface">
+            {statValue(stats.totalSubmissions)}
+          </div>
         </div>
         <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4">
           <div className="text-xs text-on-surface-variant mb-1">通过题目</div>
-          <div className="text-2xl font-bold text-emerald-600">{mockStats.passedProblems}</div>
+          <div className="text-2xl font-bold text-emerald-600">
+            {statValue(stats.passedProblems)}
+          </div>
         </div>
         <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4">
           <div className="text-xs text-on-surface-variant mb-1">薄弱知识点</div>
-          <div className="text-2xl font-bold text-amber-600">{mockStats.weakPoints}</div>
+          <div className="text-2xl font-bold text-amber-600">
+            {statValue(stats.weakPointCount)}
+          </div>
         </div>
         <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4">
           <div className="text-xs text-on-surface-variant mb-1">错题数量</div>
-          <div className="text-2xl font-bold text-error">{mockStats.mistakeCount}</div>
+          <div className="text-2xl font-bold text-error">
+            {statValue(stats.mistakeCount)}
+          </div>
         </div>
       </div>
 
@@ -48,15 +131,15 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* 左栏 */}
         <div className="lg:col-span-7 space-y-8">
-          <WeaknessList weaknesses={mockWeaknesses} />
-          <SubmissionHistory submissions={mockSubmissionHistory} />
-          <MistakeCards mistakes={mockMistakes} />
+          <WeaknessList weaknesses={weaknesses} />
+          <SubmissionHistory submissions={submissions} />
+          <MistakeCards mistakes={mistakes} />
         </div>
 
         {/* 右栏 */}
         <aside className="lg:col-span-5">
           <div className="sticky top-20 space-y-6">
-            <TrainingPlan plan={mockTrainingPlan} />
+            <TrainingPlan plan={trainingPlan} />
 
             {/* AI 教练建议 */}
             <div className="bg-primary/5 border border-primary/20 rounded-xl p-5">
@@ -65,7 +148,9 @@ export default function DashboardPage() {
                 <h3 className="text-sm font-semibold text-on-surface">AI 教练建议</h3>
               </div>
               <p className="text-xs text-on-surface-variant leading-relaxed">
-                你的 HashMap 和链表基础较弱，建议先完成第 1 天和第 2 天训练。每天完成 2 道题并理解错误原因，比泛泛刷 10 道题更有效。完成后系统会自动更新你的薄弱点画像。
+                {trainingPlan
+                  ? trainingPlan.summary
+                  : "还没有学习数据，去做第一道题并触发 AI 诊断吧。"}
               </p>
             </div>
           </div>

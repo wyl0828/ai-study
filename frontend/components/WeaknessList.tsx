@@ -2,7 +2,7 @@
 
 import { BarChart3 } from "lucide-react";
 import type { UserWeakness } from "@/lib/types";
-import { categoryName, knowledgePoint } from "@/lib/i18n";
+import { errorTypeName, knowledgePoint } from "@/lib/i18n";
 
 interface WeaknessListProps {
   weaknesses: UserWeakness[];
@@ -26,6 +26,11 @@ export default function WeaknessList({ weaknesses }: WeaknessListProps) {
         <h2 className="text-lg font-semibold text-on-surface">薄弱知识点排行</h2>
       </div>
       <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl overflow-hidden">
+        {sorted.length === 0 && (
+          <div className="px-5 py-8 text-sm text-on-surface-variant">
+            还没有学习数据，去做第一道题并触发 AI 诊断吧。
+          </div>
+        )}
         {sorted.map((w, i) => {
           const colors = rankColors[i] || rankColors[2];
           return (
@@ -46,13 +51,13 @@ export default function WeaknessList({ weaknesses }: WeaknessListProps) {
                     {knowledgePoint(w.knowledgePoint)}
                   </div>
                   <div className="text-xs text-on-surface-variant">
-                    {categoryName(w.category)} &middot; 关联题目 {w.relatedProblemCount} 道
+                    {errorTypeName(w.errorType)}
                   </div>
                 </div>
               </div>
               <div className="text-right">
                 <div className={`text-sm font-semibold ${colors.error}`}>
-                  错误 {w.errorCount} 次
+                  错误 {w.wrongCount} 次
                 </div>
                 <div className="text-xs text-on-surface-variant">
                   薄弱分数 {w.weaknessScore}

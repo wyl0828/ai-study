@@ -64,11 +64,11 @@ Agent 收到任务
 
 - Phase 1 后端骨架、题目接口、Piston 判题和提交持久化已完成。
 - Phase 2 Agent Workflow 后端已完成：`AgentRun`、`AgentStep`、AI 诊断、三层提示、弱点记忆、错题卡、训练计划均已接入 MySQL。
-- 当前真实暴露的 Controller：`ProblemController`、`SubmissionController`、`AgentController`。
+- 当前真实暴露的 Controller：`ProblemController`、`SubmissionController`、`AgentController`、`UserController`。
 - 当前真实暴露的 Agent 接口：`POST /api/agent/analyze`、`GET /api/submissions/{submissionId}/diagnosis/stream`。
 - Phase 3 前端核心页面已完成：`/`、`/problem/[id]`、`/dashboard` 均已按 `stitch_front_end_interface_design/mvp/` HTML 原型做紧凑 MVP 风格还原，并完成中文化。
 - 当前做题页提交失败后会自动调用同步 `POST /api/agent/analyze` 展示测试结果、AI 诊断和三层提示；后端 SSE 接口已保留，但前端暂未接入 SSE 流式展示。
-- Dashboard 当前使用 `frontend/lib/mock.ts` 展示弱点、错题、提交记录和训练计划；Dashboard 读取接口、单独 hint 查询、accepted-code review 尚未暴露为 REST 接口，留到后续阶段。
+- Dashboard 已通过 `UserController` 接入真实 MySQL 学习数据，展示统计、薄弱点、错题卡、最近提交和最新训练计划；单独 hint 查询、accepted-code review 和手动重新生成训练计划留到后续阶段。
 - 最新接口文档以 `docs/API.md` 为准。
 
 ## 3. 项目结构
@@ -415,13 +415,13 @@ handler：全局异常处理和统一响应处理
 - 做题页 `/problem/[id]` 已实现固定视口高度三栏布局：左侧题目描述、中间 Monaco Editor、右侧测试结果 / AI 诊断 / 分层提示。
 - Monaco 容器已改为深色 loading 背景，避免编辑器加载前出现大面积浅色空白。
 - 当前提交流程为：`POST /api/submissions` 判题，失败后自动调用同步 `POST /api/agent/analyze` 获取诊断结果；SSE 前端接入留到后续增强。
-- Dashboard `/dashboard` 已实现统计卡、薄弱点排行、最近提交表格、错题卡片、训练计划和 AI 建议展示，当前数据来自 `frontend/lib/mock.ts`。
+- Dashboard `/dashboard` 已实现统计卡、薄弱点排行、最近提交表格、错题卡片、训练计划和 AI 建议展示，当前数据来自 `/api/users/1/...` 用户学习查询接口。
 - 前端页面已完成中文化，题目标题、难度、知识点、按钮、空状态、Dashboard 文案均按“国内互联网产品 + LeetCode 中文站”风格处理。
 - 已运行 `npm run build`，Next.js 编译、类型检查和页面生成通过。
 
 ### 阶段 4：训练计划与错题本，Day 13-16
 
-状态：部分完成。Phase 2 已完成后端持久化闭环；Dashboard 前端展示已完成 mock 版；Dashboard 查询接口和真实数据接入尚未完成。
+状态：已完成真实数据闭环。Phase 2 已完成后端持久化闭环；Phase 4 已补齐 Dashboard 查询接口，并将前端 Dashboard 从 mock 数据切换为真实 MySQL 数据。
 
 目标：实现学习闭环，让项目不只是一次性 AI 分析。
 
@@ -431,21 +431,22 @@ handler：全局异常处理和统一响应处理
 2. 已完成：每次 Agent 成功诊断失败提交后更新用户弱点画像。
 3. 已完成基础版：`TrainingPlanService` 保存 3 天训练计划和计划 item。
 4. 已完成基础版：错题卡片持久化字段包括题目、提交、AgentRun、错误类型、知识点、错误摘要和正确思路。
-5. 待实现：用户学习查询接口：
+5. 已完成：用户学习查询接口：
+   - `GET /api/users/{userId}/dashboard/stats`
    - `GET /api/users/{userId}/weaknesses`
    - `GET /api/users/{userId}/training-plans/latest`
-   - `POST /api/users/{userId}/training-plans/generate`
    - `GET /api/users/{userId}/mistakes`
-6. 已完成 mock 版：Dashboard 页面展示弱点、错题、最近提交和训练计划。
-7. 待实现：Dashboard 真实数据接入，替换当前 mock 数据。
+   - `GET /api/users/{userId}/submissions/recent`
+6. 已完成：Dashboard 页面展示真实统计、弱点、错题、最近提交和训练计划。
+7. 待实现增强：手动重新生成训练计划、单独 hint 查询、accepted-code review。
 
 验收标准：
 
 - 已完成：提交失败并触发 Agent 诊断后能更新薄弱点。
 - 已完成：能生成并保存 3 天训练计划。
-- 待完成：能通过 REST API 查看错题卡片。
-- 已完成 mock 版：Dashboard 能展示用户训练闭环的产品形态。
-- 待完成真实闭环：Dashboard 从 MySQL 持久化数据读取弱点、错题卡和最新训练计划。
+- 已完成：能通过 REST API 查看错题卡片。
+- 已完成：Dashboard 从 MySQL 持久化数据读取弱点、错题卡、最近提交和最新训练计划。
+- 已完成：无数据时 Dashboard 显示空状态引导文案，不回退 mock 数据。
 
 ### 阶段 5：打磨与演示准备，Day 17-20
 
@@ -567,13 +568,14 @@ data:{"agentRunId":1,"submissionId":1001,"errorType":"LOGIC_ERROR","knowledgePoi
 
 ### 5.4 用户学习接口
 
-状态：后端已有持久化表和部分服务基础，但当前尚未暴露 REST Controller。
+状态：Dashboard 读取接口已通过 `UserController` 暴露；手动重新生成训练计划暂不实现。
 
 ```http
+GET /api/users/{userId}/dashboard/stats
 GET /api/users/{userId}/weaknesses
 GET /api/users/{userId}/training-plans/latest
-POST /api/users/{userId}/training-plans/generate
 GET /api/users/{userId}/mistakes
+GET /api/users/{userId}/submissions/recent
 ```
 
 ## 6. Prompt 设计
@@ -807,14 +809,14 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 
 ### 前端验证
 
-状态：Phase 3 核心页面已完成，2026-05-07 已运行 `npm run build` 并通过。
+状态：Phase 4 Dashboard 真实数据接入已完成，2026-05-07 已运行 `npm run build` 并通过。
 
 - 打开首页，确认题目列表、筛选、搜索和卡片跳转可用。
 - 进入做题页，确认 Monaco Editor 可用且首屏为三栏布局。
 - 提交代码，确认测试结果展示。
 - 提交失败后，确认同步 `POST /api/agent/analyze` 返回的 AI 诊断和分层提示能展示。
-- 打开 Dashboard，确认 mock 弱点、错题卡、最近提交和训练计划展示。
-- 后续接入 Dashboard 查询接口后，再补充真实数据流验证。
+- 打开 Dashboard，确认统计、弱点、错题卡、最近提交和训练计划来自真实查询接口。
+- 首次无数据时，确认 Dashboard 显示空状态引导文案。
 
 ### 演示验证
 
@@ -835,7 +837,7 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 | 兼容模型先输出 thinking 导致 JSON text 超出 token | 默认 `AI_MAX_TOKENS=3000`，Prompt 要求 compact JSON |
 | 模型返回负数 `weaknessScoreDelta` | `LearningTrackerImpl` 对空值或小于等于 0 的 delta 兜底为 `5` |
 | AI 分类不准 | 准备 10 个固定错误样例调 Prompt |
-| 前端做不完 | 已完成核心页面；后续优先把 Dashboard mock 数据替换为真实查询接口 |
+| 前端做不完 | 已完成核心页面和 Dashboard 真实数据接入；后续优先打磨演示稳定性 |
 | 题库太多拖慢进度 | MVP 先做 10 道题，README 写可扩展到 30 道 |
 | Piston 测试用例封装复杂 | 第一版使用固定 Java Main 模板拼接测试输入 |
 
@@ -854,7 +856,7 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 9. 修改代码后重新提交并通过。
 10. 通过数据库或后端日志展示 `agent_run`、`agent_step`、`ai_diagnosis`、`hint_record`、`user_weakness`、`mistake_card`、`training_plan`。
 11. 讲解后端设计：Piston 封装、Agent Tool、Observation、Memory、SSE、MySQL、Redis。
-12. 说明下一步会补 Dashboard 查询接口，将 mock 弱点、错题卡和训练计划替换为真实 MySQL 数据。
+12. 打开 Dashboard，展示真实 MySQL 数据驱动的薄弱点、错题卡、最近提交和训练计划。
 
 ## 10. 简历准备
 

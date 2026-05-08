@@ -6,6 +6,11 @@ import type {
   SubmitCodeRequest,
   SubmissionResult,
   AgentAnalyzeVO,
+  DashboardStatsVO,
+  UserWeakness,
+  MistakeCard,
+  TrainingPlan,
+  SubmissionHistoryVO,
 } from "./types";
 
 const API_BASE = typeof window === "undefined" ? "http://localhost:8080" : "";
@@ -47,4 +52,17 @@ export const agentApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ submissionId }),
     }),
+};
+
+export const userApi = {
+  stats: (userId: number) =>
+    request<ApiResponse<DashboardStatsVO>>(`/api/users/${userId}/dashboard/stats`),
+  weaknesses: (userId: number) =>
+    request<ApiResponse<UserWeakness[]>>(`/api/users/${userId}/weaknesses`),
+  mistakes: (userId: number) =>
+    request<ApiResponse<MistakeCard[]>>(`/api/users/${userId}/mistakes`),
+  latestPlan: (userId: number) =>
+    request<ApiResponse<TrainingPlan | null>>(`/api/users/${userId}/training-plans/latest`),
+  recentSubmissions: (userId: number) =>
+    request<ApiResponse<SubmissionHistoryVO[]>>(`/api/users/${userId}/submissions/recent`),
 };

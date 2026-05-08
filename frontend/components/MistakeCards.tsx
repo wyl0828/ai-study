@@ -17,6 +17,11 @@ export default function MistakeCards({ mistakes }: MistakeCardsProps) {
         <h2 className="text-lg font-semibold text-on-surface">错题卡片</h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {mistakes.length === 0 && (
+          <div className="md:col-span-2 bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-5 py-8 text-sm text-on-surface-variant">
+            还没有学习数据，去做第一道题并触发 AI 诊断吧。
+          </div>
+        )}
         {mistakes.map((m) => {
           const isError = m.errorType === "LOGIC_ERROR" || m.errorType === "逻辑错误";
           return (
@@ -42,11 +47,11 @@ export default function MistakeCards({ mistakes }: MistakeCardsProps) {
               <div className="space-y-2 text-xs text-on-surface-variant leading-relaxed">
                 <div>
                   <span className="font-medium text-on-surface">错误原因：</span>
-                  {m.userError}
+                  {m.mistakeSummary}
                 </div>
                 <div>
                   <span className="font-medium text-on-surface">正确思路：</span>
-                  {m.correctApproach}
+                  {m.correctIdea}
                 </div>
               </div>
               <div className="mt-3 pt-3 border-t border-outline-variant/20 flex items-center justify-between">

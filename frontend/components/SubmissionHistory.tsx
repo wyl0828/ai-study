@@ -2,19 +2,27 @@
 
 import Link from "next/link";
 import { History, CheckCircle, XCircle } from "lucide-react";
+import type { SubmissionHistoryVO } from "@/lib/types";
 import { problemTitle } from "@/lib/i18n";
 
-interface Submission {
-  problemId: number;
-  problemTitle: string;
-  status: string;
-  passedCount: number;
-  totalCount: number;
-  time: string;
+interface SubmissionHistoryProps {
+  submissions: SubmissionHistoryVO[];
 }
 
-interface SubmissionHistoryProps {
-  submissions: Submission[];
+function formatCreatedAt(createdAt: string | null) {
+  if (!createdAt) {
+    return "未知时间";
+  }
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) {
+    return createdAt;
+  }
+  return date.toLocaleString("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function SubmissionHistory({
@@ -50,6 +58,16 @@ export default function SubmissionHistory({
             </tr>
           </thead>
           <tbody>
+            {submissions.length === 0 && (
+              <tr>
+                <td
+                  colSpan={4}
+                  className="px-5 py-8 text-sm text-on-surface-variant"
+                >
+                  还没有提交记录，去题库看看。
+                </td>
+              </tr>
+            )}
             {submissions.map((s, i) => {
               const isPassed = s.status === "ACCEPTED";
               return (
@@ -88,7 +106,9 @@ export default function SubmissionHistory({
                   <td className="px-5 py-3 text-xs text-on-surface-variant font-mono">
                     {s.passedCount}/{s.totalCount}
                   </td>
-                  <td className="px-5 py-3 text-xs text-outline">{s.time}</td>
+                  <td className="px-5 py-3 text-xs text-outline">
+                    {formatCreatedAt(s.createdAt)}
+                  </td>
                 </tr>
               );
             })}

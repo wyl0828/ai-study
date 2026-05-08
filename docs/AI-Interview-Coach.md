@@ -58,7 +58,7 @@ Agent 收到代码诊断任务
 - 页面已按 `stitch_front_end_interface_design/mvp/` 下的 HTML 原型还原为紧凑 MVP 风格。
 - 页面文案已完成中文化，风格参考国内技术学习产品和 LeetCode 中文站。
 - 做题页提交失败后当前使用同步 `POST /api/agent/analyze` 展示 AI 诊断和分层提示；后端 SSE 接口已具备，前端流式接入留到后续增强。
-- Dashboard 当前使用 mock 数据展示弱点、错题卡、最近提交和训练计划，下一步需要接入真实用户学习查询接口。
+- Dashboard 已通过用户学习查询接口接入真实 MySQL 数据，展示弱点、错题卡、最近提交和训练计划。
 
 ### 后端
 
@@ -712,9 +712,9 @@ agent/
 - 已完成：SSE 流式返回 Agent 步骤的后端接口
 - 已完成：Agent Step / Trace 记录
 - 已完成：分层提示
-- 已完成后端持久化，前端 mock 展示：薄弱点统计
-- 已完成后端持久化，前端 mock 展示：3 天训练计划
-- 待完成：Dashboard 查询接口和真实数据接入
+- 已完成：Dashboard 查询接口和真实数据接入
+- 已完成：薄弱点统计、错题卡和 3 天训练计划从 MySQL 持久化数据读取
+- 已完成：无数据时 Dashboard 显示空状态引导文案
 
 ### 暂不实现
 
@@ -834,9 +834,9 @@ MVP 阶段不追求复杂自主规划，而是采用可解释的状态机式 Age
 5. 打开 Agent 诊断面板，展示错误诊断和分层提示；当前前端使用同步诊断，后端 SSE 接口可在接口层演示。
 6. 展示错误类型和关联知识点。
 7. 逐层点击 Level 1、Level 2、Level 3 提示。
-8. 展示学习中心中的薄弱点统计、错题卡片和 3 天训练计划 mock 页面。
-9. 说明下一步会把学习中心接入真实用户学习查询接口。
-10. 解释后端如何封装 Piston 代码执行服务、Agent Tool、Observation、Memory 和 SSE 步骤流。
+8. 展示学习中心中的真实薄弱点统计、错题卡片、最近提交和 3 天训练计划。
+9. 说明 Dashboard 数据来自 `user_weakness`、`mistake_card`、`training_plan`、`training_plan_item` 和 `submission` 表。
+10. 解释后端如何封装 Piston 代码执行服务、Agent Tool、Observation、Memory、Dashboard 查询接口和 SSE 步骤流。
 
 ## 12. README 标题建议
 
