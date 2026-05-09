@@ -16,7 +16,10 @@ import type {
 const API_BASE = "http://localhost:8080";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${url}`, init);
+  const res = await fetch(`${API_BASE}${url}`, {
+    ...init,
+    cache: "no-store",
+  });
   if (!res.ok) {
     throw new Error(`请求失败：${res.status}`);
   }

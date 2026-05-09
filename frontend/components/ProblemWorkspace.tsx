@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { X, AlertCircle } from "lucide-react";
 import type { SubmissionResult, AgentAnalyzeVO } from "@/lib/types";
-import { submissionApi, agentApi } from "@/lib/api";
+import { problemApi, submissionApi, agentApi } from "@/lib/api";
 import {
   clearDraft,
   formatDraftTime,
@@ -16,18 +16,18 @@ import ResultPanel from "./ResultPanel";
 
 interface ProblemWorkspaceProps {
   problemId: number;
-  defaultCode: string;
 }
 
 const DEMO_USER_ID = 1;
 
 export default function ProblemWorkspace({
   problemId,
-  defaultCode,
 }: ProblemWorkspaceProps) {
-  const [code, setCode] = useState(defaultCode);
+  const [code, setCode] = useState("");
   const skipNextAutosaveRef = useRef(false);
+  const templateRequestIdRef = useRef(0);
   const [isDraftReady, setIsDraftReady] = useState(false);
+  const [isTemplateLoading, setIsTemplateLoading] = useState(true);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const [showDraftNotice, setShowDraftNotice] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,29 +41,73 @@ export default function ProblemWorkspace({
     "test"
   );
 
+  const loadTemplate = useCallback(
+    async (restoreDraft: boolean) => {
+      const requestId = templateRequestIdRef.current + 1;
+      templateRequestIdRef.current = requestId;
+      skipNextAutosaveRef.current = true;
+      setIsDraftReady(false);
+      setIsTemplateLoading(true);
+      setError(null);
+
+      try {
+        const { data: template } = await problemApi.template(problemId);
+        if (requestId !== templateRequestIdRef.current) {
+          return;
+        }
+        const draft = restoreDraft ? loadDraft(DEMO_USER_ID, problemId) : null;
+
+        if (draft) {
+          setCode(draft.code);
+          setSubmissionResult(draft.lastResult ?? null);
+          setDiagnosis(draft.lastDiagnosis ?? null);
+          setDraftSavedAt(draft.updatedAt);
+          setShowDraftNotice(true);
+          setActiveTab(draft.lastDiagnosis ? "diagnosis" : "test");
+        } else {
+          setCode(template.templateCode);
+          setSubmissionResult(null);
+          setDiagnosis(null);
+          setDraftSavedAt(null);
+          setShowDraftNotice(false);
+          setActiveTab("test");
+        }
+      } catch (err) {
+        if (requestId !== templateRequestIdRef.current) {
+          return;
+        }
+        const draft = restoreDraft ? loadDraft(DEMO_USER_ID, problemId) : null;
+        if (draft) {
+          setCode(draft.code);
+          setSubmissionResult(draft.lastResult ?? null);
+          setDiagnosis(draft.lastDiagnosis ?? null);
+          setDraftSavedAt(draft.updatedAt);
+          setShowDraftNotice(true);
+          setActiveTab(draft.lastDiagnosis ? "diagnosis" : "test");
+        } else {
+          setCode("");
+          setSubmissionResult(null);
+          setDiagnosis(null);
+          setDraftSavedAt(null);
+          setShowDraftNotice(false);
+          setActiveTab("test");
+        }
+        setError(
+          err instanceof Error ? err.message : "代码模板加载失败，请稍后重试"
+        );
+      } finally {
+        if (requestId === templateRequestIdRef.current) {
+          setIsDraftReady(true);
+          setIsTemplateLoading(false);
+        }
+      }
+    },
+    [problemId]
+  );
+
   useEffect(() => {
-    skipNextAutosaveRef.current = true;
-    const draft = loadDraft(DEMO_USER_ID, problemId);
-
-    if (draft) {
-      setCode(draft.code);
-      setSubmissionResult(draft.lastResult ?? null);
-      setDiagnosis(draft.lastDiagnosis ?? null);
-      setDraftSavedAt(draft.updatedAt);
-      setShowDraftNotice(true);
-      setActiveTab(draft.lastDiagnosis ? "diagnosis" : "test");
-    } else {
-      setCode(defaultCode);
-      setSubmissionResult(null);
-      setDiagnosis(null);
-      setDraftSavedAt(null);
-      setShowDraftNotice(false);
-      setActiveTab("test");
-    }
-
-    setError(null);
-    setIsDraftReady(true);
-  }, [defaultCode, problemId]);
+    void loadTemplate(true);
+  }, [loadTemplate]);
 
   useEffect(() => {
     if (!isDraftReady) {
@@ -95,14 +139,8 @@ export default function ProblemWorkspace({
     }
 
     clearDraft(DEMO_USER_ID, problemId);
-    skipNextAutosaveRef.current = true;
-    setCode(defaultCode);
-    setSubmissionResult(null);
-    setDiagnosis(null);
-    setActiveTab("test");
-    setDraftSavedAt(null);
-    setShowDraftNotice(false);
-  }, [defaultCode, problemId]);
+    void loadTemplate(false);
+  }, [loadTemplate, problemId]);
 
   const handleSubmit = useCallback(async () => {
     setIsSubmitting(true);
@@ -210,6 +248,7 @@ export default function ProblemWorkspace({
           onDismissDraftNotice={() => setShowDraftNotice(false)}
           isSubmitting={isSubmitting}
           isAnalyzing={isAnalyzing}
+          isTemplateLoading={isTemplateLoading}
           isCurrentCodeAccepted={isCurrentCodeAccepted}
           submitLabel={submitLabel}
         />

@@ -21,11 +21,13 @@ import com.interview.coach.vo.SubmissionResultVO;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SubmissionServiceImpl implements SubmissionService {
 
     private final ProblemService problemService;
@@ -50,7 +52,8 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
 
         Submission submission = createRunningSubmission(request);
-        JudgeResult judgeResult = judgeService.judgeJava(request.getCode(), toJudgeCases(testCases));
+        String judgeCode = wrapCodeForJudge(problem.getId(), request.getCode());
+        JudgeResult judgeResult = judgeService.judgeJava(judgeCode, toJudgeCases(testCases));
         updateSubmission(submission, judgeResult);
         return toSubmissionResultVO(submission, judgeResult);
     }
@@ -79,9 +82,19 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (testCases.isEmpty()) {
             throw new BusinessException(500, "problem has no test cases");
         }
-        JudgeResult judgeResult = judgeService.judgeJava(submission.getCode(), toJudgeCases(testCases));
+        String judgeCode = wrapCodeForJudge(problem.getId(), submission.getCode());
+        JudgeResult judgeResult = judgeService.judgeJava(judgeCode, toJudgeCases(testCases));
         updateSubmission(submission, judgeResult);
         return judgeResult;
+    }
+
+    private String wrapCodeForJudge(Long problemId, String code) {
+        String judgeCode = CodeWrapper.wrap(problemId, code);
+        boolean solutionMode = CodeWrapper.isSolutionModeProblem(problemId);
+        boolean containsMain = judgeCode != null && judgeCode.contains("public class Main");
+        log.info("judge code prepared: problemId={}, solutionModeWrapped={}, containsPublicMain={}",
+                problemId, solutionMode, containsMain);
+        return judgeCode;
     }
 
     private SubmissionResultVO unsupportedLanguageResult(SubmitCodeRequest request) {

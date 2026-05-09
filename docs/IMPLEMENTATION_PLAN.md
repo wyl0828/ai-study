@@ -69,6 +69,8 @@ Agent 收到任务
 - Phase 3 前端核心页面已完成：`/`、`/problem/[id]`、`/dashboard` 均已按 `stitch_front_end_interface_design/mvp/` HTML 原型做紧凑 MVP 风格还原，并完成中文化。
 - 当前做题页提交失败后会自动调用同步 `POST /api/agent/analyze` 展示测试结果、AI 诊断和三层提示；后端 SSE 接口已保留，但前端暂未接入 SSE 流式展示。
 - Dashboard 已通过 `UserController` 接入真实 MySQL 学习数据，展示统计、薄弱点、错题卡、最近提交和最新训练计划；单独 hint 查询、accepted-code review 和手动重新生成训练计划留到后续阶段。
+- 题库提交模式当前为混合形态：`101/105/106/107/108` 保留 ACM `public class Main`；`102/103/104` 已切换为 LeetCode 风格 `class Solution`，后端通过 `CodeWrapper` 在送入 Piston 前包装为 `Main.java`。
+- `/problem/[id]` 页面现在由浏览器端 `ProblemWorkspace` 请求 `/api/problems/{id}/template`，Monaco 使用后端返回模板初始化；重置代码会重新读取后端模板而不是恢复写死默认值。
 - 最新接口文档以 `docs/API.md` 为准。
 
 ## 3. 项目结构
@@ -99,8 +101,8 @@ interview-coach/
 │   │   └── TrainingPlan.tsx
 │   └── lib/
 │       ├── api.ts
+│       ├── draft.ts
 │       ├── i18n.ts
-│       ├── mock.ts
 │       └── types.ts
 │
 ├── backend/
@@ -119,6 +121,7 @@ interview-coach/
 │       │   └── impl/
 │       │       ├── ProblemServiceImpl.java
 │       │       ├── SubmissionServiceImpl.java
+│       │       ├── CodeWrapper.java
 │       │       ├── JudgeServiceImpl.java
 │       │       ├── AgentServiceImpl.java
 │       │       ├── LearningTrackerImpl.java
@@ -275,6 +278,8 @@ handler：全局异常处理和统一响应处理
 - 已创建 `data/schema.sql` 和 `data/problems.sql`，当前 MVP 种子数据为 8 道题、24 条测试用例、1 个 demo 用户。
 - 已实现 `ProblemController`、`SubmissionController`、`ProblemService`、`SubmissionService`、`JudgeService`、`PistonClient`。
 - 当前判题路径为 `SubmissionController -> SubmissionService -> JudgeService -> PistonClient`，Controller 不直接调用 Mapper 或 Piston。
+- `SubmissionServiceImpl` 会保存用户原始代码；对 `problemId=102/103/104`，仅在调用 `JudgeService` 前通过 `CodeWrapper.wrap(...)` 注入 `public class Main`、必要的 `ListNode` 和输入输出适配代码。
+- `CodeWrapper` 当前白名单：`102` 对应 `isAnagram(String s, String t)`，`103` 对应 `reverseList(ListNode head)`，`104` 对应 `mergeTwoLists(ListNode list1, ListNode list2)`。其他题目原样判题，不新增 `code_mode` 字段。
 - 本地 Piston 使用 Docker Desktop 启动，API 地址为 `http://localhost:2000/api/v2`，当前安装 runtime 为 `java 15.0.2`。
 - `PistonClient` 强制使用 HTTP/1.1 访问本地 Piston；Java 默认 HTTP/2 请求会被当前本地 Piston API 返回 `400 Bad Request`。
 - Piston 成功编译运行时可能没有 `compile` 字段，`JudgeServiceImpl` 仅在 `compile` 字段存在且失败时判定为 `COMPILE_ERROR`。
@@ -413,6 +418,9 @@ handler：全局异常处理和统一响应处理
 - 首页 `/` 已实现题库标题区、难度筛选、分类筛选、搜索框、统计行和三列题目卡片。
 - 首页数据仍从 `GET /api/problems` 获取，并在 8 道 MVP 题范围内并行请求 `GET /api/problems/{id}` 补齐描述和知识点，不新增后端接口。
 - 做题页 `/problem/[id]` 已实现固定视口高度三栏布局：左侧题目描述、中间 Monaco Editor、右侧测试结果 / AI 诊断 / 分层提示。
+- 做题页模板加载链路已统一：`page.tsx` 只取题目详情；客户端 `ProblemWorkspace.tsx` 进入页面后调用 `GET /api/problems/{id}/template`；Monaco Editor 的 `value` 来自该模板或用户草稿。
+- “重置代码”会清除当前题草稿并重新请求后端模板，解决 102/104 切换到 Solution 模式后仍显示旧 `public class Main` 的问题。
+- `frontend/lib/api.ts` 使用 `cache: "no-store"`，避免服务端或浏览器 fetch 缓存导致模板不刷新。
 - Monaco 容器已改为深色 loading 背景，避免编辑器加载前出现大面积浅色空白。
 - 当前提交流程为：`POST /api/submissions` 判题，失败后自动调用同步 `POST /api/agent/analyze` 获取诊断结果；SSE 前端接入留到后续增强。
 - Dashboard `/dashboard` 已实现统计卡、薄弱点排行、最近提交表格、错题卡片、训练计划和 AI 建议展示，当前数据来自 `/api/users/1/...` 用户学习查询接口。
@@ -816,10 +824,13 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 
 ### 前端验证
 
-状态：Phase 4 Dashboard 真实数据接入已完成，2026-05-07 已运行 `npm run build` 并通过。
+状态：Phase 4 Dashboard 真实数据接入已完成；Solution 模式模板加载修复后已运行 `npm run build` 并通过。
 
 - 打开首页，确认题目列表、筛选、搜索和卡片跳转可用。
 - 进入做题页，确认 Monaco Editor 可用且首屏为三栏布局。
+- 进入 `/problem/102`、`/problem/103`、`/problem/104`，确认浏览器 Network 能看到 `/api/problems/{id}/template`，编辑器显示 `class Solution` 模板。
+- 进入 `/problem/101`，确认仍显示完整 `public class Main` 模板并保持 ACM 提交路径。
+- 点击“重置代码”，确认会重新请求后端模板并清除当前题草稿。
 - 提交代码，确认测试结果展示。
 - 提交失败后，确认同步 `POST /api/agent/analyze` 返回的 AI 诊断和分层提示能展示。
 - 打开 Dashboard，确认统计、弱点、错题卡、最近提交和训练计划来自真实查询接口。
@@ -847,7 +858,9 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 | AI 分类不准 | 准备 10 个固定错误样例调 Prompt |
 | 前端做不完 | 已完成核心页面和 Dashboard 真实数据接入；后续优先打磨演示稳定性 |
 | 题库太多拖慢进度 | MVP 先做 10 道题，README 写可扩展到 30 道 |
-| Piston 测试用例封装复杂 | 第一版使用固定 Java Main 模板拼接测试输入 |
+| Piston 测试用例封装复杂 | ACM 题继续使用完整 `Main` + stdin/stdout；Solution 题通过 `CodeWrapper` 统一输入构造和输出转换 |
+| Solution 模式题目误显示旧模板 | 模板请求下沉到客户端 `ProblemWorkspace`，并对 fetch 使用 `cache: "no-store"`；必要时清理旧 localStorage 草稿 |
+| Solution/ACM 混合模式误判题 | 后端只对白名单 `102/103/104` 包装，`101` 保留为 ACM 回归基线，并用单测覆盖 `submit` 与 `rejudge` |
 
 ## 9. 演示脚本
 

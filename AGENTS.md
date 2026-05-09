@@ -40,11 +40,16 @@ If this file conflicts with those documents, prefer this file for engineering co
 
 ## Current Implementation Status
 
-As of Phase 2, the backend has a demoable Agent workflow:
+As of Phase 4 plus the Solution-mode pilot, the project has a demoable end-to-end Agent workflow, real Dashboard data, and a mixed ACM/Solution Java submission model:
 
 ```text
 POST /api/submissions
-  -> persist and judge Java submission through Piston
+  -> persist original Java submission
+  -> wrap Solution-mode problems 102/103/104 into Main.java for Piston
+  -> judge Java submission through Piston
+
+POST /api/agent/analyze
+  -> run the Agent workflow synchronously for the current frontend demo flow
 
 GET /api/submissions/{submissionId}/diagnosis/stream
   -> create AgentRun
@@ -62,14 +67,13 @@ Current implemented controllers:
 - `ProblemController`
 - `SubmissionController`
 - `AgentController`
+- `UserController`
 
 Not yet exposed as REST controllers:
 
-- user weakness list
-- mistake card list
-- latest training plan detail
 - single-hint lookup
 - accepted-code review
+- manual training plan regeneration
 
 ## Fixed Technical Stack
 
@@ -226,6 +230,15 @@ Frontend priorities:
 
 Use Monaco Editor only where code editing is needed. Do not overbuild a complete IDE.
 
+Problem draft and template rules:
+
+- For v1, keep draft persistence in `frontend/lib/draft.ts` backed by localStorage.
+- Store only temporary browser-side state: code, last submission result, last AI diagnosis, and code snapshots.
+- Do not put durable training data in localStorage; submissions, diagnoses, hints, weaknesses, mistake cards, and training plans remain MySQL-backed.
+- `ProblemWorkspace.tsx`, `CodeEditor.tsx`, and result panels must not call localStorage directly except through `frontend/lib/draft.ts`.
+- `/problem/[id]` should load code templates through browser-side `GET /api/problems/{id}/template`; do not reintroduce hard-coded `DEFAULT_CODE` templates in page components.
+- The reset button should clear the current problem draft and re-read the backend template.
+
 ## AI Agent Rules
 
 The Agent must behave like an interview coach, not an answer generator.
@@ -276,6 +289,14 @@ failed submission -> tool observation -> diagnosis -> hints -> weakness update -
 Use Piston API for the MVP.
 
 The first version supports Java only. Do not add Python, JavaScript, C++, or multi-language execution unless the user explicitly changes scope.
+
+Current Java submission modes:
+
+- `problemId=101/105/106/107/108` use ACM mode: user submits complete `public class Main`.
+- `problemId=102/103/104` use Solution mode: user submits non-public `class Solution`.
+- `SubmissionServiceImpl` must save the original user code to `submission.code`.
+- Only code sent to `JudgeService/Piston` should be wrapped by `CodeWrapper`.
+- Do not add a `code_mode` field or REST parameter unless the user explicitly asks for a broader schema migration.
 
 Keep execution replaceable:
 
@@ -372,8 +393,11 @@ Frontend verification:
 - editor accepts code
 - submit button calls backend
 - test result is displayed
-- AI diagnosis stream is displayed
+- AI diagnosis and layered hints are displayed after a failed submission through the synchronous analyze endpoint
+- backend SSE diagnosis stream remains available for API-level demonstration
 - layered hints can be viewed
+- draft code, last result, and last diagnosis can be restored after refresh
+- stale diagnosis warning appears after editing code that differs from the diagnosis snapshot
 
 Demo verification:
 

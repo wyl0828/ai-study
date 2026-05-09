@@ -20,6 +20,7 @@ interface CodeEditorProps {
   onDismissDraftNotice: () => void;
   isSubmitting: boolean;
   isAnalyzing: boolean;
+  isTemplateLoading: boolean;
   isCurrentCodeAccepted: boolean;
   submitLabel?: string;
 }
@@ -33,12 +34,16 @@ export default function CodeEditor({
   onDismissDraftNotice,
   isSubmitting,
   isAnalyzing,
+  isTemplateLoading,
   isCurrentCodeAccepted,
   submitLabel,
 }: CodeEditorProps) {
-  const disabled = isSubmitting || isAnalyzing || isCurrentCodeAccepted;
+  const disabled =
+    isTemplateLoading || isSubmitting || isAnalyzing || isCurrentCodeAccepted;
 
-  const buttonLabel = isSubmitting
+  const buttonLabel = isTemplateLoading
+    ? "加载模板..."
+    : isSubmitting
     ? "判题中..."
     : isAnalyzing
     ? "AI 分析中..."
