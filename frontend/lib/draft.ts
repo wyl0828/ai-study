@@ -69,6 +69,16 @@ export function loadDraft(
   }
 }
 
+export function shouldUseDraftForTemplate(
+  draft: ProblemDraft,
+  templateCode: string
+): boolean {
+  const backendUsesSolutionMode = /\bclass\s+Solution\b/.test(templateCode);
+  const draftUsesMainMode = /\bpublic\s+class\s+Main\b/.test(draft.code);
+
+  return !(backendUsesSolutionMode && draftUsesMainMode);
+}
+
 export function saveDraft(
   userId: number,
   problemId: number,
