@@ -19,7 +19,6 @@ interface CodeEditorProps {
   draftSavedAt: string | null;
   onDismissDraftNotice: () => void;
   isSubmitting: boolean;
-  isAnalyzing: boolean;
   isTemplateLoading: boolean;
   isCurrentCodeAccepted: boolean;
   submitLabel?: string;
@@ -33,20 +32,16 @@ export default function CodeEditor({
   draftSavedAt,
   onDismissDraftNotice,
   isSubmitting,
-  isAnalyzing,
   isTemplateLoading,
   isCurrentCodeAccepted,
   submitLabel,
 }: CodeEditorProps) {
-  const disabled =
-    isTemplateLoading || isSubmitting || isAnalyzing || isCurrentCodeAccepted;
+  const disabled = isTemplateLoading || isSubmitting;
 
   const buttonLabel = isTemplateLoading
     ? "加载模板..."
     : isSubmitting
     ? "判题中..."
-    : isAnalyzing
-    ? "AI 分析中..."
     : submitLabel ?? "提交代码";
 
   return (
@@ -73,7 +68,7 @@ export default function CodeEditor({
             disabled={disabled}
             className="bg-[#238636] hover:bg-[#2ea043] text-white text-xs px-4 py-1.5 rounded font-medium transition-all flex items-center gap-1 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {isSubmitting || isAnalyzing ? (
+            {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : isCurrentCodeAccepted ? (
               <CheckCircle className="w-4 h-4" />

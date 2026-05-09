@@ -25,6 +25,8 @@ public class Problem {
 
     private String outputFormat;
 
+    private String codeMode;
+
     private String templateCode;
 
     private String solutionOutline;

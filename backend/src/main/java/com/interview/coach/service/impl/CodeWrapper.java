@@ -1,5 +1,7 @@
 package com.interview.coach.service.impl;
 
+import com.interview.coach.entity.Problem;
+
 final class CodeWrapper {
 
     private static final Long VALID_ANAGRAM_PROBLEM_ID = 102L;
@@ -9,10 +11,11 @@ final class CodeWrapper {
     private CodeWrapper() {
     }
 
-    static String wrap(Long problemId, String userCode) {
-        if (problemId == null || userCode == null) {
+    static String wrap(Problem problem, String userCode) {
+        if (problem == null || problem.getId() == null || userCode == null) {
             return userCode;
         }
+        Long problemId = problem.getId();
         if (VALID_ANAGRAM_PROBLEM_ID.equals(problemId)) {
             return wrapValidAnagram(userCode);
         }
@@ -23,12 +26,6 @@ final class CodeWrapper {
             return wrapMergeTwoLists(userCode);
         }
         return userCode;
-    }
-
-    static boolean isSolutionModeProblem(Long problemId) {
-        return VALID_ANAGRAM_PROBLEM_ID.equals(problemId)
-                || REVERSE_LIST_PROBLEM_ID.equals(problemId)
-                || MERGE_TWO_LISTS_PROBLEM_ID.equals(problemId);
     }
 
     private static String wrapValidAnagram(String userCode) {

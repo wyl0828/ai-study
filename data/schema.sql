@@ -36,6 +36,7 @@ CREATE TABLE problem (
     category VARCHAR(64) NOT NULL,
     input_format TEXT,
     output_format TEXT,
+    code_mode VARCHAR(32) NOT NULL DEFAULT 'acm',
     template_code LONGTEXT,
     solution_outline TEXT,
     enabled TINYINT(1) NOT NULL DEFAULT 1,

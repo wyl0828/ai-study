@@ -2,6 +2,7 @@ package com.interview.coach.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.interview.coach.entity.Problem;
 import org.junit.jupiter.api.Test;
 
 class CodeWrapperTest {
@@ -16,7 +17,7 @@ class CodeWrapperTest {
                 }
                 """;
 
-        String wrapped = CodeWrapper.wrap(102L, userCode);
+        String wrapped = CodeWrapper.wrap(problem(102L), userCode);
 
         assertThat(wrapped).contains("import java.util.*;");
         assertThat(wrapped).contains("public class Main");
@@ -34,7 +35,7 @@ class CodeWrapperTest {
                 }
                 """;
 
-        String wrapped = CodeWrapper.wrap(103L, userCode);
+        String wrapped = CodeWrapper.wrap(problem(103L), userCode);
 
         assertThat(wrapped).contains("import java.util.*;");
         assertThat(wrapped).contains("public class Main");
@@ -54,7 +55,7 @@ class CodeWrapperTest {
                 }
                 """;
 
-        String wrapped = CodeWrapper.wrap(104L, userCode);
+        String wrapped = CodeWrapper.wrap(problem(104L), userCode);
 
         assertThat(wrapped).contains("import java.util.*;");
         assertThat(wrapped).contains("public class Main");
@@ -68,8 +69,15 @@ class CodeWrapperTest {
     void leavesOtherProblemsAndNullInputsUnchanged() {
         String acmCode = "public class Main {}";
 
-        assertThat(CodeWrapper.wrap(101L, acmCode)).isSameAs(acmCode);
+        assertThat(CodeWrapper.wrap(problem(101L), acmCode)).isSameAs(acmCode);
         assertThat(CodeWrapper.wrap(null, acmCode)).isSameAs(acmCode);
-        assertThat(CodeWrapper.wrap(102L, null)).isNull();
+        assertThat(CodeWrapper.wrap(problem(102L), null)).isNull();
+    }
+
+    private Problem problem(Long id) {
+        Problem problem = new Problem();
+        problem.setId(id);
+        problem.setCodeMode("solution");
+        return problem;
     }
 }

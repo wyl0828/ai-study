@@ -26,6 +26,7 @@ export default function ProblemWorkspace({
   const [code, setCode] = useState("");
   const skipNextAutosaveRef = useRef(false);
   const templateRequestIdRef = useRef(0);
+  const analysisRequestIdRef = useRef(0);
   const [isDraftReady, setIsDraftReady] = useState(false);
   const [isTemplateLoading, setIsTemplateLoading] = useState(true);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
@@ -142,8 +143,57 @@ export default function ProblemWorkspace({
     void loadTemplate(false);
   }, [loadTemplate, problemId]);
 
+  const startAiAnalysis = useCallback(
+    async (
+      resultWithSnapshot: NonNullable<ProblemDraft["lastResult"]>,
+      codeSnapshot: string,
+      requestId: number
+    ) => {
+      setIsAnalyzing(true);
+
+      try {
+        const { data: diag } = await agentApi.analyze(
+          resultWithSnapshot.submissionId
+        );
+        if (requestId !== analysisRequestIdRef.current) {
+          return;
+        }
+
+        const diagnosisWithSnapshot: ProblemDraft["lastDiagnosis"] = {
+          ...diag,
+          codeSnapshot,
+        };
+        setDiagnosis(diagnosisWithSnapshot);
+        saveDraft(DEMO_USER_ID, problemId, {
+          code: codeSnapshot,
+          language: "java",
+          lastResult: resultWithSnapshot,
+          lastDiagnosis: diagnosisWithSnapshot,
+        });
+        setDraftSavedAt(new Date().toISOString());
+        setActiveTab("diagnosis");
+      } catch (diagErr) {
+        if (requestId !== analysisRequestIdRef.current) {
+          return;
+        }
+
+        console.error("AI 诊断失败:", diagErr);
+        setError("AI 诊断失败，请稍后重试");
+      } finally {
+        if (requestId === analysisRequestIdRef.current) {
+          setIsAnalyzing(false);
+        }
+      }
+    },
+    [problemId]
+  );
+
   const handleSubmit = useCallback(async () => {
+    const analysisRequestId = analysisRequestIdRef.current + 1;
+    analysisRequestIdRef.current = analysisRequestId;
+
     setIsSubmitting(true);
+    setIsAnalyzing(false);
     setError(null);
     setSubmissionResult(null);
     setDiagnosis(null);
@@ -173,35 +223,14 @@ export default function ProblemWorkspace({
       setDraftSavedAt(new Date().toISOString());
 
       if (result.status !== "ACCEPTED") {
-        setIsAnalyzing(true);
-        try {
-          const { data: diag } = await agentApi.analyze(result.submissionId);
-          const diagnosisWithSnapshot: ProblemDraft["lastDiagnosis"] = {
-            ...diag,
-            codeSnapshot: code,
-          };
-          setDiagnosis(diagnosisWithSnapshot);
-          saveDraft(DEMO_USER_ID, problemId, {
-            code,
-            language: "java",
-            lastResult: resultWithSnapshot,
-            lastDiagnosis: diagnosisWithSnapshot,
-          });
-          setDraftSavedAt(new Date().toISOString());
-          setActiveTab("diagnosis");
-        } catch (diagErr) {
-          console.error("AI 诊断失败:", diagErr);
-          setError("AI 诊断失败，请稍后重试");
-        } finally {
-          setIsAnalyzing(false);
-        }
+        void startAiAnalysis(resultWithSnapshot, code, analysisRequestId);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "提交失败，请稍后重试");
     } finally {
       setIsSubmitting(false);
     }
-  }, [problemId, code]);
+  }, [problemId, code, startAiAnalysis]);
 
   const isCurrentCodeAccepted =
     submissionResult?.status === "ACCEPTED" &&
@@ -247,7 +276,6 @@ export default function ProblemWorkspace({
           }
           onDismissDraftNotice={() => setShowDraftNotice(false)}
           isSubmitting={isSubmitting}
-          isAnalyzing={isAnalyzing}
           isTemplateLoading={isTemplateLoading}
           isCurrentCodeAccepted={isCurrentCodeAccepted}
           submitLabel={submitLabel}

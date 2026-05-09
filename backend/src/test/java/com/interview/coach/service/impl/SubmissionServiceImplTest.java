@@ -57,7 +57,7 @@ class SubmissionServiceImplTest {
         request.setProblemId(102L);
         request.setLanguage("java");
         request.setCode(userCode);
-        when(problemService.getEnabledProblem(102L)).thenReturn(problem(102L));
+        when(problemService.getEnabledProblem(102L)).thenReturn(problem(102L, "solution"));
         when(testCaseMapper.selectList(any())).thenReturn(List.of(testCase()));
         when(judgeService.judgeJava(any(), any())).thenReturn(acceptedResult());
 
@@ -89,7 +89,7 @@ class SubmissionServiceImplTest {
         submission.setLanguage("java");
         submission.setCode(userCode);
         when(submissionMapper.selectById(7L)).thenReturn(submission);
-        when(problemService.getEnabledProblem(104L)).thenReturn(problem(104L));
+        when(problemService.getEnabledProblem(104L)).thenReturn(problem(104L, "solution"));
         when(testCaseMapper.selectList(any())).thenReturn(List.of(testCase()));
         when(judgeService.judgeJava(any(), any())).thenReturn(acceptedResult());
 
@@ -111,7 +111,7 @@ class SubmissionServiceImplTest {
         request.setProblemId(101L);
         request.setLanguage("java");
         request.setCode(acmCode);
-        when(problemService.getEnabledProblem(101L)).thenReturn(problem(101L));
+        when(problemService.getEnabledProblem(101L)).thenReturn(problem(101L, "acm"));
         when(testCaseMapper.selectList(any())).thenReturn(List.of(testCase()));
         when(judgeService.judgeJava(eq(acmCode), any())).thenReturn(acceptedResult());
 
@@ -120,9 +120,33 @@ class SubmissionServiceImplTest {
         verify(judgeService).judgeJava(eq(acmCode), any());
     }
 
-    private Problem problem(Long id) {
+    @Test
+    void submitDoesNotWrapKnownSolutionIdWhenCodeModeIsAcm() {
+        String solutionCode = """
+                class Solution {
+                    public boolean isAnagram(String s, String t) {
+                        return true;
+                    }
+                }
+                """;
+        SubmitCodeRequest request = new SubmitCodeRequest();
+        request.setUserId(1L);
+        request.setProblemId(102L);
+        request.setLanguage("java");
+        request.setCode(solutionCode);
+        when(problemService.getEnabledProblem(102L)).thenReturn(problem(102L, "acm"));
+        when(testCaseMapper.selectList(any())).thenReturn(List.of(testCase()));
+        when(judgeService.judgeJava(eq(solutionCode), any())).thenReturn(acceptedResult());
+
+        submissionService.submit(request);
+
+        verify(judgeService).judgeJava(eq(solutionCode), any());
+    }
+
+    private Problem problem(Long id, String codeMode) {
         Problem problem = new Problem();
         problem.setId(id);
+        problem.setCodeMode(codeMode);
         return problem;
     }
 

@@ -14,13 +14,14 @@ INSERT INTO knowledge_point (id, name, category, description) VALUES
 (8, '二分优化', 'DynamicProgramming', '用二分维护递增序列的候选结尾。');
 
 INSERT INTO problem
-(id, title, description, difficulty, category, input_format, output_format, template_code, solution_outline, enabled, created_at, updated_at)
+(id, title, description, difficulty, category, input_format, output_format, code_mode, template_code, solution_outline, enabled, created_at, updated_at)
 VALUES
 (101, '两数之和',
 '给定一个整数数组和一个目标值，请找出数组中和为目标值的两个元素下标。若不存在满足条件的组合，输出 -1 -1。',
 'EASY', 'HashMap',
 '第 1 行输入数组长度 n，第 2 行输入 n 个整数，第 3 行输入目标值 target。',
 '输出两个下标，用空格分隔；若不存在答案，输出 -1 -1。',
+'acm',
 'import java.util.*;
 
 public class Main {
@@ -44,6 +45,7 @@ public class Main {
 'EASY', 'HashMap',
 '给定参数 s 和 t，无需处理标准输入。',
 '返回 true 或 false，无需自行打印结果。',
+'solution',
 'class Solution {
     public boolean isAnagram(String s, String t) {
         // 请在这里实现判断逻辑
@@ -57,6 +59,7 @@ public class Main {
 'EASY', 'LinkedList',
 '给定参数 head，无需处理标准输入。',
 '返回反转后的链表头节点，无需自行打印结果。',
+'solution',
 'class Solution {
     public ListNode reverseList(ListNode head) {
         // 请在这里实现反转链表逻辑
@@ -70,6 +73,7 @@ public class Main {
 'EASY', 'LinkedList',
 '给定参数 list1 和 list2，无需处理标准输入。',
 '返回合并后的链表头节点，无需自行打印结果。',
+'solution',
 'class Solution {
     public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
         // 请在这里实现合并逻辑
@@ -83,6 +87,7 @@ public class Main {
 'EASY', 'Tree',
 '第 1 行输入节点数量 n，第 2 行输入 n 个层序节点，例如 3 9 20 null null 15 7。',
 '输出最大深度，结果为一个整数。',
+'acm',
 'import java.util.*;
 
 public class Main {
@@ -109,6 +114,7 @@ public class Main {
 'MEDIUM', 'Tree',
 '第 1 行输入节点数量 n，第 2 行输入 n 个层序节点，其中 null 表示空节点。',
 '按层输出节点值，层与层之间用分号分隔，同一层内用空格分隔。',
+'acm',
 'import java.util.*;
 
 public class Main {
@@ -135,6 +141,7 @@ public class Main {
 'EASY', 'DynamicProgramming',
 '第 1 行输入台阶数 n。',
 '输出不同走法数量。',
+'acm',
 'import java.util.*;
 
 public class Main {
@@ -153,6 +160,7 @@ public class Main {
 'MEDIUM', 'DynamicProgramming',
 '第 1 行输入数组长度 n，第 2 行输入 n 个整数。',
 '输出最长递增子序列的长度。',
+'acm',
 'import java.util.*;
 
 public class Main {

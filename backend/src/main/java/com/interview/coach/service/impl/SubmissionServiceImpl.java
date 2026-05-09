@@ -8,6 +8,7 @@ import com.interview.coach.dto.SubmitCodeRequest;
 import com.interview.coach.entity.Problem;
 import com.interview.coach.entity.Submission;
 import com.interview.coach.entity.TestCase;
+import com.interview.coach.enums.CodeModeEnum;
 import com.interview.coach.enums.LanguageEnum;
 import com.interview.coach.enums.SubmissionStatusEnum;
 import com.interview.coach.handler.BusinessException;
@@ -52,7 +53,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
 
         Submission submission = createRunningSubmission(request);
-        String judgeCode = wrapCodeForJudge(problem.getId(), request.getCode());
+        String judgeCode = prepareJudgeCode(problem, request.getCode());
         JudgeResult judgeResult = judgeService.judgeJava(judgeCode, toJudgeCases(testCases));
         updateSubmission(submission, judgeResult);
         return toSubmissionResultVO(submission, judgeResult);
@@ -82,18 +83,18 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (testCases.isEmpty()) {
             throw new BusinessException(500, "problem has no test cases");
         }
-        String judgeCode = wrapCodeForJudge(problem.getId(), submission.getCode());
+        String judgeCode = prepareJudgeCode(problem, submission.getCode());
         JudgeResult judgeResult = judgeService.judgeJava(judgeCode, toJudgeCases(testCases));
         updateSubmission(submission, judgeResult);
         return judgeResult;
     }
 
-    private String wrapCodeForJudge(Long problemId, String code) {
-        String judgeCode = CodeWrapper.wrap(problemId, code);
-        boolean solutionMode = CodeWrapper.isSolutionModeProblem(problemId);
+    private String prepareJudgeCode(Problem problem, String code) {
+        boolean solutionMode = CodeModeEnum.isSolution(problem.getCodeMode());
+        String judgeCode = solutionMode ? CodeWrapper.wrap(problem, code) : code;
         boolean containsMain = judgeCode != null && judgeCode.contains("public class Main");
-        log.info("judge code prepared: problemId={}, solutionModeWrapped={}, containsPublicMain={}",
-                problemId, solutionMode, containsMain);
+        log.info("judge code prepared: problemId={}, codeMode={}, solutionModeWrapped={}, containsPublicMain={}",
+                problem.getId(), problem.getCodeMode(), solutionMode, containsMain);
         return judgeCode;
     }
 
