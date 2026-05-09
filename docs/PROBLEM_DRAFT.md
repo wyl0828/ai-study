@@ -76,7 +76,9 @@ formatDraftTime(isoString: string): string  // → "05-08 09:06"
 ```text
 进入 /problem/[id]
     │
-    ├─ 并行请求：题目详情 + 模板代码
+    ├─ page.tsx 服务端请求题目详情
+    │
+    ├─ ProblemWorkspace 浏览器端请求 /api/problems/{id}/template
     │
     ├─ loadDraft(1, problemId)
     │     ├─ 解析失败 → 返回 null，静默忽略
@@ -85,7 +87,7 @@ formatDraftTime(isoString: string): string  // → "05-08 09:06"
     ├─ 草稿存在？
     │     ├─ 是 → 恢复 code/lastResult/lastDiagnosis
     │     │       显示提示条："草稿已自动保存于 05-08 09:06"
-    │     └─ 否 → 使用默认模板 code
+    │     └─ 否 → 使用后端返回的 templateCode
     │
     └─ 渲染页面
 ```
@@ -120,11 +122,12 @@ formatDraftTime(isoString: string): string  // → "05-08 09:06"
 确认后执行：
 
 1. clearDraft(1, problemId)
-2. code 恢复为 defaultCode
-3. submissionResult 清空
-4. diagnosis 清空
-5. activeTab 重置为 "test"
-6. 草稿提示条隐藏
+2. 重新请求 /api/problems/{id}/template
+3. code 恢复为后端返回的 templateCode
+4. submissionResult 清空
+5. diagnosis 清空
+6. activeTab 重置为 "test"
+7. 草稿提示条隐藏
 
 ### 5.3 通过状态逻辑
 
@@ -177,8 +180,8 @@ const isDiagnosisStale =
 | 文件 | 改动类型 | 说明 |
 |------|----------|------|
 | `lib/draft.ts` | 新建 | 草稿读写抽象层，页面不直接操作 localStorage |
-| `components/ProblemWorkspace.tsx` | 修改 | 初始化读草稿、提交/诊断后存草稿、重置功能、通过状态判断 |
-| `components/CodeEditor.tsx` | 修改 | 新增草稿提示条、重置按钮、通过/重新提交状态、诊断过期提示 |
+| `components/ProblemWorkspace.tsx` | 修改 | 客户端读取模板、初始化读草稿、提交/诊断后存草稿、重置功能、通过状态判断 |
+| `components/CodeEditor.tsx` | 修改 | 新增草稿提示条、重置按钮、模板加载状态、通过/重新提交状态、诊断过期提示 |
 
 ## 9. 强制约束
 
@@ -220,7 +223,7 @@ DELETE /api/users/{userId}/drafts/{problemId}
 ```json
 {
   "language": "java",
-  "code": "public class Main { ... }",
+  "code": "class Solution { ... } 或 public class Main { ... }",
   "lastSubmissionId": 1001
 }
 ```
@@ -232,7 +235,7 @@ DELETE /api/users/{userId}/drafts/{problemId}
   "problemId": 101,
   "userId": 1,
   "language": "java",
-  "code": "public class Main { ... }",
+  "code": "class Solution { ... } 或 public class Main { ... }",
   "lastSubmissionId": 1001,
   "updatedAt": "2026-05-08 12:30:00"
 }

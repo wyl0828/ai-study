@@ -2,10 +2,11 @@ package com.interview.coach.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.interview.coach.dto.JudgeCase;
 import com.interview.coach.dto.JudgeResult;
 import com.interview.coach.dto.SubmitCodeRequest;
 import com.interview.coach.entity.Problem;
@@ -43,95 +44,94 @@ class SubmissionServiceImplTest {
     private SubmissionServiceImpl submissionService;
 
     @Test
-    void submitSavesOriginalReverseListSolutionAndJudgesWrappedCode() {
-        String solutionCode = """
+    void submitStoresOriginalSolutionButJudgesWrappedCodeForSolutionProblem() {
+        String userCode = """
                 class Solution {
-                    public ListNode reverseList(ListNode head) {
-                        return head;
+                    public boolean isAnagram(String s, String t) {
+                        return true;
                     }
                 }
                 """;
-        SubmitCodeRequest request = submitRequest(103L, solutionCode);
-        when(problemService.getEnabledProblem(103L)).thenReturn(problem(103L));
-        when(testCaseMapper.selectList(any())).thenReturn(List.of(testCase(7L, 103L)));
-        doAnswer(invocation -> {
-            Submission submission = invocation.getArgument(0);
-            submission.setId(55L);
-            return 1;
-        }).when(submissionMapper).insert(any(Submission.class));
-        when(judgeService.judgeJava(any(), any())).thenReturn(acceptedResult());
-
-        submissionService.submit(request);
-
-        ArgumentCaptor<Submission> insertedSubmission = ArgumentCaptor.forClass(Submission.class);
-        verify(submissionMapper).insert(insertedSubmission.capture());
-        assertThat(insertedSubmission.getValue().getCode()).isEqualTo(solutionCode);
-
-        ArgumentCaptor<String> judgedCode = ArgumentCaptor.forClass(String.class);
-        verify(judgeService).judgeJava(judgedCode.capture(), any());
-        assertThat(judgedCode.getValue()).contains("public class Main");
-        assertThat(judgedCode.getValue()).contains("class ListNode");
-        assertThat(judgedCode.getValue()).contains(solutionCode);
-    }
-
-    @Test
-    void rejudgeWrapsPersistedReverseListSolutionBeforeJudging() {
-        String solutionCode = "class Solution { public ListNode reverseList(ListNode head) { return head; } }";
-        Submission submission = new Submission();
-        submission.setId(77L);
-        submission.setProblemId(103L);
-        submission.setLanguage("java");
-        submission.setCode(solutionCode);
-        when(submissionMapper.selectById(77L)).thenReturn(submission);
-        when(problemService.getEnabledProblem(103L)).thenReturn(problem(103L));
-        when(testCaseMapper.selectList(any())).thenReturn(List.of(testCase(8L, 103L)));
-        when(judgeService.judgeJava(any(), any())).thenReturn(acceptedResult());
-
-        submissionService.rejudge(77L);
-
-        ArgumentCaptor<String> judgedCode = ArgumentCaptor.forClass(String.class);
-        verify(judgeService).judgeJava(judgedCode.capture(), any());
-        assertThat(judgedCode.getValue()).contains("public class Main");
-        assertThat(judgedCode.getValue()).contains(solutionCode);
-    }
-
-    @Test
-    void submitKeepsMainModeCodeUnchangedForOtherProblems() {
-        String mainCode = "public class Main {}";
-        SubmitCodeRequest request = submitRequest(101L, mainCode);
-        when(problemService.getEnabledProblem(101L)).thenReturn(problem(101L));
-        when(testCaseMapper.selectList(any())).thenReturn(List.of(testCase(1L, 101L)));
-        when(judgeService.judgeJava(any(), any())).thenReturn(acceptedResult());
-
-        submissionService.submit(request);
-
-        ArgumentCaptor<String> judgedCode = ArgumentCaptor.forClass(String.class);
-        verify(judgeService).judgeJava(judgedCode.capture(), any());
-        assertThat(judgedCode.getValue()).isSameAs(mainCode);
-    }
-
-    private SubmitCodeRequest submitRequest(Long problemId, String code) {
         SubmitCodeRequest request = new SubmitCodeRequest();
         request.setUserId(1L);
-        request.setProblemId(problemId);
+        request.setProblemId(102L);
         request.setLanguage("java");
-        request.setCode(code);
-        return request;
+        request.setCode(userCode);
+        when(problemService.getEnabledProblem(102L)).thenReturn(problem(102L));
+        when(testCaseMapper.selectList(any())).thenReturn(List.of(testCase()));
+        when(judgeService.judgeJava(any(), any())).thenReturn(acceptedResult());
+
+        submissionService.submit(request);
+
+        ArgumentCaptor<Submission> submissionCaptor = ArgumentCaptor.forClass(Submission.class);
+        verify(submissionMapper).insert(submissionCaptor.capture());
+        assertThat(submissionCaptor.getValue().getCode()).isEqualTo(userCode);
+
+        ArgumentCaptor<String> codeCaptor = ArgumentCaptor.forClass(String.class);
+        verify(judgeService).judgeJava(codeCaptor.capture(), any());
+        assertThat(codeCaptor.getValue()).contains("public class Main");
+        assertThat(codeCaptor.getValue()).contains("new Solution().isAnagram(s, t)");
+        assertThat(codeCaptor.getValue()).contains(userCode);
+    }
+
+    @Test
+    void rejudgeUsesWrappedCodeForSolutionProblem() {
+        String userCode = """
+                class Solution {
+                    public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
+                        return list1;
+                    }
+                }
+                """;
+        Submission submission = new Submission();
+        submission.setId(7L);
+        submission.setProblemId(104L);
+        submission.setLanguage("java");
+        submission.setCode(userCode);
+        when(submissionMapper.selectById(7L)).thenReturn(submission);
+        when(problemService.getEnabledProblem(104L)).thenReturn(problem(104L));
+        when(testCaseMapper.selectList(any())).thenReturn(List.of(testCase()));
+        when(judgeService.judgeJava(any(), any())).thenReturn(acceptedResult());
+
+        submissionService.rejudge(7L);
+
+        ArgumentCaptor<String> codeCaptor = ArgumentCaptor.forClass(String.class);
+        verify(judgeService).judgeJava(codeCaptor.capture(), any());
+        assertThat(codeCaptor.getValue()).contains("public class Main");
+        assertThat(codeCaptor.getValue()).contains("class ListNode");
+        assertThat(codeCaptor.getValue()).contains("new Solution().mergeTwoLists(list1, list2)");
+        assertThat(codeCaptor.getValue()).contains(userCode);
+    }
+
+    @Test
+    void submitLeavesAcmProblemCodeUnchanged() {
+        String acmCode = "public class Main { public static void main(String[] args) {} }";
+        SubmitCodeRequest request = new SubmitCodeRequest();
+        request.setUserId(1L);
+        request.setProblemId(101L);
+        request.setLanguage("java");
+        request.setCode(acmCode);
+        when(problemService.getEnabledProblem(101L)).thenReturn(problem(101L));
+        when(testCaseMapper.selectList(any())).thenReturn(List.of(testCase()));
+        when(judgeService.judgeJava(eq(acmCode), any())).thenReturn(acceptedResult());
+
+        submissionService.submit(request);
+
+        verify(judgeService).judgeJava(eq(acmCode), any());
     }
 
     private Problem problem(Long id) {
         Problem problem = new Problem();
         problem.setId(id);
-        problem.setEnabled(true);
         return problem;
     }
 
-    private TestCase testCase(Long id, Long problemId) {
+    private TestCase testCase() {
         TestCase testCase = new TestCase();
-        testCase.setId(id);
-        testCase.setProblemId(problemId);
-        testCase.setInputData("0\n");
-        testCase.setExpectedOutput("");
+        testCase.setId(1L);
+        testCase.setProblemId(102L);
+        testCase.setInputData("a\nb\n");
+        testCase.setExpectedOutput("false");
         return testCase;
     }
 
@@ -140,6 +140,7 @@ class SubmissionServiceImplTest {
         result.setStatus(SubmissionStatusEnum.ACCEPTED);
         result.setPassedCount(1);
         result.setTotalCount(1);
+        result.setFailedCases(List.of());
         return result;
     }
 }

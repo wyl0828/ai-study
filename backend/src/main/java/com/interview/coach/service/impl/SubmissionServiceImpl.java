@@ -52,12 +52,8 @@ public class SubmissionServiceImpl implements SubmissionService {
         }
 
         Submission submission = createRunningSubmission(request);
-        String wrappedCode = CodeWrapper.wrap(problem.getId(), request.getCode());
-        log.info("Prepared submit judge code: problemId={}, codeWrapped={}, containsMain={}",
-                problem.getId(), wrappedCode != request.getCode(), containsMainClass(wrappedCode));
-        JudgeResult judgeResult = judgeService.judgeJava(
-                wrappedCode,
-                toJudgeCases(testCases));
+        String judgeCode = wrapCodeForJudge(problem.getId(), request.getCode());
+        JudgeResult judgeResult = judgeService.judgeJava(judgeCode, toJudgeCases(testCases));
         updateSubmission(submission, judgeResult);
         return toSubmissionResultVO(submission, judgeResult);
     }
@@ -86,14 +82,19 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (testCases.isEmpty()) {
             throw new BusinessException(500, "problem has no test cases");
         }
-        String wrappedCode = CodeWrapper.wrap(submission.getProblemId(), submission.getCode());
-        log.info("Prepared rejudge code: problemId={}, codeWrapped={}, containsMain={}",
-                submission.getProblemId(), wrappedCode != submission.getCode(), containsMainClass(wrappedCode));
-        JudgeResult judgeResult = judgeService.judgeJava(
-                wrappedCode,
-                toJudgeCases(testCases));
+        String judgeCode = wrapCodeForJudge(problem.getId(), submission.getCode());
+        JudgeResult judgeResult = judgeService.judgeJava(judgeCode, toJudgeCases(testCases));
         updateSubmission(submission, judgeResult);
         return judgeResult;
+    }
+
+    private String wrapCodeForJudge(Long problemId, String code) {
+        String judgeCode = CodeWrapper.wrap(problemId, code);
+        boolean solutionMode = CodeWrapper.isSolutionModeProblem(problemId);
+        boolean containsMain = judgeCode != null && judgeCode.contains("public class Main");
+        log.info("judge code prepared: problemId={}, solutionModeWrapped={}, containsPublicMain={}",
+                problemId, solutionMode, containsMain);
+        return judgeCode;
     }
 
     private SubmissionResultVO unsupportedLanguageResult(SubmitCodeRequest request) {
@@ -121,10 +122,6 @@ public class SubmissionServiceImpl implements SubmissionService {
         return testCaseMapper.selectList(new LambdaQueryWrapper<TestCase>()
                 .eq(TestCase::getProblemId, problemId)
                 .orderByAsc(TestCase::getId));
-    }
-
-    private boolean containsMainClass(String code) {
-        return code != null && code.contains("public class Main");
     }
 
     private Submission createRunningSubmission(SubmitCodeRequest request) {

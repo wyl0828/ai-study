@@ -42,18 +42,12 @@ public class Main {
 (102, '有效字母异位词',
 '给定两个只包含小写字母的字符串 s 和 t，判断 t 是否是 s 的字母异位词。',
 'EASY', 'HashMap',
-'第 1 行输入字符串 s，第 2 行输入字符串 t。',
-'输出 true 或 false。',
-'import java.util.*;
-
-public class Main {
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        String s = sc.next();
-        String t = sc.next();
-
-        // TODO: 比较两个字符串的字符计数。
-        System.out.println(false);
+'给定参数 s 和 t，无需处理标准输入。',
+'返回 true 或 false，无需自行打印结果。',
+'class Solution {
+    public boolean isAnagram(String s, String t) {
+        // 请在这里实现判断逻辑
+        return false;
     }
 }',
 '统计两个字符串的字符出现次数，也可以遍历 s 时加一、遍历 t 时减一。',
@@ -72,29 +66,14 @@ public class Main {
 '使用 prev、cur、next 三个指针。移动 cur 的同时反转 cur.next 指向。',
 1, NOW(), NOW()),
 (104, '合并两个有序链表',
-'给定两个升序链表，请将它们合并为一个升序链表，并输出合并后的节点值。',
+'给定两个升序链表 list1 和 list2，请合并为一个升序链表并返回合并后的头节点。',
 'EASY', 'LinkedList',
-'第 1 行输入链表 a 的长度 n，第 2 行输入 n 个整数，第 3 行输入链表 b 的长度 m，第 4 行输入 m 个整数。',
-'输出合并后的节点值，用空格分隔。',
-'import java.util.*;
-
-public class Main {
-    static class ListNode {
-        int val;
-        ListNode next;
-        ListNode(int val) { this.val = val; }
-    }
-
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        int n = sc.nextInt();
-        int[] a = new int[n];
-        for (int i = 0; i < n; i++) a[i] = sc.nextInt();
-        int m = sc.nextInt();
-        int[] b = new int[m];
-        for (int i = 0; i < m; i++) b[i] = sc.nextInt();
-
-        // TODO: 合并两个有序序列，也可以先构建链表再合并。
+'给定参数 list1 和 list2，无需处理标准输入。',
+'返回合并后的链表头节点，无需自行打印结果。',
+'class Solution {
+    public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
+        // 请在这里实现合并逻辑
+        return null;
     }
 }',
 '使用哨兵节点，每次连接当前值更小的节点，并继续移动指针。',

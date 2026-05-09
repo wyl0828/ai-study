@@ -7,8 +7,26 @@ import org.junit.jupiter.api.Test;
 class CodeWrapperTest {
 
     @Test
-    void wrapsReverseListSolutionAsExecutableMainProgram() {
-        String solutionCode = """
+    void wrapsValidAnagramSolutionWithMain() {
+        String userCode = """
+                class Solution {
+                    public boolean isAnagram(String s, String t) {
+                        return true;
+                    }
+                }
+                """;
+
+        String wrapped = CodeWrapper.wrap(102L, userCode);
+
+        assertThat(wrapped).contains("import java.util.*;");
+        assertThat(wrapped).contains("public class Main");
+        assertThat(wrapped).contains("new Solution().isAnagram(s, t)");
+        assertThat(wrapped).contains(userCode);
+    }
+
+    @Test
+    void wrapsReverseListSolutionWithListNodeAndMain() {
+        String userCode = """
                 class Solution {
                     public ListNode reverseList(ListNode head) {
                         return head;
@@ -16,36 +34,42 @@ class CodeWrapperTest {
                 }
                 """;
 
-        String wrappedCode = CodeWrapper.wrap(103L, solutionCode);
+        String wrapped = CodeWrapper.wrap(103L, userCode);
 
-        assertThat(wrappedCode).contains("import java.util.*;");
-        assertThat(wrappedCode).contains("class ListNode {");
-        assertThat(wrappedCode).contains("public class Main {");
-        assertThat(wrappedCode).contains("Solution solution = new Solution();");
-        assertThat(wrappedCode).contains("solution.reverseList(dummy.next)");
-        assertThat(wrappedCode).contains(solutionCode);
+        assertThat(wrapped).contains("import java.util.*;");
+        assertThat(wrapped).contains("public class Main");
+        assertThat(wrapped).contains("class ListNode");
+        assertThat(wrapped).contains("new Solution().reverseList(head)");
+        assertThat(wrapped).contains(userCode);
+        assertThat(wrapped.indexOf("public class Main")).isLessThan(wrapped.indexOf("class ListNode"));
     }
 
     @Test
-    void putsMainBeforeListNodeSoPistonRunsMainClass() {
-        String wrappedCode = CodeWrapper.wrap(103L, "class Solution {}");
+    void wrapsMergeTwoListsSolutionWithListNodeAndMain() {
+        String userCode = """
+                class Solution {
+                    public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
+                        return list1;
+                    }
+                }
+                """;
 
-        assertThat(wrappedCode.indexOf("public class Main"))
-                .isLessThan(wrappedCode.indexOf("class ListNode"));
+        String wrapped = CodeWrapper.wrap(104L, userCode);
+
+        assertThat(wrapped).contains("import java.util.*;");
+        assertThat(wrapped).contains("public class Main");
+        assertThat(wrapped).contains("class ListNode");
+        assertThat(wrapped).contains("new Solution().mergeTwoLists(list1, list2)");
+        assertThat(wrapped).contains(userCode);
+        assertThat(wrapped.indexOf("public class Main")).isLessThan(wrapped.indexOf("class ListNode"));
     }
 
     @Test
-    void leavesOtherProblemsUnchanged() {
-        String mainCode = "public class Main {}";
+    void leavesOtherProblemsAndNullInputsUnchanged() {
+        String acmCode = "public class Main {}";
 
-        assertThat(CodeWrapper.wrap(101L, mainCode)).isSameAs(mainCode);
-    }
-
-    @Test
-    void leavesNullInputsUnchanged() {
-        String code = "class Solution {}";
-
-        assertThat(CodeWrapper.wrap(null, code)).isSameAs(code);
-        assertThat(CodeWrapper.wrap(103L, null)).isNull();
+        assertThat(CodeWrapper.wrap(101L, acmCode)).isSameAs(acmCode);
+        assertThat(CodeWrapper.wrap(null, acmCode)).isSameAs(acmCode);
+        assertThat(CodeWrapper.wrap(102L, null)).isNull();
     }
 }

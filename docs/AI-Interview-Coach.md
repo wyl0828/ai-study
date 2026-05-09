@@ -58,7 +58,7 @@ Agent 收到代码诊断任务
 - 页面已按 `stitch_front_end_interface_design/mvp/` 下的 HTML 原型还原为紧凑 MVP 风格。
 - 页面文案已完成中文化，风格参考国内技术学习产品和 LeetCode 中文站。
 - 做题页提交失败后当前使用同步 `POST /api/agent/analyze` 展示 AI 诊断和分层提示；后端 SSE 接口已具备，前端流式接入留到后续增强。
-- 做题页已实现 localStorage 草稿自动保存 v1：通过 `frontend/lib/draft.ts` 抽象隔离本地存储，支持恢复代码、上次判题结果和上次 AI 诊断，并用 `codeSnapshot` 提示诊断是否基于旧代码。
+- 做题页模板加载已统一为浏览器端请求 `/api/problems/{id}/template`：`102/103/104` 显示 `class Solution`，`101/105/106/107/108` 仍显示 ACM `public class Main`。
 - Dashboard 已通过用户学习查询接口接入真实 MySQL 数据，展示弱点、错题卡、最近提交和训练计划。
 - 如果本地 Dashboard 接口提示不存在，需要确认 Spring Boot 后端已重启到包含 `UserController` 的最新代码，并确认新增后端文件已纳入版本控制。
 
@@ -96,6 +96,8 @@ Next.js 前端
 Spring Boot API
   ↓
 SubmissionService 创建提交记录
+  ↓
+Solution 题目通过 CodeWrapper 包装为 Main.java
   ↓
 MyBatis-Plus Mapper -> MySQL
   ↓
@@ -219,7 +221,17 @@ Phase 1 本地开发说明：
 - 当前安装的 Piston Java runtime 为 `java 15.0.2`，题库模板避免使用 Java 17 专属语法。
 - 后端工程仍使用 Java 17 和 Spring Boot 3；Piston runtime 只影响用户提交代码的执行环境。
 - 本地 Piston 对 Java HTTP 客户端默认 HTTP/2 请求不兼容，`PistonClient` 强制使用 HTTP/1.1。
-- 判题使用 stdin/stdout 模式：用户提交完整 `public class Main`，每条 `test_case.input_data` 作为 stdin，标准输出与 `expected_output` 归一化后比较。
+- 判题底层仍使用 stdin/stdout：每条 `test_case.input_data` 作为 stdin，标准输出与 `expected_output` 归一化后比较。ACM 题由用户提交完整 `public class Main`，Solution 题由后端包装出 `public class Main`。
+- 当前已引入小范围 Solution 模式试点：`problemId=102/103/104` 的 `template_code` 和用户提交为非 `public` 的 `class Solution`，后端通过 `CodeWrapper` 在调用 Piston 前生成完整 `Main.java`。数据库 `submission.code` 仍保存用户原始 Solution 代码，便于 AI 诊断围绕用户代码而不是包装代码。
+- `101/105/106/107/108` 暂保留 ACM 模式；不新增 `code_mode` 字段，不改变 REST 请求结构。
+
+当前 Solution 签名：
+
+| problemId | 题目 | 方法签名 |
+| --- | --- | --- |
+| 102 | 有效字母异位词 | `public boolean isAnagram(String s, String t)` |
+| 103 | 反转链表 | `public ListNode reverseList(ListNode head)` |
+| 104 | 合并两个有序链表 | `public ListNode mergeTwoLists(ListNode list1, ListNode list2)` |
 
 ### 4.4 Agent Workflow 模块
 
@@ -535,6 +547,8 @@ POST /api/submissions
 }
 ```
 
+对于 `problemId=102/103/104`，`code` 可以是 `class Solution { ... }`；对于其他当前题目，仍提交完整 `public class Main`。
+
 响应示例：
 
 ```json
@@ -578,20 +592,21 @@ data: {"errorType":"BOUNDARY_ERROR","knowledgePoint":"HashMap","confidence":0.86
 
 ```http
 POST /api/agent/analyze
-POST /api/agent/review
-POST /api/agent/hint
 ```
 
-`/api/agent/analyze` 用于分析失败提交，`/api/agent/review` 用于代码通过后的 Code Review，`/api/agent/hint` 用于逐级获取提示。
+`/api/agent/analyze` 用于同步分析失败提交。代码通过后的 Code Review 和逐级获取提示暂未暴露为 REST Controller。
 
 ### 6.5 用户学习接口
 
 ```http
+GET /api/users/{userId}/dashboard/stats
 GET /api/users/{userId}/weaknesses
 GET /api/users/{userId}/training-plans/latest
-POST /api/users/{userId}/training-plans/generate
 GET /api/users/{userId}/mistakes
+GET /api/users/{userId}/submissions/recent
 ```
+
+Dashboard 当前通过以上接口读取真实 MySQL 学习数据；手动重新生成训练计划暂未暴露为接口。
 
 ## 7. Agent Workflow 设计
 
@@ -717,7 +732,6 @@ agent/
 - 已完成：Dashboard 查询接口和真实数据接入
 - 已完成：薄弱点统计、错题卡和 3 天训练计划从 MySQL 持久化数据读取
 - 已完成：无数据时 Dashboard 显示空状态引导文案
-- 已完成：做题页 localStorage 草稿缓存，支持刷新后恢复代码、上次判题结果和上次 AI 诊断
 
 ### 暂不实现
 
@@ -831,16 +845,15 @@ MVP 阶段不追求复杂自主规划，而是采用可解释的状态机式 Age
 ## 11. 推荐演示流程
 
 1. 进入题目列表。
-2. 选择“两数之和”或二叉树题目。
+2. 选择“两数之和”演示 ACM 模式，或选择“反转链表 / 有效字母异位词 / 合并两个有序链表”演示 Solution 模式。
 3. 在 Monaco Editor 中写一段存在 bug 的 Java 代码。
 4. 提交代码并展示测试失败结果。
 5. 打开 Agent 诊断面板，展示错误诊断和分层提示；当前前端使用同步诊断，后端 SSE 接口可在接口层演示。
 6. 展示错误类型和关联知识点。
 7. 逐层点击 Level 1、Level 2、Level 3 提示。
-8. 刷新做题页，展示草稿恢复提示、代码恢复、上次测试结果和上次 AI 诊断；修改代码后展示“该诊断基于上次提交，当前代码已修改，仅供参考”。
-9. 展示学习中心中的真实薄弱点统计、错题卡片、最近提交和 3 天训练计划。
-10. 说明 Dashboard 数据来自 `user_weakness`、`mistake_card`、`training_plan`、`training_plan_item` 和 `submission` 表；草稿缓存当前只保存在浏览器 localStorage，后续登录系统完善后可升级为后端草稿接口。
-11. 解释后端如何封装 Piston 代码执行服务、Agent Tool、Observation、Memory、Dashboard 查询接口和 SSE 步骤流。
+8. 展示学习中心中的真实薄弱点统计、错题卡片、最近提交和 3 天训练计划。
+9. 说明 Dashboard 数据来自 `user_weakness`、`mistake_card`、`training_plan`、`training_plan_item` 和 `submission` 表。
+10. 解释后端如何封装 Piston 代码执行服务、Agent Tool、Observation、Memory、Dashboard 查询接口和 SSE 步骤流。
 
 ## 12. README 标题建议
 

@@ -3,13 +3,12 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { X, AlertCircle } from "lucide-react";
 import type { SubmissionResult, AgentAnalyzeVO } from "@/lib/types";
-import { submissionApi, agentApi, problemApi } from "@/lib/api";
+import { problemApi, submissionApi, agentApi } from "@/lib/api";
 import {
   clearDraft,
   formatDraftTime,
   loadDraft,
   saveDraft,
-  shouldUseDraftForTemplate,
   type ProblemDraft,
 } from "@/lib/draft";
 import CodeEditor from "./CodeEditor";
@@ -25,8 +24,8 @@ export default function ProblemWorkspace({
   problemId,
 }: ProblemWorkspaceProps) {
   const [code, setCode] = useState("");
-  const [templateCode, setTemplateCode] = useState("");
   const skipNextAutosaveRef = useRef(false);
+  const templateRequestIdRef = useRef(0);
   const [isDraftReady, setIsDraftReady] = useState(false);
   const [isTemplateLoading, setIsTemplateLoading] = useState(true);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
@@ -42,20 +41,23 @@ export default function ProblemWorkspace({
     "test"
   );
 
-  const loadProblemTemplate = useCallback(
-    async (preferDraft: boolean) => {
+  const loadTemplate = useCallback(
+    async (restoreDraft: boolean) => {
+      const requestId = templateRequestIdRef.current + 1;
+      templateRequestIdRef.current = requestId;
+      skipNextAutosaveRef.current = true;
+      setIsDraftReady(false);
       setIsTemplateLoading(true);
       setError(null);
-      skipNextAutosaveRef.current = true;
 
       try {
         const { data: template } = await problemApi.template(problemId);
-        const nextTemplateCode = template.templateCode;
-        const draft = preferDraft ? loadDraft(DEMO_USER_ID, problemId) : null;
+        if (requestId !== templateRequestIdRef.current) {
+          return;
+        }
+        const draft = restoreDraft ? loadDraft(DEMO_USER_ID, problemId) : null;
 
-        setTemplateCode(nextTemplateCode);
-
-        if (draft && shouldUseDraftForTemplate(draft, nextTemplateCode)) {
+        if (draft) {
           setCode(draft.code);
           setSubmissionResult(draft.lastResult ?? null);
           setDiagnosis(draft.lastDiagnosis ?? null);
@@ -63,39 +65,49 @@ export default function ProblemWorkspace({
           setShowDraftNotice(true);
           setActiveTab(draft.lastDiagnosis ? "diagnosis" : "test");
         } else {
-          if (draft) {
-            clearDraft(DEMO_USER_ID, problemId);
-          }
-          setCode(nextTemplateCode);
+          setCode(template.templateCode);
           setSubmissionResult(null);
           setDiagnosis(null);
           setDraftSavedAt(null);
           setShowDraftNotice(false);
           setActiveTab("test");
         }
-
-        setIsDraftReady(true);
       } catch (err) {
-        setIsDraftReady(false);
-        setError(err instanceof Error ? err.message : "代码模板加载失败，请刷新重试");
+        if (requestId !== templateRequestIdRef.current) {
+          return;
+        }
+        const draft = restoreDraft ? loadDraft(DEMO_USER_ID, problemId) : null;
+        if (draft) {
+          setCode(draft.code);
+          setSubmissionResult(draft.lastResult ?? null);
+          setDiagnosis(draft.lastDiagnosis ?? null);
+          setDraftSavedAt(draft.updatedAt);
+          setShowDraftNotice(true);
+          setActiveTab(draft.lastDiagnosis ? "diagnosis" : "test");
+        } else {
+          setCode("");
+          setSubmissionResult(null);
+          setDiagnosis(null);
+          setDraftSavedAt(null);
+          setShowDraftNotice(false);
+          setActiveTab("test");
+        }
+        setError(
+          err instanceof Error ? err.message : "代码模板加载失败，请稍后重试"
+        );
       } finally {
-        setIsTemplateLoading(false);
+        if (requestId === templateRequestIdRef.current) {
+          setIsDraftReady(true);
+          setIsTemplateLoading(false);
+        }
       }
     },
     [problemId]
   );
 
   useEffect(() => {
-    setIsDraftReady(false);
-    setTemplateCode("");
-    setCode("");
-    setSubmissionResult(null);
-    setDiagnosis(null);
-    setDraftSavedAt(null);
-    setShowDraftNotice(false);
-    setActiveTab("test");
-    void loadProblemTemplate(true);
-  }, [loadProblemTemplate]);
+    void loadTemplate(true);
+  }, [loadTemplate]);
 
   useEffect(() => {
     if (!isDraftReady) {
@@ -120,22 +132,17 @@ export default function ProblemWorkspace({
 
   const handleReset = useCallback(() => {
     const confirmed = window.confirm(
-      "确定要重置代码吗？将重新读取后端模板并清除运行结果。"
+      "确定要重置代码吗？将恢复为默认模板并清除运行结果。"
     );
     if (!confirmed) {
       return;
     }
 
     clearDraft(DEMO_USER_ID, problemId);
-    void loadProblemTemplate(false);
-  }, [loadProblemTemplate, problemId]);
+    void loadTemplate(false);
+  }, [loadTemplate, problemId]);
 
   const handleSubmit = useCallback(async () => {
-    if (!templateCode) {
-      setError("代码模板仍在加载，请稍后再提交");
-      return;
-    }
-
     setIsSubmitting(true);
     setError(null);
     setSubmissionResult(null);
@@ -194,7 +201,7 @@ export default function ProblemWorkspace({
     } finally {
       setIsSubmitting(false);
     }
-  }, [problemId, code, templateCode]);
+  }, [problemId, code]);
 
   const isCurrentCodeAccepted =
     submissionResult?.status === "ACCEPTED" &&

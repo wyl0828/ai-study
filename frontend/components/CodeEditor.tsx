@@ -42,7 +42,7 @@ export default function CodeEditor({
     isTemplateLoading || isSubmitting || isAnalyzing || isCurrentCodeAccepted;
 
   const buttonLabel = isTemplateLoading
-    ? "加载模板中..."
+    ? "加载模板..."
     : isSubmitting
     ? "判题中..."
     : isAnalyzing
@@ -73,7 +73,7 @@ export default function CodeEditor({
             disabled={disabled}
             className="bg-[#238636] hover:bg-[#2ea043] text-white text-xs px-4 py-1.5 rounded font-medium transition-all flex items-center gap-1 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {isTemplateLoading || isSubmitting || isAnalyzing ? (
+            {isSubmitting || isAnalyzing ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : isCurrentCodeAccepted ? (
               <CheckCircle className="w-4 h-4" />
