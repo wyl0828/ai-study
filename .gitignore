@@ -41,3 +41,6 @@ target/
 tmp/
 temp/
 .cache/
+output/playwright-runner/
+output/playwright/frames/
+output/playwright/videos/.tmp/

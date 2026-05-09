@@ -394,9 +394,9 @@ Content-Type: application/json
 | `knowledgePoint` | String | 关联知识点 |
 | `specificError` | String | 具体错误 |
 | `diagnosis` | String | 诊断说明 |
-| `hintLevel1` | String | Level 1 提示：方向 |
-| `hintLevel2` | String | Level 2 提示：知识点和可能问题 |
-| `hintLevel3` | String | Level 3 提示：伪代码或关键思路，不给完整 Java 答案 |
+| `hintLevel1` | String | Agent 生成的 Level 1 提示，当前后端保留并持久化，前端做题页不再单独展示 |
+| `hintLevel2` | String | Agent 生成的 Level 2 提示，当前后端保留并持久化，前端做题页不再单独展示 |
+| `hintLevel3` | String | Agent 生成的 Level 3 提示，当前后端保留并持久化，前端做题页不再单独展示 |
 | `trainingPlanTitle` | String | 生成的训练计划标题 |
 | `steps` | AgentStepVO[] | Agent 步骤记录 |
 
@@ -628,7 +628,7 @@ GET /api/users/{userId}/submissions/recent
 5. 如果提交失败：
    当前前端调用 POST /api/agent/analyze
    后端已保留 GET /api/submissions/{submissionId}/diagnosis/stream 作为 SSE 流式诊断能力
-6. 前端从 AgentAnalyzeVO 中展示 diagnosis、hintLevel1、hintLevel2、hintLevel3、trainingPlanTitle
+6. 前端从 AgentAnalyzeVO 中展示 errorType、knowledgePoint、diagnosis、specificError、trainingPlanTitle 和 steps；hintLevel1/2/3 仍由后端返回和持久化，但当前做题页不再单独展示
 ```
 
 模板加载说明：
@@ -638,6 +638,7 @@ GET /api/users/{userId}/submissions/recent
 - `CodeEditor.tsx` 使用 `ProblemWorkspace` 状态中的 `code` 作为 Monaco `value`。
 - “重置代码”会清除该题草稿，并重新请求后端模板，不再恢复写死的默认 `Main` 模板。
 - `frontend/lib/api.ts` 对 fetch 使用 `cache: "no-store"`，避免 Next.js 或浏览器复用旧模板响应。
+- 做题页左侧“分层提示”当前来自前端 `problemId` 静态映射，不调用后端接口；右侧结果区只保留“测试结果”和“AI 诊断”。
 
 ### 8.2 Dashboard 当前状态
 

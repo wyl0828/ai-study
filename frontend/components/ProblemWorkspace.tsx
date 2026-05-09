@@ -38,7 +38,7 @@ export default function ProblemWorkspace({
     useState<ProblemDraft["lastResult"] | null>(null);
   const [diagnosis, setDiagnosis] =
     useState<ProblemDraft["lastDiagnosis"] | null>(null);
-  const [activeTab, setActiveTab] = useState<"test" | "diagnosis" | "hint">(
+  const [activeTab, setActiveTab] = useState<"test" | "diagnosis">(
     "test"
   );
 

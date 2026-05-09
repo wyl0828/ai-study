@@ -1,10 +1,9 @@
 "use client";
 
-import { ClipboardCheck, Brain, Lightbulb } from "lucide-react";
+import { ClipboardCheck, Brain } from "lucide-react";
 import type { SubmissionResult, AgentAnalyzeVO } from "@/lib/types";
 import TestResult from "./TestResult";
 import AiDiagnosis from "./AiDiagnosis";
-import HintPanel from "./HintPanel";
 
 interface ResultPanelProps {
   submissionResult: SubmissionResult | null;
@@ -12,14 +11,13 @@ interface ResultPanelProps {
   isAnalyzing: boolean;
   isDiagnosisStale: boolean;
   isCurrentCodeAccepted: boolean;
-  activeTab: "test" | "diagnosis" | "hint";
-  onTabChange: (tab: "test" | "diagnosis" | "hint") => void;
+  activeTab: "test" | "diagnosis";
+  onTabChange: (tab: "test" | "diagnosis") => void;
 }
 
 const tabs = [
   { key: "test" as const, label: "测试结果", Icon: ClipboardCheck },
   { key: "diagnosis" as const, label: "AI 诊断", Icon: Brain },
-  { key: "hint" as const, label: "分层提示", Icon: Lightbulb },
 ];
 
 export default function ResultPanel({
@@ -71,14 +69,6 @@ export default function ResultPanel({
           />
         )}
 
-        {activeTab === "hint" && (
-          <HintPanel
-            diagnosis={diagnosis}
-            isAnalyzing={isAnalyzing}
-            isAccepted={isCurrentCodeAccepted}
-            isDiagnosisStale={isDiagnosisStale}
-          />
-        )}
       </div>
     </div>
   );

@@ -10,6 +10,12 @@ The project must not drift into a generic LeetCode clone, a generic AI chatbot, 
 agent task -> planner -> tool call -> observation -> error diagnosis -> layered hints -> weakness memory -> training plan
 ```
 
+Current product distinction:
+
+- Problem-level layered hints are preset problem content shown on the left problem panel.
+- AI diagnosis is generated only after a failed submission and explains this user's current error on the right result panel.
+- Backend Agent hint fields and `hint_record` persistence remain part of the Agent workflow, but the frontend no longer shows a separate right-side "layered hints" tab.
+
 Primary audience:
 
 - Java backend job seekers
@@ -35,12 +41,13 @@ Use these documents as the source of truth:
 - `docs/AI-Interview-Coach.md`: project design, database tables, API design, Agent workflow, resume packaging, interview talking points
 - `docs/IMPLEMENTATION_PLAN.md`: implementation phases, directory structure, acceptance criteria, prompts, risks, demo script
 - `docs/API.md`: current implemented REST/SSE API surface
+- `docs/PROJECT_STATUS.md`: current accomplishments, progress assessment, risks, and next-step outline
 
 If this file conflicts with those documents, prefer this file for engineering constraints and MVP discipline, then update the docs only when the user explicitly asks.
 
 ## Current Implementation Status
 
-As of Phase 4 plus the Solution-mode pilot, the project has a demoable end-to-end Agent workflow, real Dashboard data, and a mixed ACM/Solution Java submission model:
+As of Phase 4 plus the Solution-mode pilot and prompt/diagnosis UI cleanup, the project has a demoable end-to-end Agent workflow, real Dashboard data, a mixed ACM/Solution Java submission model, and clearer frontend separation between preset hints and AI diagnosis:
 
 ```text
 POST /api/submissions
@@ -50,6 +57,8 @@ POST /api/submissions
 
 POST /api/agent/analyze
   -> run the Agent workflow synchronously for the current frontend demo flow
+  -> frontend displays error type, knowledge point, diagnosis, improvement suggestion, training plan title, and trace steps
+  -> frontend does not show hintLevel1/2/3 as a separate right-side tab
 
 GET /api/submissions/{submissionId}/diagnosis/stream
   -> create AgentRun
@@ -74,6 +83,7 @@ Not yet exposed as REST controllers:
 - single-hint lookup
 - accepted-code review
 - manual training plan regeneration
+- backend-backed problem preset hints
 
 ## Fixed Technical Stack
 
@@ -99,7 +109,8 @@ AI:
 
 - Anthropic-compatible API
 - Structured JSON outputs whenever AI results are persisted or consumed by business logic
-- AI is used for error classification, layered hints, code review, and training plan generation
+- AI is used for error classification, Agent hint data, code review, and training plan generation
+- Current frontend treats problem-level layered hints as preset content, not as an on-click AI generation flow
 
 Code execution:
 
@@ -144,7 +155,7 @@ Always optimize for a demoable end-to-end loop before adding breadth.
 
 Priority order:
 
-1. Complete demo loop: submit Java code, run tests, diagnose error, show hints, record weakness, generate plan.
+1. Complete demo loop: submit Java code, run tests, diagnose error, show preset hints, record weakness, generate plan.
 2. AI diagnosis and three-level hint quality.
 3. Weakness tracking and training plan.
 4. Problem count, dashboard polish, charts, UI animations.
@@ -218,7 +229,7 @@ Keep the frontend practical and simple. The user has limited frontend experience
 Required pages:
 
 - `/`: problem list
-- `/problem/[id]`: problem detail, code editor, test result, AI diagnosis, layered hints
+- `/problem/[id]`: problem detail, preset layered hints, code editor, test result, AI diagnosis
 - `/dashboard`: weakness list, recent submissions, training plan, mistake cards
 
 Frontend priorities:
@@ -238,6 +249,15 @@ Problem draft and template rules:
 - `ProblemWorkspace.tsx`, `CodeEditor.tsx`, and result panels must not call localStorage directly except through `frontend/lib/draft.ts`.
 - `/problem/[id]` should load code templates through browser-side `GET /api/problems/{id}/template`; do not reintroduce hard-coded `DEFAULT_CODE` templates in page components.
 - The reset button should clear the current problem draft and re-read the backend template.
+
+Problem hint and diagnosis UI rules:
+
+- Problem-level layered hints are currently maintained in `frontend/lib/problemHints.ts` and displayed by `ProblemHintPanel`.
+- The left problem panel should show Level 1 / Level 2 / Level 3 preset hints; all levels default collapsed and expand on click.
+- The right result panel should only expose "测试结果" and "AI 诊断" tabs.
+- Do not reintroduce a right-side "分层提示" tab unless the product direction explicitly changes.
+- Do not call AI when the user expands preset problem hints.
+- AI diagnosis should focus on current submission error type, knowledge point, diagnosis, improvement suggestion, training plan, and Agent trace steps.
 
 ## AI Agent Rules
 
@@ -265,6 +285,7 @@ Use layered hints:
 - Level 1: direction only
 - Level 2: related knowledge point and likely issue
 - Level 3: pseudocode or key idea, not full Java answer
+- For the current MVP UI, problem-level hints are preset and shown on the left; AI-generated hint fields are still persisted for Agent workflow completeness and future expansion.
 
 Persist AI outputs only after converting them to structured data. Prefer JSON fields such as:
 
@@ -282,6 +303,12 @@ AI output should support the learning loop:
 
 ```text
 failed submission -> tool observation -> diagnosis -> hints -> weakness update -> mistake card -> training plan
+```
+
+Frontend display should present this as:
+
+```text
+problem preset hints -> failed submission -> test result -> AI diagnosis -> weakness memory -> training plan
 ```
 
 ## Code Execution Rules
@@ -393,16 +420,18 @@ Frontend verification:
 - editor accepts code
 - submit button calls backend
 - test result is displayed
-- AI diagnosis and layered hints are displayed after a failed submission through the synchronous analyze endpoint
+- preset layered hints are visible on the left problem panel and all levels are collapsed by default
+- AI diagnosis is displayed after a failed submission through the synchronous analyze endpoint
+- the right result panel has no separate layered hints tab
 - backend SSE diagnosis stream remains available for API-level demonstration
-- layered hints can be viewed
+- preset layered hints can be expanded manually without calling AI
 - draft code, last result, and last diagnosis can be restored after refresh
 - stale diagnosis warning appears after editing code that differs from the diagnosis snapshot
 
 Demo verification:
 
 ```text
-select problem -> write buggy code -> submit -> run CodeExecutionTool -> observe failed test -> stream Agent steps -> view hints -> update weakness memory -> generate plan
+select problem -> inspect preset hints -> write buggy code -> submit -> run CodeExecutionTool -> observe failed test -> diagnose error -> update weakness memory -> generate plan
 ```
 
 ## Do Not Do These In MVP
@@ -432,3 +461,13 @@ Add abstractions only when they protect a planned extension:
 Keep names aligned with the project docs. If a service or concept appears in `docs/IMPLEMENTATION_PLAN.md`, reuse that naming unless there is a strong reason not to.
 
 When in doubt, protect the demo loop.
+
+## Next-Step Focus
+
+Near-term work should follow `docs/PROJECT_STATUS.md`:
+
+1. Stabilize three demo problems and known bug samples.
+2. Write root README and demo startup notes.
+3. Capture screenshots for problem page, AI diagnosis, and Dashboard.
+4. Add frontend SSE step display.
+5. Move preset problem hints from frontend static mapping to backend data when the demo loop is stable.

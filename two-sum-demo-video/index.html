@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #faf8ff;
+        color: #131b2e;
+        font-family: "IBM Plex Sans", "Noto Sans Japanese", sans-serif;
+      }
+
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #faf8ff;
+      }
+
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #faf8ff;
+      }
+
+      #scene-1 {
+        z-index: 1;
+      }
+
+      #scene-2 {
+        z-index: 2;
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      #scene-3 {
+        z-index: 3;
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      #scene-4 {
+        z-index: 4;
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .scene-content {
+        width: 100%;
+        height: 100%;
+        padding: 86px 108px;
+        display: flex;
+        flex-direction: column;
+        gap: 36px;
+        box-sizing: border-box;
+        position: relative;
+        z-index: 2;
+      }
+
+      .grid-bg {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(0, 90, 144, 0.07) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 90, 144, 0.07) 1px, transparent 1px);
+        background-size: 72px 72px;
+        z-index: 0;
+      }
+
+      .glow {
+        position: absolute;
+        border-radius: 999px;
+        filter: blur(18px);
+        opacity: 0.3;
+        background: radial-gradient(circle, rgba(0, 115, 183, 0.55), rgba(0, 115, 183, 0));
+        z-index: 1;
+      }
+
+      .glow-a {
+        width: 620px;
+        height: 620px;
+        right: -160px;
+        top: -150px;
+      }
+
+      .glow-b {
+        width: 540px;
+        height: 540px;
+        left: -170px;
+        bottom: -180px;
+        background: radial-gradient(circle, rgba(234, 237, 255, 0.95), rgba(234, 237, 255, 0));
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        width: fit-content;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 18px;
+        border: 1px solid #c0c7d2;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.72);
+        color: #005a90;
+        font-size: 24px;
+        font-weight: 800;
+      }
+
+      .title {
+        max-width: 1120px;
+        font-size: 86px;
+        line-height: 1.06;
+        letter-spacing: 0;
+        font-weight: 900;
+      }
+
+      .subtitle {
+        max-width: 940px;
+        color: #404750;
+        font-size: 32px;
+        line-height: 1.48;
+        font-weight: 400;
+      }
+
+      .layout-row {
+        display: grid;
+        grid-template-columns: 0.96fr 1.04fr;
+        gap: 34px;
+        flex: 1;
+        min-height: 0;
+      }
+
+      .panel {
+        background: rgba(255, 255, 255, 0.86);
+        border: 1px solid #c0c7d2;
+        border-radius: 22px;
+        box-shadow: 0 24px 70px rgba(19, 27, 46, 0.12);
+        overflow: hidden;
+      }
+
+      .panel-header {
+        height: 72px;
+        padding: 0 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #f2f3ff;
+        border-bottom: 1px solid #c0c7d2;
+        font-size: 24px;
+        font-weight: 850;
+      }
+
+      .panel-body {
+        padding: 28px;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 20px;
+        font-weight: 800;
+      }
+
+      .tag-blue {
+        color: #005a90;
+        background: #ebf3ff;
+        border: 1px solid #c0d9f2;
+      }
+
+      .tag-red {
+        color: #93000a;
+        background: #ffdad6;
+        border: 1px solid #f0b5af;
+      }
+
+      .tag-green {
+        color: #15803d;
+        background: #dcfce7;
+        border: 1px solid #bbf7d0;
+      }
+
+      .code-card {
+        background: #0d1117;
+        color: #e6edf3;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        overflow: hidden;
+        box-shadow: 0 26px 80px rgba(13, 17, 23, 0.28);
+      }
+
+      .code-title {
+        height: 62px;
+        padding: 0 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #161b22;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+        color: #c9d1d9;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 19px;
+      }
+
+      pre {
+        margin: 0;
+        padding: 26px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 25px;
+        line-height: 1.48;
+        white-space: pre-wrap;
+        font-variant-ligatures: none;
+      }
+
+      .bad-line {
+        color: #ffb4ab;
+        background: rgba(186, 26, 26, 0.22);
+        border-radius: 8px;
+        padding: 2px 6px;
+      }
+
+      .good-line {
+        color: #b7f7c5;
+        background: rgba(21, 128, 61, 0.2);
+        border-radius: 8px;
+        padding: 2px 6px;
+      }
+
+      .workflow {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 18px;
+        margin-top: 24px;
+      }
+
+      .step {
+        min-height: 130px;
+        padding: 20px;
+        background: #ffffff;
+        border: 1px solid #c0c7d2;
+        border-radius: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .step-num {
+        color: #005a90;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 900;
+        font-size: 20px;
+      }
+
+      .step-title {
+        font-size: 24px;
+        font-weight: 850;
+      }
+
+      .step-copy {
+        font-size: 18px;
+        line-height: 1.42;
+        color: #404750;
+      }
+
+      .case-table {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 18px;
+      }
+
+      .case-box {
+        padding: 20px;
+        border-radius: 18px;
+        background: #ffffff;
+        border: 1px solid #c0c7d2;
+      }
+
+      .case-box h3 {
+        font-size: 24px;
+        margin-bottom: 14px;
+      }
+
+      .case-box p {
+        font-size: 22px;
+        line-height: 1.4;
+        color: #404750;
+      }
+
+      .result-card {
+        padding: 28px;
+        border-radius: 22px;
+        background: #ffffff;
+        border: 1px solid #c0c7d2;
+        min-height: 240px;
+      }
+
+      .result-card h3 {
+        font-size: 32px;
+        margin-bottom: 18px;
+      }
+
+      .result-card p {
+        font-size: 26px;
+        line-height: 1.46;
+        color: #404750;
+      }
+
+      .diagnosis-grid {
+        display: grid;
+        grid-template-columns: 0.88fr 1.12fr;
+        gap: 30px;
+        flex: 1;
+        min-height: 0;
+      }
+
+      .diagnosis-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .diagnosis-item {
+        padding: 24px;
+        border-radius: 20px;
+        background: #ffffff;
+        border: 1px solid #c0c7d2;
+      }
+
+      .diagnosis-item h3 {
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+
+      .diagnosis-item p {
+        font-size: 23px;
+        line-height: 1.44;
+        color: #404750;
+      }
+
+      .dashboard-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+
+      .metric {
+        padding: 24px;
+        border-radius: 20px;
+        background: #eaedff;
+        border: 1px solid #c0c7d2;
+      }
+
+      .metric-value {
+        font-size: 46px;
+        font-weight: 900;
+        color: #005a90;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .metric-label {
+        margin-top: 8px;
+        font-size: 22px;
+        color: #404750;
+      }
+
+      .transition-bar {
+        position: absolute;
+        inset: 0;
+        z-index: 20;
+        pointer-events: none;
+        transform: translateX(-100%);
+        background: linear-gradient(90deg, rgba(0, 90, 144, 0), #005a90 22%, #0073b7 78%, rgba(0, 115, 183, 0));
+      }
+
+      .footer-note {
+        font-size: 24px;
+        color: #404750;
+      }
+
+      .big-check {
+        width: 82px;
+        height: 82px;
+        border-radius: 50%;
+        background: #dcfce7;
+        color: #15803d;
+        display: grid;
+        place-items: center;
+        font-size: 52px;
+        font-weight: 900;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="28"
+      data-width="1920"
+      data-height="1080"
+    >
+      <div class="grid-bg" data-layout-ignore></div>
+      <div class="glow glow-a" data-layout-ignore></div>
+      <div class="glow glow-b" data-layout-ignore></div>
+
+      <section id="scene-1" class="scene">
+        <div class="scene-content">
+          <div class="eyebrow">AI Interview Coach Agent · Demo Case 101</div>
+          <div class="title">两数之和 bug 演示：HashMap 查询顺序为什么重要</div>
+          <div class="subtitle">这支短视频展示完整闭环：提交错误 Java 代码，观察失败用例，触发 AI 诊断，再用修正代码通过测试。</div>
+          <div class="workflow">
+            <div class="step">
+              <div class="step-num">01</div>
+              <div class="step-title">提交代码</div>
+              <div class="step-copy">ACM 模式，完整 public class Main。</div>
+            </div>
+            <div class="step">
+              <div class="step-num">02</div>
+              <div class="step-title">Piston 判题</div>
+              <div class="step-copy">重复元素测试暴露自匹配问题。</div>
+            </div>
+            <div class="step">
+              <div class="step-num">03</div>
+              <div class="step-title">AI 诊断</div>
+              <div class="step-copy">定位 HashMap 查询与写入顺序。</div>
+            </div>
+            <div class="step">
+              <div class="step-num">04</div>
+              <div class="step-title">弱点记忆</div>
+              <div class="step-copy">更新 HashMap 与数组遍历弱点。</div>
+            </div>
+            <div class="step">
+              <div class="step-num">05</div>
+              <div class="step-title">修正通过</div>
+              <div class="step-copy">先查 complement，再写入当前值。</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-2" class="scene">
+        <div class="scene-content">
+          <div class="eyebrow">Bug 提交 · WRONG_ANSWER</div>
+          <div class="layout-row">
+            <div class="code-card">
+              <div class="code-title">
+                <span>101-two-sum-bug.java</span>
+                <span>ACM / Main</span>
+              </div>
+              <pre><code>Map&lt;Integer, Integer&gt; map = new HashMap&lt;&gt;();
+for (int i = 0; i &lt; n; i++) {
+  <span class="bad-line">map.put(nums[i], i);</span>
+  int need = target - nums[i];
+  if (map.containsKey(need)) {
+    System.out.println(map.get(need) + " " + i);
+    return;
+  }
+}</code></pre>
+            </div>
+            <div class="panel">
+              <div class="panel-header">
+                <span>失败用例观察</span>
+                <span class="tag tag-red">WRONG_ANSWER</span>
+              </div>
+              <div class="panel-body">
+                <div class="case-table">
+                  <div class="case-box">
+                    <h3>输入</h3>
+                    <p>n = 2</p>
+                    <p>nums = [3, 3]</p>
+                    <p>target = 6</p>
+                  </div>
+                  <div class="case-box">
+                    <h3>期望</h3>
+                    <p>0 1</p>
+                  </div>
+                  <div class="case-box">
+                    <h3>实际</h3>
+                    <p>0 0</p>
+                  </div>
+                </div>
+                <div class="result-card" style="margin-top: 24px">
+                  <h3>问题核心</h3>
+                  <p>当前元素先写入 HashMap，导致它可以立刻和自己匹配。重复元素场景下，下标组合被判错。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-3" class="scene">
+        <div class="scene-content">
+          <div class="eyebrow">AI 诊断 · Observation → Error Classification</div>
+          <div class="diagnosis-grid">
+            <div class="diagnosis-list">
+              <div class="diagnosis-item">
+                <h3>错误类型</h3>
+                <p><span class="tag tag-red">LOGIC_ERROR</span> <span class="tag tag-blue">HashMap 基础查找</span></p>
+              </div>
+              <div class="diagnosis-item">
+                <h3>错误原因</h3>
+                <p>代码在检查 complement 之前插入当前值，造成 self-matching。</p>
+              </div>
+              <div class="diagnosis-item">
+                <h3>改进建议</h3>
+                <p>遍历时先查 target - nums[i] 是否已出现，再记录当前 nums[i]。</p>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-header">
+                <span>Dashboard 预期更新</span>
+                <span class="tag tag-blue">Memory</span>
+              </div>
+              <div class="panel-body">
+                <div class="dashboard-strip">
+                  <div class="metric">
+                    <div class="metric-value">+1</div>
+                    <div class="metric-label">错题卡：两数之和</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-value">+5</div>
+                    <div class="metric-label">HashMap 弱点分</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-value">3天</div>
+                    <div class="metric-label">专项训练计划</div>
+                  </div>
+                </div>
+                <div class="result-card" style="margin-top: 30px">
+                  <h3>Agent Trace</h3>
+                  <p>CodeExecutionTool 运行测试，Observation 捕获失败用例，ErrorClassifierTool 分类错误，WeaknessTrackerTool 更新长期记忆。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="scene-4" class="scene">
+        <div class="scene-content">
+          <div class="eyebrow">Fixed 提交 · ACCEPTED</div>
+          <div class="layout-row">
+            <div class="code-card">
+              <div class="code-title">
+                <span>101-two-sum-fixed.java</span>
+                <span>先查，再写</span>
+              </div>
+              <pre><code>for (int i = 0; i &lt; n; i++) {
+  int need = target - nums[i];
+  <span class="good-line">if (map.containsKey(need)) {</span>
+    System.out.println(map.get(need) + " " + i);
+    return;
+  }
+  <span class="good-line">map.put(nums[i], i);</span>
+}</code></pre>
+            </div>
+            <div class="panel">
+              <div class="panel-header">
+                <span>演示结论</span>
+                <span class="tag tag-green">ACCEPTED</span>
+              </div>
+              <div class="panel-body">
+                <div class="result-card">
+                  <div class="big-check">✓</div>
+                  <h3 style="margin-top: 22px">完整闭环稳定可演示</h3>
+                  <p>题目预设提示负责通用引导，AI 诊断负责本次错误分析。后端记录 Agent Step、诊断、弱点、错题卡和训练计划。</p>
+                </div>
+                <p class="footer-note" style="margin-top: 28px">Demo source: docs/DEMO_CASES.md · docs/demo-cases/101-two-sum-*.java</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div id="wipe" class="transition-bar" data-layout-ignore></div>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const transitionDuration = 0.42;
+
+      function fromIf(target, vars, at) {
+        if (document.querySelector(target)) {
+          tl.from(target, vars, at);
+        }
+      }
+
+      function enterScene(selector, at) {
+        fromIf(selector + " .eyebrow", { y: 26, opacity: 0, duration: 0.48, ease: "power3.out" }, at + 0.18);
+        fromIf(selector + " .title", { y: 46, opacity: 0, duration: 0.68, ease: "expo.out" }, at + 0.36);
+        fromIf(selector + " .subtitle", { x: -28, opacity: 0, duration: 0.54, ease: "power2.out" }, at + 0.58);
+        fromIf(selector + " .step", { y: 34, opacity: 0, scale: 0.96, duration: 0.52, stagger: 0.11, ease: "back.out(1.4)" }, at + 0.92);
+        fromIf(selector + " .code-card", { y: 34, opacity: 0, scale: 0.98, duration: 0.62, ease: "power3.out" }, at + 0.24);
+        fromIf(selector + " .panel", { x: 38, opacity: 0, duration: 0.58, ease: "circ.out" }, at + 0.46);
+        fromIf(selector + " .case-box", { y: 24, opacity: 0, duration: 0.44, stagger: 0.09, ease: "power2.out" }, at + 0.9);
+        fromIf(selector + " .result-card", { y: 28, opacity: 0, duration: 0.5, ease: "expo.out" }, at + 1.18);
+        fromIf(selector + " .diagnosis-item", { x: -32, opacity: 0, duration: 0.5, stagger: 0.12, ease: "power3.out" }, at + 0.42);
+        fromIf(selector + " .metric", { y: 30, opacity: 0, scale: 0.95, duration: 0.46, stagger: 0.1, ease: "back.out(1.5)" }, at + 0.74);
+        fromIf(selector + " .big-check", { scale: 0.5, opacity: 0, rotation: -18, duration: 0.56, ease: "back.out(1.8)" }, at + 0.78);
+        fromIf(selector + " .footer-note", { y: 20, opacity: 0, duration: 0.42, ease: "power2.out" }, at + 1.4);
+      }
+
+      function wipeTo(previousSceneSelector, nextSceneSelector, at) {
+        tl.set(nextSceneSelector, { visibility: "visible" }, at);
+        tl.to("#wipe", { x: "100%", duration: transitionDuration, ease: "power3.inOut" }, at);
+        tl.to(nextSceneSelector, { opacity: 1, duration: transitionDuration, ease: "sine.inOut" }, at + 0.1);
+        tl.set(previousSceneSelector, { opacity: 0, visibility: "hidden" }, at + transitionDuration + 0.03);
+        tl.set("#wipe", { x: "-100%" }, at + transitionDuration + 0.02);
+      }
+
+      tl.to(".glow-a", { scale: 1.08, x: -42, y: 22, duration: 6, repeat: 4, yoyo: true, ease: "sine.inOut" }, 0);
+      tl.to(".glow-b", { scale: 1.06, x: 38, y: -18, duration: 7, repeat: 3, yoyo: true, ease: "sine.inOut" }, 0);
+
+      enterScene("#scene-1", 0);
+      wipeTo("#scene-1", "#scene-2", 6.4);
+      enterScene("#scene-2", 6.8);
+      wipeTo("#scene-2", "#scene-3", 13.1);
+      enterScene("#scene-3", 13.5);
+      wipeTo("#scene-3", "#scene-4", 20.0);
+      enterScene("#scene-4", 20.4);
+      tl.to("#scene-4 .scene-content", { opacity: 0, y: -18, duration: 0.7, ease: "power2.in" }, 27.0);
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

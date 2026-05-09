@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #faf8ff;
+        color: #131b2e;
+        font-family: "Microsoft YaHei", sans-serif;
+      }
+
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #faf8ff;
+      }
+
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 1920px;
+        height: 1080px;
+        opacity: 0;
+        background: #faf8ff;
+      }
+
+      #scene-1 {
+        opacity: 1;
+        z-index: 1;
+      }
+
+      #scene-2 {
+        z-index: 2;
+      }
+
+      #scene-3 {
+        z-index: 3;
+      }
+
+      .scene-bg {
+        position: absolute;
+        inset: -36px;
+        width: calc(100% + 72px);
+        height: calc(100% + 72px);
+        object-fit: cover;
+        transform: scale(1.06);
+        filter: blur(18px) saturate(0.95);
+      }
+
+      .scene-bg-clear {
+        filter: blur(10px) saturate(1);
+      }
+
+      .scene-tint {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(135deg, rgba(250, 248, 255, 0.93), rgba(250, 248, 255, 0.74)),
+          radial-gradient(circle at top right, rgba(0, 115, 183, 0.14), rgba(0, 115, 183, 0));
+      }
+
+      .scene-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(0, 90, 144, 0.06) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 90, 144, 0.06) 1px, transparent 1px);
+        background-size: 72px 72px;
+        opacity: 0.85;
+      }
+
+      .glow {
+        position: absolute;
+        border-radius: 999px;
+        filter: blur(18px);
+        opacity: 0.42;
+      }
+
+      .glow-a {
+        width: 520px;
+        height: 520px;
+        right: -120px;
+        top: -120px;
+        background: radial-gradient(circle, rgba(0, 115, 183, 0.34), rgba(0, 115, 183, 0));
+      }
+
+      .glow-b {
+        width: 580px;
+        height: 580px;
+        left: -180px;
+        bottom: -180px;
+        background: radial-gradient(circle, rgba(234, 237, 255, 0.98), rgba(234, 237, 255, 0));
+      }
+
+      .scene-content {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        height: 100%;
+        padding: 104px 118px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 28px;
+      }
+
+      .scene-content-wide {
+        justify-content: space-between;
+        gap: 36px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        width: fit-content;
+        padding: 12px 20px;
+        border-radius: 999px;
+        border: 1px solid rgba(0, 90, 144, 0.18);
+        background: rgba(255, 255, 255, 0.78);
+        color: #005a90;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      .title {
+        max-width: 1100px;
+        font-size: 92px;
+        line-height: 1.05;
+        font-weight: 900;
+      }
+
+      .subtitle {
+        max-width: 980px;
+        color: #404750;
+        font-size: 34px;
+        line-height: 1.5;
+      }
+
+      .statement {
+        max-width: 1140px;
+        font-size: 88px;
+        line-height: 1.08;
+        font-weight: 900;
+      }
+
+      .support-line {
+        max-width: 1120px;
+        color: #404750;
+        font-size: 34px;
+        line-height: 1.46;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 72px;
+        padding: 18px 24px;
+        border-radius: 999px;
+        border: 1px solid rgba(0, 90, 144, 0.18);
+        background: rgba(255, 255, 255, 0.82);
+        color: #005a90;
+        font-size: 30px;
+        font-weight: 800;
+      }
+
+      .note-card {
+        max-width: 980px;
+        padding: 30px 34px;
+        border-radius: 24px;
+        border: 1px solid rgba(0, 90, 144, 0.16);
+        background: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 22px 60px rgba(19, 27, 46, 0.12);
+      }
+
+      .note-card p {
+        color: #404750;
+        font-size: 28px;
+        line-height: 1.52;
+      }
+
+      .scene-3-layout {
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        gap: 30px;
+        align-items: end;
+      }
+
+      .small-kicker {
+        font-family: "JetBrains Mono", monospace;
+        color: #005a90;
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      .caption {
+        max-width: 720px;
+        color: #404750;
+        font-size: 30px;
+        line-height: 1.5;
+      }
+
+      .preview-card {
+        justify-self: end;
+        width: 940px;
+        padding: 18px;
+        border-radius: 28px;
+        border: 1px solid rgba(0, 90, 144, 0.16);
+        background: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 26px 80px rgba(19, 27, 46, 0.14);
+      }
+
+      .preview-card img {
+        width: 100%;
+        border-radius: 18px;
+        display: block;
+      }
+
+      .preview-meta {
+        margin-top: 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #404750;
+        font-size: 22px;
+      }
+
+      .preview-meta strong {
+        color: #15803d;
+        font-weight: 800;
+      }
+
+      .transition-wash {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        pointer-events: none;
+        opacity: 0;
+        background: linear-gradient(90deg, rgba(250, 248, 255, 0), rgba(234, 237, 255, 0.96), rgba(250, 248, 255, 0));
+      }
+    </style>
+  </head>
+  <body>
+    <div data-composition-id="main" data-start="0" data-duration="14.10" data-width="1920" data-height="1080" id="root">
+      <section class="scene" id="scene-1">
+        <img class="scene-bg" src="assets/scene-1.png" alt="" />
+        <div class="scene-tint"></div>
+        <div class="scene-grid" data-layout-ignore></div>
+        <div class="glow glow-a" data-layout-ignore></div>
+        <div class="glow glow-b" data-layout-ignore></div>
+        <div class="scene-content">
+          <div class="eyebrow">REAL PRODUCT DEMO</div>
+          <div class="title">AI Interview Coach Agent</div>
+          <div class="subtitle">真实页面录制的 Java 面试训练 Agent 演示。</div>
+        </div>
+      </section>
+
+      <section class="scene" id="scene-2">
+        <img class="scene-bg" src="assets/scene-2.png" alt="" />
+        <div class="scene-tint"></div>
+        <div class="scene-grid" data-layout-ignore></div>
+        <div class="glow glow-a" data-layout-ignore></div>
+        <div class="glow glow-b" data-layout-ignore></div>
+        <div class="scene-content">
+          <div class="statement">不是只告诉你对错</div>
+          <div class="pill-row">
+            <div class="pill">定位错误</div>
+            <div class="pill">记录弱点</div>
+            <div class="pill">生成训练计划</div>
+          </div>
+          <div class="note-card">
+            <p>这支短片聚焦一次真实的错误提交，展示判题、诊断和后续训练建议如何串成完整闭环。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="scene" id="scene-3">
+        <img class="scene-bg scene-bg-clear" src="assets/scene-3.png" alt="" />
+        <div class="scene-tint"></div>
+        <div class="scene-grid" data-layout-ignore></div>
+        <div class="glow glow-a" data-layout-ignore></div>
+        <div class="glow glow-b" data-layout-ignore></div>
+        <div class="scene-content scene-content-wide">
+          <div class="eyebrow">PRODUCTION NOTE</div>
+          <div class="scene-3-layout">
+            <div style="display: flex; flex-direction: column; gap: 20px">
+              <div class="small-kicker">真实页面 · Codex + Plugins</div>
+              <div class="support-line">本演示基于真实页面，由 Codex 与插件完成录制、剪辑、配音和字幕制作。</div>
+              <div class="caption">片头之后会进入“两数之和”问题页，直接演示错误提交、AI 诊断和修正通过的完整过程。</div>
+            </div>
+            <div class="preview-card">
+              <img src="assets/scene-3-preview.png" alt="" />
+              <div class="preview-meta">
+                <span>Problem 101 · Two Sum</span>
+                <strong>通过 3 / 3</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="transition-wash" id="wash" data-layout-ignore></div>
+    </div>
+
+    <audio
+      id="voiceover"
+      data-start="0"
+      data-duration="13.28"
+      data-track-index="1"
+      data-volume="1"
+      src="assets/intro-voice.wav"
+    ></audio>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const transitionDuration = 0.42;
+
+      function maybeFrom(selector, vars, at) {
+        if (document.querySelector(selector)) {
+          tl.from(selector, vars, at);
+        }
+      }
+
+      function enterScene(scene, at) {
+        maybeFrom(scene + " .eyebrow", { y: 28, opacity: 0, duration: 0.48, ease: "power3.out" }, at + 0.18);
+        maybeFrom(scene + " .title", { y: 48, opacity: 0, duration: 0.72, ease: "expo.out" }, at + 0.34);
+        maybeFrom(scene + " .subtitle", { x: -26, opacity: 0, duration: 0.56, ease: "power2.out" }, at + 0.56);
+        maybeFrom(scene + " .statement", { y: 42, opacity: 0, duration: 0.64, ease: "expo.out" }, at + 0.2);
+        maybeFrom(scene + " .pill", { y: 26, opacity: 0, scale: 0.97, duration: 0.44, stagger: 0.12, ease: "back.out(1.4)" }, at + 0.64);
+        maybeFrom(scene + " .note-card", { y: 34, opacity: 0, duration: 0.5, ease: "circ.out" }, at + 1.12);
+        maybeFrom(scene + " .small-kicker", { x: -22, opacity: 0, duration: 0.46, ease: "power3.out" }, at + 0.38);
+        maybeFrom(scene + " .support-line", { y: 30, opacity: 0, duration: 0.56, ease: "expo.out" }, at + 0.62);
+        maybeFrom(scene + " .caption", { y: 24, opacity: 0, duration: 0.48, ease: "power2.out" }, at + 1.02);
+        maybeFrom(scene + " .preview-card", { x: 36, opacity: 0, scale: 0.985, duration: 0.62, ease: "power3.out" }, at + 0.56);
+      }
+
+      function crossTo(previousScene, nextScene, at) {
+        tl.set(nextScene, { opacity: 0 }, at);
+        tl.fromTo("#wash", { x: "-100%", opacity: 0 }, { x: "100%", opacity: 0.68, duration: transitionDuration, ease: "power2.inOut" }, at);
+        tl.to(nextScene, { opacity: 1, duration: transitionDuration, ease: "power2.inOut" }, at + 0.04);
+        tl.set(previousScene, { opacity: 0 }, at + transitionDuration + 0.03);
+        tl.set("#wash", { x: "-100%", opacity: 0 }, at + transitionDuration + 0.04);
+      }
+
+      tl.to(".glow-a", { x: -28, y: 18, scale: 1.06, duration: 4.8, repeat: 1, yoyo: true, ease: "sine.inOut" }, 0);
+      tl.to(".glow-b", { x: 30, y: -20, scale: 1.04, duration: 5.6, repeat: 1, yoyo: true, ease: "sine.inOut" }, 0);
+
+      enterScene("#scene-1", 0);
+      crossTo("#scene-1", "#scene-2", 1.95);
+      enterScene("#scene-2", 2.08);
+      crossTo("#scene-2", "#scene-3", 6.95);
+      enterScene("#scene-3", 7.08);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

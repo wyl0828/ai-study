@@ -48,7 +48,7 @@ export default function AiDiagnosis({
       <div className="flex flex-col items-center justify-center h-full text-on-surface-variant p-6">
         <Loader2 className="w-10 h-10 text-primary mb-3 animate-spin" />
         <p className="text-sm font-medium">AI 正在分析你的代码...</p>
-        <p className="text-xs mt-1">正在诊断错误原因并生成提示</p>
+        <p className="text-xs mt-1">正在诊断错误原因并生成训练建议</p>
       </div>
     );
   }

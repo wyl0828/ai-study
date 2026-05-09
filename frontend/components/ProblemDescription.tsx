@@ -8,9 +8,10 @@ import {
 import {
   displayExamples,
   shouldShowIoFormat,
-  solutionModeHints,
 } from "@/lib/problemPresentation";
+import { getProblemPresetHints } from "@/lib/problemHints";
 import DifficultyBadge from "./DifficultyBadge";
+import ProblemHintPanel from "./ProblemHintPanel";
 
 interface ProblemDescriptionProps {
   problem: ProblemDetail;
@@ -20,8 +21,8 @@ export default function ProblemDescription({
   problem,
 }: ProblemDescriptionProps) {
   const examples = displayExamples(problem);
-  const hints = solutionModeHints(problem.id);
   const showIoFormat = shouldShowIoFormat(problem);
+  const presetHints = getProblemPresetHints(problem.id);
 
   return (
     <section className="w-[25%] min-w-[280px] max-w-[420px] h-full border-r border-outline-variant/30 flex flex-col overflow-y-auto bg-surface-container-lowest">
@@ -94,19 +95,6 @@ export default function ProblemDescription({
           </div>
         )}
 
-        {hints.length > 0 && (
-          <div className="mt-5">
-            <h3 className="text-sm font-semibold text-on-surface mb-2">
-              提示：
-            </h3>
-            <ul className="list-disc pl-5 text-sm text-on-surface-variant space-y-1 leading-relaxed">
-              {hints.map((hint) => (
-                <li key={hint}>{hint}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         {/* 知识点标签 */}
         {problem.knowledgePoints?.length > 0 && (
           <div className="mt-5 pt-4 border-t border-outline-variant/30">
@@ -125,6 +113,8 @@ export default function ProblemDescription({
             </div>
           </div>
         )}
+
+        <ProblemHintPanel hints={presetHints} />
       </div>
     </section>
   );

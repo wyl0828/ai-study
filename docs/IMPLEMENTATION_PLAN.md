@@ -67,7 +67,7 @@ Agent 收到任务
 - 当前真实暴露的 Controller：`ProblemController`、`SubmissionController`、`AgentController`、`UserController`。
 - 当前真实暴露的 Agent 接口：`POST /api/agent/analyze`、`GET /api/submissions/{submissionId}/diagnosis/stream`。
 - Phase 3 前端核心页面已完成：`/`、`/problem/[id]`、`/dashboard` 均已按 `stitch_front_end_interface_design/mvp/` HTML 原型做紧凑 MVP 风格还原，并完成中文化。
-- 当前做题页提交失败后会自动调用同步 `POST /api/agent/analyze` 展示测试结果、AI 诊断和三层提示；后端 SSE 接口已保留，但前端暂未接入 SSE 流式展示。
+- 当前做题页已完成提示/诊断去重：左侧展示题目预设 Level 1/2/3 分层提示，右侧只保留测试结果和 AI 诊断；提交失败后自动调用同步 `POST /api/agent/analyze` 展示本次错误诊断和推荐训练。后端 SSE 接口已保留，但前端暂未接入 SSE 流式展示。
 - Dashboard 已通过 `UserController` 接入真实 MySQL 学习数据，展示统计、薄弱点、错题卡、最近提交和最新训练计划；单独 hint 查询、accepted-code review 和手动重新生成训练计划留到后续阶段。
 - 题库提交模式当前为混合形态：`101/105/106/107/108` 保留 ACM `public class Main`；`102/103/104` 已切换为 LeetCode 风格 `class Solution`，后端通过 `CodeWrapper` 在送入 Piston 前包装为 `Main.java`。
 - `/problem/[id]` 页面现在由浏览器端 `ProblemWorkspace` 请求 `/api/problems/{id}/template`，Monaco 使用后端返回模板初始化；重置代码会重新读取后端模板而不是恢复写死默认值。
@@ -89,7 +89,7 @@ interview-coach/
 │   ├── components/
 │   │   ├── CodeEditor.tsx
 │   │   ├── TestResult.tsx
-│   │   ├── HintPanel.tsx
+│   │   ├── ProblemHintPanel.tsx
 │   │   ├── AiDiagnosis.tsx
 │   │   ├── ResultPanel.tsx
 │   │   ├── ProblemCard.tsx
@@ -103,6 +103,7 @@ interview-coach/
 │       ├── api.ts
 │       ├── draft.ts
 │       ├── i18n.ts
+│       ├── problemHints.ts
 │       └── types.ts
 │
 ├── backend/
@@ -369,7 +370,7 @@ handler：全局异常处理和统一响应处理
 
 状态：已完成核心页面，并通过本地构建验证。
 
-目标：做出能演示的前端，有题目列表、代码编辑器、测试结果和 AI 提示面板。
+目标：做出能演示的前端，有题目列表、代码编辑器、测试结果、题目预设分层提示和 AI 诊断面板。
 
 任务：
 
@@ -379,10 +380,11 @@ handler：全局异常处理和统一响应处理
    - 按类型和难度筛选。
 3. 实现做题页 `/problem/[id]`：
    - 左侧题目描述。
+   - 左侧题目预设分层提示。
    - 右侧 Monaco Editor。
    - 下方测试结果。
    - Agent 诊断步骤流式输出。
-   - 分层提示面板。
+   - AI 诊断面板。
 4. 实现个人中心 `/dashboard`：
    - 薄弱知识点排行。
    - 最近提交记录。
@@ -396,12 +398,13 @@ handler：全局异常处理和统一响应处理
 - `frontend/app/problem/[id]/page.tsx`
 - `frontend/app/dashboard/page.tsx`
 - `frontend/components/CodeEditor.tsx`
-- `frontend/components/HintPanel.tsx`
+- `frontend/components/ProblemHintPanel.tsx`
 - `frontend/components/TestResult.tsx`
 - `frontend/components/AiDiagnosis.tsx`
 - `frontend/components/ResultPanel.tsx`
 - `frontend/components/ProblemWorkspace.tsx`
 - `frontend/components/ProblemCard.tsx`
+- `frontend/lib/problemHints.ts`
 - `frontend/lib/i18n.ts`
 
 验收标准：
@@ -410,19 +413,21 @@ handler：全局异常处理和统一响应处理
 - 能进入做题页。
 - Monaco Editor 能输入 Java 代码。
 - 点击提交后能展示测试结果。
-- 测试失败后能展示 AI 诊断和分层提示。
+- 左侧题目区能展示题目预设 Level 1/2/3 分层提示，默认收起，点击后展开。
+- 测试失败后右侧能展示 AI 诊断，不再重复展示三层提示 tab。
 - Dashboard 能展示弱点和训练计划。
 
 本阶段实际落地说明：
 
 - 首页 `/` 已实现题库标题区、难度筛选、分类筛选、搜索框、统计行和三列题目卡片。
 - 首页数据仍从 `GET /api/problems` 获取，并在 8 道 MVP 题范围内并行请求 `GET /api/problems/{id}` 补齐描述和知识点，不新增后端接口。
-- 做题页 `/problem/[id]` 已实现固定视口高度三栏布局：左侧题目描述、中间 Monaco Editor、右侧测试结果 / AI 诊断 / 分层提示。
+- 做题页 `/problem/[id]` 已实现固定视口高度三栏布局：左侧题目描述与题目预设分层提示、中间 Monaco Editor、右侧测试结果 / AI 诊断。
 - 做题页模板加载链路已统一：`page.tsx` 只取题目详情；客户端 `ProblemWorkspace.tsx` 进入页面后调用 `GET /api/problems/{id}/template`；Monaco Editor 的 `value` 来自该模板或用户草稿。
 - “重置代码”会清除当前题草稿并重新请求后端模板，解决 102/104 切换到 Solution 模式后仍显示旧 `public class Main` 的问题。
 - `frontend/lib/api.ts` 使用 `cache: "no-store"`，避免服务端或浏览器 fetch 缓存导致模板不刷新。
 - Monaco 容器已改为深色 loading 背景，避免编辑器加载前出现大面积浅色空白。
-- 当前提交流程为：`POST /api/submissions` 判题，失败后自动调用同步 `POST /api/agent/analyze` 获取诊断结果；SSE 前端接入留到后续增强。
+- 当前提交流程为：`POST /api/submissions` 判题，失败后自动调用同步 `POST /api/agent/analyze` 获取诊断结果；右侧 AI 诊断展示错误类型、知识点、错误原因、改进建议和推荐训练；SSE 前端接入留到后续增强。
+- 当前题目预设分层提示先由 `frontend/lib/problemHints.ts` 按 `problemId` 静态维护，后续可迁移到 `problem_hint` 表或 `ProblemDetailVO`。
 - Dashboard `/dashboard` 已实现统计卡、薄弱点排行、最近提交表格、错题卡片、训练计划和 AI 建议展示，当前数据来自 `/api/users/1/...` 用户学习查询接口。
 - 前端页面已完成中文化，题目标题、难度、知识点、按钮、空状态、Dashboard 文案均按“国内互联网产品 + LeetCode 中文站”风格处理。
 - 已运行 `npm run build`，Next.js 编译、类型检查和页面生成通过。
@@ -824,15 +829,16 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 
 ### 前端验证
 
-状态：Phase 4 Dashboard 真实数据接入已完成；Solution 模式模板加载修复后已运行 `npm run build` 并通过。
+状态：Phase 4 Dashboard 真实数据接入已完成；Solution 模式模板加载、提示/诊断去重后已运行前端 Node 测试和 `npm run build` 并通过。
 
 - 打开首页，确认题目列表、筛选、搜索和卡片跳转可用。
 - 进入做题页，确认 Monaco Editor 可用且首屏为三栏布局。
 - 进入 `/problem/102`、`/problem/103`、`/problem/104`，确认浏览器 Network 能看到 `/api/problems/{id}/template`，编辑器显示 `class Solution` 模板。
 - 进入 `/problem/101`，确认仍显示完整 `public class Main` 模板并保持 ACM 提交路径。
+- 在左侧题目区确认“分层提示”存在，Level 1/2/3 默认收起，点击“查看”后展开。
 - 点击“重置代码”，确认会重新请求后端模板并清除当前题草稿。
 - 提交代码，确认测试结果展示。
-- 提交失败后，确认同步 `POST /api/agent/analyze` 返回的 AI 诊断和分层提示能展示。
+- 提交失败后，确认同步 `POST /api/agent/analyze` 返回的 AI 诊断能展示；右侧不再出现“分层提示”tab。
 - 打开 Dashboard，确认统计、弱点、错题卡、最近提交和训练计划来自真实查询接口。
 - 首次无数据时，确认 Dashboard 显示空状态引导文案。
 - 若 Dashboard 接口返回 404 或 `No static resource api/users/...`，重启后端并确认新增后端文件已纳入版本控制。
@@ -842,7 +848,7 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 完整走一遍：
 
 ```text
-选择“两数之和” -> 写 bug 代码 -> 提交失败 -> Agent 调用判题 Tool -> Observation -> 错误分类 -> 分层提示 -> 更新弱点 -> 生成训练计划
+选择“两数之和” -> 查看左侧题目预设提示 -> 写 bug 代码 -> 提交失败 -> Agent 调用判题 Tool -> Observation -> 错误分类 -> AI 诊断 -> 更新弱点 -> 生成训练计划
 ```
 
 ## 8. 关键风险和应对
@@ -871,9 +877,9 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 3. 解释项目不是刷题平台，也不是 AI 聊天壳，而是 Java 代码诊断 Agent。
 4. 在 Monaco Editor 中写一段有 bug 的 Java 代码。
 5. 点击提交，展示 Piston 返回测试失败结果。
-6. 打开 Agent 诊断面板，展示测试结果、AI 错误诊断和三层提示；当前前端使用同步 `POST /api/agent/analyze`，后端 SSE 能力可作为接口层演示。
+6. 打开 Agent 诊断面板，展示测试结果和 AI 错误诊断；当前前端使用同步 `POST /api/agent/analyze`，后端 SSE 能力可作为接口层演示。
 7. 展示错误分类：例如 `BOUNDARY_ERROR`、`HashMap`。
-8. 展示 Level 1、Level 2、Level 3 分层提示。
+8. 回到左侧题目区逐层展开 Level 1、Level 2、Level 3 预设提示，说明它不依赖本次 AI 调用。
 9. 修改代码后重新提交并通过。
 10. 通过数据库或后端日志展示 `agent_run`、`agent_step`、`ai_diagnosis`、`hint_record`、`user_weakness`、`mistake_card`、`training_plan`。
 11. 讲解后端设计：Piston 封装、Agent Tool、Observation、Memory、SSE、MySQL、Redis。

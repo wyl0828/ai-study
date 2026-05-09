@@ -1,0 +1,25 @@
+[Script Info]
+Title: AI Interview Coach Agent - Two Sum Demo
+ScriptType: v4.00+
+PlayResX: 1440
+PlayResY: 900
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Microsoft YaHei,34,&H00FFFFFF,&H00FFFFFF,&H00000000,&HAA000000,-1,0,0,0,100,100,0,0,3,1.5,0,2,90,90,48,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:03.20,Default,,0,0,0,,这是 AI Interview Coach Agent 的两数之和演示。
+Dialogue: 0,0:00:03.20,0:00:07.20,Default,,0,0,0,,我们先提交一份有问题的 Java 代码。
+Dialogue: 0,0:00:07.20,0:00:12.80,Default,,0,0,0,,它的错误是先写入 HashMap，再查找 complement。
+Dialogue: 0,0:00:12.80,0:00:17.80,Default,,0,0,0,,重复元素场景下，可能把当前元素和自己匹配。
+Dialogue: 0,0:00:17.80,0:00:22.20,Default,,0,0,0,,提交后，系统通过真实后端接口保存代码，并调用 Piston 执行测试。
+Dialogue: 0,0:00:22.20,0:00:26.40,Default,,0,0,0,,右侧可以看到失败用例，实际输出和期望结果不一致。
+Dialogue: 0,0:00:26.40,0:00:31.00,Default,,0,0,0,,随后失败提交会自动触发 AI 诊断。
+Dialogue: 0,0:00:31.00,0:00:35.30,Default,,0,0,0,,AI 会根据本次代码和失败用例，分析错误类型、知识点和修改建议。
+Dialogue: 0,0:00:35.30,0:00:39.80,Default,,0,0,0,,修正方式是：先查询 target 减当前值是否出现。
+Dialogue: 0,0:00:39.80,0:00:43.10,Default,,0,0,0,,没出现时，再写入当前元素。
+Dialogue: 0,0:00:43.10,0:00:47.05,Default,,0,0,0,,最后重新提交，所有测试用例通过，形成完整 Agent 学习闭环。

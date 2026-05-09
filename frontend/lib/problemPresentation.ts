@@ -33,16 +33,6 @@ export function displayExamples(problem: ProblemDetail): DisplayExample[] {
   }));
 }
 
-export function solutionModeHints(problemId: number): string[] {
-  if (!isSolutionModeProblem(problemId)) {
-    return [];
-  }
-  return [
-    "链表中节点的数目范围是 [0, 5000]",
-    "-5000 <= Node.val <= 5000",
-  ];
-}
-
 function formatReverseListInput(sample: TestCase): string {
   const tokens = tokenize(sample.input);
   const length = Number(tokens[0] ?? 0);

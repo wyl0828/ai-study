@@ -1,0 +1,106 @@
+# AI Interview Coach Agent 当前成果与下一步大纲
+
+## 1. 当前成果
+
+项目已经具备可演示的 MVP 闭环，不再只是题库页面或大模型接口包装。当前核心流程是：
+
+```text
+选择题目 -> 编写 Java 代码 -> 提交判题 -> 观察失败用例
+-> 触发 Agent 诊断 -> 记录错误类型和知识点
+-> 更新弱点、错题卡和 3 天训练计划 -> Dashboard 展示学习数据
+```
+
+已完成的主要成果：
+
+- **题目与提交闭环**：支持题目列表、题目详情、Java 模板加载、代码提交、Piston 判题、失败用例返回和提交记录持久化。
+- **混合提交模式**：`101/105/106/107/108` 保持 ACM `public class Main` 模式；`102/103/104` 支持 LeetCode 风格 `class Solution`，后端通过 `CodeWrapper` 只包装送入 Piston 的代码，数据库仍保存用户原始代码。
+- **Agent Workflow 后端**：已实现 `InterviewCoachAgent`、`AgentContext`、`AgentStep` 和核心 Tool 链，支持同步分析接口和 SSE 流式诊断接口。
+- **AI 诊断与学习数据**：失败提交后可生成结构化错误类型、知识点、具体错误、改进建议和训练计划，并持久化 `ai_diagnosis`、`hint_record`、`user_weakness`、`mistake_card`、`training_plan` 等数据。
+- **前端做题页**：已实现三栏布局：左侧题目描述和题目预设分层提示，中间 Monaco Editor，右侧测试结果和 AI 诊断。
+- **提示/诊断边界已理顺**：题目通用 Level 1/2/3 提示放在左侧，默认收起，不调用 AI；右侧 AI 诊断只解释本次提交为什么错，并展示改进建议和推荐训练。
+- **Dashboard 真实数据接入**：学习中心已从 mock 数据切到后端真实接口，展示统计、薄弱点、错题卡、最近提交和最新训练计划。
+- **固定演示样例**：`101`、`103`、`104` 的 bug / fixed 代码已沉淀到 `docs/demo-cases/`，使用说明见 `docs/DEMO_CASES.md`。
+
+## 2. 当前进度判断
+
+整体进度处于 **Phase 4 完成、Phase 5 打磨与演示准备阶段**。
+
+从简历项目角度看，当前已经能讲清楚这些亮点：
+
+- Spring Boot 分层设计：Controller、Service、Mapper、Agent、Tool、Integration 分包清晰。
+- MyBatis-Plus + MySQL：题目、提交、诊断、弱点、错题卡、训练计划均有持久化模型。
+- Piston 执行服务封装：Controller 不直接调用外部判题服务，代码执行通过 `JudgeService` 抽象。
+- Agent 工程化：代码执行是 Tool，判题结果是 Observation，错误诊断和学习更新由 Agent Workflow 串联。
+- SSE 能力：后端已具备 Agent Step 流式输出能力，虽然当前前端演示仍优先使用同步接口。
+- 学习闭环：一次失败提交能影响弱点、错题卡和训练计划，不是一次性 AI 文本回答。
+
+当前还不适合继续扩大的方向：
+
+- 不急着扩到 30 道题，先保证 8 道 MVP 题都能稳定演示。
+- 不急着做多语言、Docker 沙箱、复杂登录权限、语音/视频面试。
+- 不急着把前端做成完整 IDE，当前 Monaco + 提交 + 诊断已经够支撑简历演示。
+
+## 3. 主要风险
+
+- **AI 诊断稳定性**：模型可能输出不稳定 JSON 或分类不准，需要准备固定 bug 样例和验证脚本。
+- **本地依赖较多**：MySQL、Redis、Piston、后端、前端都要启动，演示前需要一键化或清晰启动脚本。
+- **SSE 未接入前端**：后端能力存在，但前端目前是同步诊断；面试时需要说明这是 MVP 取舍。
+- **题目提示暂在前端静态维护**：MVP 可以接受，但长期应迁移到数据库或 `ProblemDetailVO`。
+- **文档与代码容易漂移**：提示/诊断边界已调整，后续修改接口或页面时要同步更新 `docs/API.md` 和设计文档。
+
+## 4. 下一步大纲
+
+### 4.1 第一优先级：演示稳定性
+
+- 准备 3 个固定演示题：
+  - `101 两数之和`：HashMap 查询/写入顺序 bug。
+  - `103 反转链表`：指针断链或返回错误头节点。
+  - `104 合并两个有序链表`：直接返回 `null` 或漏接剩余链表。
+- 为每个演示题准备一份“错误代码”和“修正后代码”。
+- 写清楚本地启动顺序：MySQL、Redis、Piston、Spring Boot、Next.js。
+- 确认 Dashboard 在触发一次诊断后能看到新增弱点、错题卡和训练计划。
+
+### 4.2 第二优先级：README 与面试材料
+
+- 新增根目录 `README.md`，包含项目定位、技术栈、架构图、启动方式、核心流程和截图位置。
+- 准备一页“面试讲解稿”，重点讲：
+  - 为什么不是普通刷题平台。
+  - Piston 为什么要封装成 `JudgeService`。
+  - Agent Workflow 每一步怎么记录。
+  - MySQL 如何承载长期学习记忆。
+  - 为什么提示是题目预设，AI 诊断是本次提交动态分析。
+- 准备 2 到 3 张截图：题目页、AI 诊断、Dashboard。
+
+### 4.3 第三优先级：小范围产品增强
+
+- 将题目预设分层提示从前端静态映射迁移到后端：
+  - MVP 可先加 `ProblemDetailVO.presetHints`。
+  - 更正规时再新增 `problem_hint` 表。
+- 接入前端 SSE 展示 Agent 步骤：
+  - 先替换同步 `POST /api/agent/analyze` 的展示路径，或保留同步按钮作为 fallback。
+  - 重点展示 Planning、CodeExecution、Observation、ErrorClassification、MemoryUpdate、TrainingPlan。
+- 增加 Accepted 提交后的轻量代码点评：
+  - 不生成完整答案。
+  - 只点评复杂度、代码风格和可优化点。
+
+### 4.4 暂缓事项
+
+- 多语言支持。
+- Docker 沙箱替换 Piston。
+- 大规模题库扩展。
+- 用户登录、权限和多租户。
+- 复杂图表和 UI 动画。
+- 多 Agent 协作。
+
+## 5. 推荐近期任务顺序
+
+```text
+1. 固定 3 个演示题和 bug 样例
+2. 写 README 和启动文档
+3. 跑一遍完整 demo 并记录截图
+4. 补前端 SSE 步骤展示
+5. 将题目预设提示迁移到后端数据
+6. 准备简历描述和面试问答
+```
+
+当前最应该保护的是演示闭环稳定性，而不是继续堆功能。只要能稳定展示“代码执行 Tool -> Observation -> AI 诊断 -> Memory -> Training Plan”，这个项目已经具备清晰的 Java 后端 + Agent 工程化简历价值。

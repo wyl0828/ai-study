@@ -18,7 +18,6 @@ require.extensions[".ts"] = function loadTs(module, filename) {
 const {
   displayExamples,
   shouldShowIoFormat,
-  solutionModeHints,
 } = require("./problemPresentation.ts");
 
 test("formats reverse-list samples as LeetCode head arrays", () => {
@@ -74,6 +73,4 @@ test("keeps ACM samples unchanged for other problems", () => {
   assert.deepEqual(displayExamples(problem), [
     { id: 1, input: "4\n2 7 11 15\n9\n", output: "0 1" },
   ]);
-  assert.deepEqual(solutionModeHints(101), []);
-  assert.equal(solutionModeHints(103).length, 2);
 });
