@@ -89,7 +89,6 @@ Not yet exposed as REST controllers:
 - single-hint lookup
 - accepted-code review
 - manual training plan regeneration
-- backend-backed problem preset hints
 
 ## Fixed Technical Stack
 
@@ -187,7 +186,7 @@ Use Java-backend-style package responsibilities:
 - `service`: business interfaces
 - `service/impl`: business implementations and orchestration
 - `agent`: Agent orchestration classes such as `InterviewCoachAgent`, `AgentState`, `AgentContext`, and `AgentStep`
-- `agent/tool`: Tool implementations such as `CodeExecutionTool`, `ErrorClassifierTool`, `HintGeneratorTool`, `WeaknessTrackerTool`, and `TrainingPlannerTool`
+- `agent/tool`: Tool implementations such as `CodeExecutionTool`, `ErrorClassifierTool`, `WeaknessTrackerTool`, and `TrainingPlannerTool`
 - `integration/piston`: Piston API client and request/response adapters
 - `integration/ai`: Anthropic-compatible API client and model adapters
 - `entity`: MySQL table mapping objects

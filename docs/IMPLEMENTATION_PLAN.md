@@ -25,9 +25,8 @@ Agent 收到任务
   -> CodeExecutionTool 执行 Java 代码
   -> Observation 返回测试结果
   -> ErrorClassifierTool 分类错误
-  -> HintGeneratorTool 生成三层提示
-  -> WeaknessTrackerTool 更新长期弱点
-  -> TrainingPlannerTool 生成后续训练建议
+  -> WeaknessTrackerTool 更新长期弱点（非核心，失败不阻塞）
+  -> TrainingPlannerTool 生成后续训练建议（非核心，失败不阻塞）
 ```
 
 关键约束：
@@ -63,7 +62,7 @@ Agent 收到任务
 ### 当前落地状态快照
 
 - Phase 1 后端骨架、题目接口、Piston 判题和提交持久化已完成。
-- Phase 2 Agent Workflow 后端已完成：`AgentRun`、`AgentStep`、AI 诊断、三层提示、弱点记忆、错题卡、训练计划均已接入 MySQL。
+- Phase 2 Agent Workflow 后端已完成：`AgentRun`、`AgentStep`、AI 诊断、弱点记忆、错题卡、训练计划均已接入 MySQL。题目预设分层提示已迁移到后端 `problem` 表，AI 不再生成三层提示。
 - 当前真实暴露的 Controller：`ProblemController`、`SubmissionController`、`AgentController`、`UserController`。
 - 当前真实暴露的 Agent 接口：`POST /api/agent/analyze`、`GET /api/submissions/{submissionId}/diagnosis/stream`。
 - Phase 3 前端核心页面已完成：`/`、`/problem/[id]`、`/dashboard` 均已按 `stitch_front_end_interface_design/mvp/` HTML 原型做紧凑 MVP 风格还原，并完成中文化。
@@ -135,7 +134,6 @@ interview-coach/
 │       │       ├── Tool.java
 │       │       ├── CodeExecutionTool.java
 │       │       ├── ErrorClassifierTool.java
-│       │       ├── HintGeneratorTool.java
 │       │       ├── WeaknessTrackerTool.java
 │       │       └── TrainingPlannerTool.java
 │       ├── integration/
@@ -297,15 +295,14 @@ handler：全局异常处理和统一响应处理
 1. 实现 `AiProperties`，配置 Anthropic 兼容 API 地址、模型名、API Key、最大 token 和 Anthropic version。
 2. 在 `integration/ai` 下实现 `AnthropicCompatibleClient`，封装模型调用和结构化 JSON 输出解析。
 3. 定义 Agent 核心模型：
-   - `AgentState`：`PLANNING`、`CODE_EXECUTION`、`OBSERVATION`、`ERROR_CLASSIFICATION`、`HINT_GENERATION`、`MEMORY_UPDATE`、`TRAINING_PLAN`、`COMPLETED`、`FAILED`。
+   - `AgentState`：`PLANNING`、`CODE_EXECUTION`、`OBSERVATION`、`ERROR_CLASSIFICATION`、`MEMORY_UPDATE`、`TRAINING_PLAN`、`COMPLETED`、`FAILED`。
    - `AgentContext`：保存 submission、problem、executionResult、diagnosis、hints、weaknessUpdate 等上下文。
    - `AgentStep`：记录 stepName、toolName、status、inputSummary、outputSummary、durationMs、errorMessage。
 4. 定义 `Tool<I, O>` 通用接口，约定 Tool 只暴露清晰输入输出，不直接依赖 Controller。
 5. 实现核心 Tool：
    - `CodeExecutionTool`：调用 `JudgeService`，输出判题 Observation。
    - `ErrorClassifierTool`：调用 LLM，输出错误类型、知识点、具体错误、置信度。
-   - `HintGeneratorTool`：调用 LLM，输出三层提示。
-   - `WeaknessTrackerTool`：调用 `LearningTracker`，更新弱点和错题卡。
+   - `WeaknessTrackerTool`：调用 `LearningTracker`，更新弱点和错题卡（非核心，失败不阻塞）。
    - `TrainingPlannerTool`：调用 `TrainingPlanService` 或 LLM，生成训练建议。
 6. 实现 `InterviewCoachAgent` 编排器，按状态机执行 Tool，并记录每一步 `AgentStep`。
 7. 实现 `AgentService` 和 `AgentServiceImpl`，作为业务入口创建 `AgentRun`、组装 `AgentContext` 并调用 `InterviewCoachAgent`。
@@ -332,7 +329,6 @@ handler：全局异常处理和统一响应处理
 - `backend/src/main/java/com/interview/coach/agent/tool/Tool.java`
 - `backend/src/main/java/com/interview/coach/agent/tool/CodeExecutionTool.java`
 - `backend/src/main/java/com/interview/coach/agent/tool/ErrorClassifierTool.java`
-- `backend/src/main/java/com/interview/coach/agent/tool/HintGeneratorTool.java`
 - `backend/src/main/java/com/interview/coach/agent/tool/WeaknessTrackerTool.java`
 - `backend/src/main/java/com/interview/coach/agent/tool/TrainingPlannerTool.java`
 - `backend/src/main/java/com/interview/coach/service/AgentService.java`
@@ -364,7 +360,7 @@ handler：全局异常处理和统一响应处理
 - `weaknessScoreDelta` 为空或小于等于 0 时按默认 `+5` 处理，避免模型返回负数导致弱点分下降；弱点分最高封顶 `100`。
 - `TrainingPlannerTool` 当前使用确定性 fallback 生成 3 天训练计划，并调用 `TrainingPlanService.savePlan(...)` 持久化。
 - SSE 事件名为 `agent_step`、`done`、`error`。
-- 已使用 `mimo-v2.5-pro` 兼容 Anthropic 接口完成真实流式诊断验证：Two Sum 重复元素 bug 被分类为 `LOGIC_ERROR` / HashMap 相关知识点，三层提示和训练计划均成功生成并落库。
+- 已使用 `mimo-v2.5-pro` 兼容 Anthropic 接口完成真实流式诊断验证：Two Sum 重复元素 bug 被分类为 `LOGIC_ERROR` / HashMap 相关知识点，训练计划成功生成并落库。
 
 ### 阶段 3：前端页面，Day 8-12
 
@@ -641,24 +637,9 @@ GET /api/users/{userId}/submissions/recent
 - `weaknessScoreDelta` 对失败提交必须为 `1` 到 `10` 的正数。
 - 后端会把空值或小于等于 0 的 delta 兜底为 `5`，并将弱点分封顶为 `100`。
 
-### 6.2 HintGeneratorTool System Prompt
+### 6.2 HintGeneratorTool System Prompt（已废弃）
 
-```text
-你是 AI Interview Coach Agent 中的 HintGeneratorTool。你需要根据 ErrorClassifierTool 的结构化诊断生成分层提示。
-
-要求：
-- Level 1 只给方向，不暴露解法。
-- Level 2 指出相关知识点和需要检查的位置。
-- Level 3 给伪代码或关键思路，但不要给完整 Java 答案。
-- 语气像面试官引导候选人。
-
-请只输出 JSON：
-{
-  "hintLevel1": "...",
-  "hintLevel2": "...",
-  "hintLevel3": "..."
-}
-```
+`HintGeneratorTool` 已从 Agent 工作流中移除。题目预设分层提示由后端 `problem` 表（`hint_level1/2/3`）提供，通过 `ProblemDetailVO.presetHints` 返回，不再通过 AI 生成。`AgentAnalyzeVO.hintLevel1/2/3` 字段保留兼容，但不再写入新数据。`hint_record` 表保留但当前不再写入。
 
 ### 6.3 TrainingPlannerTool System Prompt
 
@@ -811,7 +792,7 @@ Two Sum 正确提交示例：
 - 检查 AI 是否没有直接给完整答案。
 - 检查 `user_weakness.weakness_score` 对失败提交增加，不能因为模型返回负数而下降。
 - 检查 `agent_run.status = SUCCESS` 且 `current_state = COMPLETED`。
-- 检查 `agent_step` 至少包含 `PLANNING`、`CODE_EXECUTION`、`OBSERVATION`、`ERROR_CLASSIFICATION`、`HINT_GENERATION`、`MEMORY_UPDATE`、`TRAINING_PLAN`、`COMPLETED`。
+- 检查 `agent_step` 至少包含 `PLANNING`、`CODE_EXECUTION`、`OBSERVATION`、`ERROR_CLASSIFICATION`、`MEMORY_UPDATE`、`TRAINING_PLAN`、`COMPLETED`。
 - 检查 `ai_diagnosis`、`hint_record`、`user_weakness`、`mistake_card`、`training_plan` 均有最新记录。
 
 已验证的 Two Sum bug：

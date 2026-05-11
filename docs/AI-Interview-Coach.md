@@ -259,7 +259,7 @@ Agent 执行过程会产生步骤记录：
 
 ### 4.5 AI 错误诊断模块
 
-AI 不直接替代后端业务流程，而是在 `ErrorClassifierTool`、`HintGeneratorTool` 和 `TrainingPlannerTool` 中负责语义判断。错误诊断 Tool 根据以下上下文生成结构化结果：
+AI 不直接替代后端业务流程，而是在 `ErrorClassifierTool` 和 `TrainingPlannerTool` 中负责语义判断。错误诊断 Tool 根据以下上下文生成结构化结果：
 
 - 题目信息
 - 用户代码
@@ -290,7 +290,7 @@ AI 不直接替代后端业务流程，而是在 `ErrorClassifierTool`、`HintGe
 系统不直接给完整答案，而是模拟面试官引导过程，提供三级提示。当前产品上把提示分成两类：
 
 - **题目预设分层提示**：属于题目内容，存储在后端 `problem` 表（`hint_level1/2/3`），通过 `GET /api/problems/{id}` 的 `presetHints` 字段返回，展示在左侧题目描述下方，不调用 AI。
-- **Agent 诊断中的提示数据**：后端 `HintGeneratorTool` 仍会生成并持久化 `hint_record`，用于保留 Agent Workflow 和后续扩展；当前前端右侧不再单独展示 AI 分层提示 tab，避免和“AI 诊断 / 改进建议”重复。
+- **Agent 诊断中的提示数据**：`HintGeneratorTool` 已从 Agent 工作流移除，`hint_record` 表保留但不再写入新数据。当前前端右侧不再单独展示 AI 分层提示 tab，避免和”AI 诊断 / 改进建议”重复。
 
 题目预设分层提示的展示规则：
 
@@ -632,9 +632,7 @@ Observation 记录编译错误、运行错误、失败用例
   ↓
 ErrorClassifierTool 诊断错误类型和知识点
   ↓
-HintGeneratorTool 生成 Level 1/2/3 提示
-  ↓
-WeaknessTrackerTool 更新弱点记忆和错题卡片
+WeaknessTrackerTool 更新弱点记忆和错题卡片（非核心，失败不阻塞）
   ↓
 TrainingPlannerTool 生成训练计划
   ↓
@@ -653,7 +651,6 @@ agent/
     ├── Tool.java
     ├── CodeExecutionTool.java
     ├── ErrorClassifierTool.java
-    ├── HintGeneratorTool.java
     ├── WeaknessTrackerTool.java
     └── TrainingPlannerTool.java
 ```

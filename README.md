@@ -128,9 +128,8 @@ npm run dev
 | CODE_EXECUTION | CodeExecutionTool | 重新执行代码 |
 | OBSERVATION | - | 观察判题结果 |
 | ERROR_CLASSIFICATION | ErrorClassifierTool | AI 分类错误类型 |
-| HINT_GENERATION | HintGeneratorTool | AI 生成三层提示 |
-| MEMORY_UPDATE | WeaknessTrackerTool | 更新弱点记忆和错题卡 |
-| TRAINING_PLAN | TrainingPlannerTool | 生成 3 天训练计划 |
+| MEMORY_UPDATE | WeaknessTrackerTool | 更新弱点记忆和错题卡（非核心，失败不阻塞） |
+| TRAINING_PLAN | TrainingPlannerTool | 生成 3 天训练计划（非核心，失败不阻塞） |
 
 ### 3. 学习数据持久化
 
@@ -141,8 +140,8 @@ npm run dev
 
 ### 4. 分层提示机制
 
-- **题目预设提示**：Level 1/2/3 展示在左侧题目区，不调用 AI
-- **AI 诊断**：针对本次提交解释错误原因，展示在右侧结果区
+- **题目预设提示**：存储在后端 `problem` 表，通过 API 返回，Level 1/2/3 展示在左侧题目区，不调用 AI
+- **AI 诊断**：针对本次提交解释错误原因，展示在右侧结果区，通过 SSE 实时展示 Agent 步骤
 
 ## 演示流程
 
