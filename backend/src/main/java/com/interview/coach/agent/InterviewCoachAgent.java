@@ -2,7 +2,6 @@ package com.interview.coach.agent;
 
 import com.interview.coach.agent.tool.CodeExecutionTool;
 import com.interview.coach.agent.tool.ErrorClassifierTool;
-import com.interview.coach.agent.tool.HintGeneratorTool;
 import com.interview.coach.agent.tool.TrainingPlannerTool;
 import com.interview.coach.agent.tool.WeaknessTrackerTool;
 import com.interview.coach.entity.AgentRun;
@@ -17,7 +16,10 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+@Slf4j
 
 @Component
 @RequiredArgsConstructor
@@ -26,8 +28,6 @@ public class InterviewCoachAgent {
     private final CodeExecutionTool codeExecutionTool;
 
     private final ErrorClassifierTool errorClassifierTool;
-
-    private final HintGeneratorTool hintGeneratorTool;
 
     private final WeaknessTrackerTool weaknessTrackerTool;
 
@@ -40,6 +40,7 @@ public class InterviewCoachAgent {
     public AgentContext run(AgentContext context, Consumer<AgentStep> stepSink) {
         Consumer<AgentStep> sink = stepSink == null ? step -> { } : stepSink;
         try {
+            // 核心步骤：失败则终止
             runStep(context, AgentState.PLANNING, null, "Prepare agent context", "Context ready", sink, () -> context);
             runStep(context, AgentState.CODE_EXECUTION, codeExecutionTool.name(), "submissionId=" + context.getSubmissionId(),
                     "Execution observation ready", sink,
@@ -48,15 +49,16 @@ public class InterviewCoachAgent {
             runStep(context, AgentState.ERROR_CLASSIFICATION, errorClassifierTool.name(), "Classify execution observation",
                     "Diagnosis ready", sink,
                     () -> errorClassifierTool.execute(context, context));
-            runStep(context, AgentState.HINT_GENERATION, hintGeneratorTool.name(), "Generate layered hints",
-                    "Hints ready", sink,
-                    () -> hintGeneratorTool.execute(context, context));
-            runStep(context, AgentState.MEMORY_UPDATE, weaknessTrackerTool.name(), "Persist diagnosis and weakness memory",
+
+            // 非核心步骤：失败只 warn，不阻塞后续流程
+            runOptionalStep(context, AgentState.MEMORY_UPDATE, weaknessTrackerTool.name(), "Persist diagnosis and weakness memory",
                     "Learning memory updated", sink,
                     () -> weaknessTrackerTool.execute(context, context));
-            runStep(context, AgentState.TRAINING_PLAN, trainingPlannerTool.name(), "Create short training plan",
+            runOptionalStep(context, AgentState.TRAINING_PLAN, trainingPlannerTool.name(), "Create short training plan",
                     "Training plan ready", sink,
                     () -> trainingPlannerTool.execute(context, context));
+
+            // 最终步骤：始终执行
             runStep(context, AgentState.COMPLETED, null, "Finalize agent run", "Agent run completed", sink, () -> context);
             markRunSuccess(context);
             return context;
@@ -99,6 +101,15 @@ public class InterviewCoachAgent {
             context.getSteps().add(step);
             sink.accept(step);
             throw ex;
+        }
+    }
+
+    private void runOptionalStep(AgentContext context, AgentState state, String toolName, String inputSummary,
+            String fallbackOutputSummary, Consumer<AgentStep> sink, StepAction action) {
+        try {
+            runStep(context, state, toolName, inputSummary, fallbackOutputSummary, sink, action);
+        } catch (Exception ex) {
+            log.warn("Optional step {} failed, continuing: {}", state.name(), ex.getMessage());
         }
     }
 

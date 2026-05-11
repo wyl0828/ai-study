@@ -109,10 +109,9 @@ const agentStepMap: Record<string, string> = {
   PLANNING: "准备诊断上下文",
   CODE_EXECUTION: "重新执行代码",
   OBSERVATION: "分析测试结果",
-  ERROR_CLASSIFICATION: "识别错误类型",
-  HINT_GENERATION: "生成分层提示",
+  ERROR_CLASSIFICATION: "定位错误原因",
   MEMORY_UPDATE: "更新薄弱点记录",
-  TRAINING_PLAN: "生成训练计划",
+  TRAINING_PLAN: "生成训练建议",
   COMPLETED: "诊断完成",
   FAILED: "诊断失败",
 };

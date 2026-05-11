@@ -67,7 +67,7 @@ Agent 收到任务
 - 当前真实暴露的 Controller：`ProblemController`、`SubmissionController`、`AgentController`、`UserController`。
 - 当前真实暴露的 Agent 接口：`POST /api/agent/analyze`、`GET /api/submissions/{submissionId}/diagnosis/stream`。
 - Phase 3 前端核心页面已完成：`/`、`/problem/[id]`、`/dashboard` 均已按 `stitch_front_end_interface_design/mvp/` HTML 原型做紧凑 MVP 风格还原，并完成中文化。
-- 当前做题页已完成提示/诊断去重：左侧展示题目预设 Level 1/2/3 分层提示，右侧只保留测试结果和 AI 诊断；提交失败后自动调用同步 `POST /api/agent/analyze` 展示本次错误诊断和推荐训练。后端 SSE 接口已保留，但前端暂未接入 SSE 流式展示。
+- 当前做题页已完成提示/诊断去重：左侧展示题目预设 Level 1/2/3 分层提示（优先从后端 `presetHints` 读取），右侧只保留测试结果和 AI 诊断；提交失败后通过 SSE 实时展示 Agent 步骤，完成后展示诊断结果。
 - Dashboard 已通过 `UserController` 接入真实 MySQL 学习数据，展示统计、薄弱点、错题卡、最近提交和最新训练计划；单独 hint 查询、accepted-code review 和手动重新生成训练计划留到后续阶段。
 - 题库提交模式当前为混合形态：`101/105/106/107/108` 保留 ACM `public class Main`；`102/103/104` 已切换为 LeetCode 风格 `class Solution`，后端通过 `CodeWrapper` 在送入 Piston 前包装为 `Main.java`。
 - `/problem/[id]` 页面现在由浏览器端 `ProblemWorkspace` 请求 `/api/problems/{id}/template`，Monaco 使用后端返回模板初始化；重置代码会重新读取后端模板而不是恢复写死默认值。
@@ -427,7 +427,7 @@ handler：全局异常处理和统一响应处理
 - `frontend/lib/api.ts` 使用 `cache: "no-store"`，避免服务端或浏览器 fetch 缓存导致模板不刷新。
 - Monaco 容器已改为深色 loading 背景，避免编辑器加载前出现大面积浅色空白。
 - 当前提交流程为：`POST /api/submissions` 判题，失败后自动调用同步 `POST /api/agent/analyze` 获取诊断结果；右侧 AI 诊断展示错误类型、知识点、错误原因、改进建议和推荐训练；SSE 前端接入留到后续增强。
-- 当前题目预设分层提示先由 `frontend/lib/problemHints.ts` 按 `problemId` 静态维护，后续可迁移到 `problem_hint` 表或 `ProblemDetailVO`。
+- 题目预设分层提示已迁移到后端 `problem` 表（`hint_level1/2/3`），通过 `ProblemDetailVO.presetHints` 返回；前端优先使用后端数据，保留 `problemHints.ts` 作为 fallback。
 - Dashboard `/dashboard` 已实现统计卡、薄弱点排行、最近提交表格、错题卡片、训练计划和 AI 建议展示，当前数据来自 `/api/users/1/...` 用户学习查询接口。
 - 前端页面已完成中文化，题目标题、难度、知识点、按钮、空状态、Dashboard 文案均按“国内互联网产品 + LeetCode 中文站”风格处理。
 - 已运行 `npm run build`，Next.js 编译、类型检查和页面生成通过。
@@ -463,6 +463,8 @@ handler：全局异常处理和统一响应处理
 
 ### 阶段 5：打磨与演示准备，Day 17-20
 
+状态：进行中。SSE 前端接入、题目预设提示迁移后端、ProblemNavigator 上下题切换已完成。
+
 目标：修 bug、补数据、写 README、准备面试演示。
 
 任务：
@@ -471,7 +473,7 @@ handler：全局异常处理和统一响应处理
 2. 补充题库到 20 到 30 道。
 3. 优化异常提示。
 4. Redis 缓存热门题目和题目详情。
-5. 编写 README。
+5. 编写 README。✓
 6. 准备项目截图。
 7. 准备演示脚本。
 8. 可选：录制演示 GIF。

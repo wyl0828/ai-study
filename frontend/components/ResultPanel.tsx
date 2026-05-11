@@ -1,7 +1,7 @@
 "use client";
 
 import { ClipboardCheck, Brain } from "lucide-react";
-import type { SubmissionResult, AgentAnalyzeVO } from "@/lib/types";
+import type { SubmissionResult, AgentAnalyzeVO, AgentStepVO } from "@/lib/types";
 import TestResult from "./TestResult";
 import AiDiagnosis from "./AiDiagnosis";
 
@@ -9,6 +9,7 @@ interface ResultPanelProps {
   submissionResult: SubmissionResult | null;
   diagnosis: AgentAnalyzeVO | null;
   isAnalyzing: boolean;
+  agentSteps: AgentStepVO[];
   isDiagnosisStale: boolean;
   isCurrentCodeAccepted: boolean;
   activeTab: "test" | "diagnosis";
@@ -24,6 +25,7 @@ export default function ResultPanel({
   submissionResult,
   diagnosis,
   isAnalyzing,
+  agentSteps,
   isDiagnosisStale,
   isCurrentCodeAccepted,
   activeTab,
@@ -64,6 +66,7 @@ export default function ResultPanel({
           <AiDiagnosis
             diagnosis={diagnosis}
             isAnalyzing={isAnalyzing}
+            agentSteps={agentSteps}
             isAccepted={isCurrentCodeAccepted}
             isDiagnosisStale={isDiagnosisStale}
           />

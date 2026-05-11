@@ -11,7 +11,7 @@ import {
   Circle,
   AlertTriangle,
 } from "lucide-react";
-import type { AgentAnalyzeVO } from "@/lib/types";
+import type { AgentAnalyzeVO, AgentStepVO } from "@/lib/types";
 import {
   agentStepName,
   diagnosisDisplay,
@@ -23,6 +23,7 @@ import {
 interface AiDiagnosisProps {
   diagnosis: AgentAnalyzeVO | null;
   isAnalyzing: boolean;
+  agentSteps: AgentStepVO[];
   isAccepted: boolean;
   isDiagnosisStale: boolean;
 }
@@ -30,6 +31,7 @@ interface AiDiagnosisProps {
 export default function AiDiagnosis({
   diagnosis,
   isAnalyzing,
+  agentSteps,
   isAccepted,
   isDiagnosisStale,
 }: AiDiagnosisProps) {
@@ -45,10 +47,49 @@ export default function AiDiagnosis({
 
   if (isAnalyzing) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-on-surface-variant p-6">
-        <Loader2 className="w-10 h-10 text-primary mb-3 animate-spin" />
-        <p className="text-sm font-medium">AI 正在分析你的代码...</p>
-        <p className="text-xs mt-1">正在诊断错误原因并生成训练建议</p>
+      <div className="p-5 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-primary">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          AI 正在诊断你的代码...
+        </div>
+        {agentSteps.length > 0 && (
+          <div className="space-y-1">
+            {agentSteps.map((step) => (
+              <div
+                key={step.stepName}
+                className="flex items-center gap-2 text-xs py-1.5"
+              >
+                {step.status === "RUNNING" ? (
+                  <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+                ) : step.status === "SUCCESS" ? (
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                ) : step.status === "FAILED" ? (
+                  <XCircle className="w-3.5 h-3.5 text-error" />
+                ) : (
+                  <Circle className="w-3.5 h-3.5 text-on-surface-variant" />
+                )}
+                <span
+                  className={
+                    step.status === "RUNNING"
+                      ? "text-primary font-medium"
+                      : step.status === "SUCCESS"
+                      ? "text-on-surface-variant"
+                      : step.status === "FAILED"
+                      ? "text-error"
+                      : "text-on-surface-variant/60"
+                  }
+                >
+                  {agentStepName(step.stepName)}
+                </span>
+                {step.status === "SUCCESS" && step.durationMs != null && (
+                  <span className="text-outline ml-auto">
+                    {step.durationMs}ms
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -62,7 +103,10 @@ export default function AiDiagnosis({
     );
   }
 
-  const display = diagnosisDisplay(diagnosis.diagnosis, diagnosis.specificError);
+  // 兼容 ApiResponse 包裹和裸 AgentAnalyzeVO
+  const raw = diagnosis as unknown as Record<string, unknown>;
+  const d = (raw.data ?? diagnosis) as AgentAnalyzeVO;
+  const display = diagnosisDisplay(d.diagnosis, d.specificError);
 
   return (
     <div className="p-5 space-y-4">
@@ -76,10 +120,10 @@ export default function AiDiagnosis({
       {/* 错误类型标签 */}
       <div className="flex flex-wrap gap-2">
         <span className="bg-red-50 text-red-700 border border-red-200 text-xs font-semibold px-2.5 py-1 rounded-full">
-          {errorTypeName(diagnosis.errorType)}
+          {errorTypeName(d.errorType)}
         </span>
         <span className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold px-2.5 py-1 rounded-full">
-          {knowledgePoint(diagnosis.knowledgePoint)}
+          {knowledgePoint(d.knowledgePoint)}
         </span>
       </div>
 
@@ -112,11 +156,11 @@ export default function AiDiagnosis({
       )}
 
       {/* 训练计划标题 */}
-      {diagnosis.trainingPlanTitle && (
+      {d.trainingPlanTitle && (
         <div className="flex items-center gap-2 bg-surface-container rounded-lg border border-outline-variant/40 p-3">
           <BookOpen className="w-4 h-4 text-primary" />
           <span className="text-sm text-on-surface">
-            推荐训练：{trainingPlanTitle(diagnosis.trainingPlanTitle)}
+            推荐训练：{trainingPlanTitle(d.trainingPlanTitle)}
           </span>
         </div>
       )}
@@ -128,13 +172,13 @@ export default function AiDiagnosis({
       </div>
 
       {/* Agent 步骤（可折叠） */}
-      {diagnosis.steps?.length > 0 && (
+      {d.steps?.length > 0 && (
         <details className="group">
           <summary className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide cursor-pointer hover:text-on-surface transition-colors">
-            诊断执行步骤 ({diagnosis.steps.length})
+            诊断执行步骤 ({d.steps.length})
           </summary>
           <div className="mt-2 space-y-1">
-            {diagnosis.steps.map((step, i) => (
+            {d.steps.map((step: AgentStepVO, i: number) => (
               <div
                 key={i}
                 className="flex items-center gap-2 text-xs text-on-surface-variant py-1"

@@ -65,10 +65,16 @@ GET /api/submissions/{submissionId}/diagnosis/stream
   -> emit AgentStep events through SSE
   -> rejudge submission through CodeExecutionTool
   -> classify error through AI
-  -> generate layered hints through AI
-  -> persist diagnosis, hint records, weakness memory, and mistake card
-  -> create deterministic 3-day training plan
+  -> persist diagnosis, weakness memory, and mistake card
+  -> create deterministic 3-day training plan (optional, failure does not block)
   -> emit final AgentAnalyzeVO
+
+Frontend SSE integration:
+  -> fetch + ReadableStream (not EventSource, for future Authorization header)
+  -> real-time step display during analysis
+  -> done event shows final diagnosis result
+  -> onEnd fallback ensures loading state is cleared
+  -> streamId protection prevents old requests from overwriting new results
 ```
 
 Current implemented controllers:
@@ -252,7 +258,7 @@ Problem draft and template rules:
 
 Problem hint and diagnosis UI rules:
 
-- Problem-level layered hints are currently maintained in `frontend/lib/problemHints.ts` and displayed by `ProblemHintPanel`.
+- Problem-level layered hints are served from the backend `problem` table via `GET /api/problems/{id}` (`presetHints` field), with fallback to `frontend/lib/problemHints.ts`.
 - The left problem panel should show Level 1 / Level 2 / Level 3 preset hints; all levels default collapsed and expand on click.
 - The right result panel should only expose "测试结果" and "AI 诊断" tabs.
 - Do not reintroduce a right-side "分层提示" tab unless the product direction explicitly changes.
@@ -266,8 +272,10 @@ The Agent must behave like an interview coach, not an answer generator.
 The Agent must be implemented as an explainable workflow, not as a single prompt call. Prefer a simple state machine plus Tool chain for MVP:
 
 ```text
-Planner -> CodeExecutionTool -> Observation -> ErrorClassifierTool -> HintGeneratorTool -> WeaknessTrackerTool -> TrainingPlannerTool
+Planner -> CodeExecutionTool -> Observation -> ErrorClassifierTool -> WeaknessTrackerTool -> TrainingPlannerTool
 ```
+
+`WeaknessTrackerTool` and `TrainingPlannerTool` are optional steps — their failure does not block the final diagnosis result.
 
 Agent concepts:
 
@@ -382,8 +390,8 @@ SSE is for server-to-browser updates such as:
 - "observing failed test cases"
 - "analyzing test result"
 - "classifying error type"
-- "generating layered hints"
 - "updating weakness memory"
+- "generating training plan"
 - final structured diagnosis summary
 
 Current SSE event names:
@@ -466,8 +474,9 @@ When in doubt, protect the demo loop.
 
 Near-term work should follow `docs/PROJECT_STATUS.md`:
 
-1. Stabilize three demo problems and known bug samples.
-2. Write root README and demo startup notes.
+1. Stabilize three demo problems and known bug samples. ✓
+2. Write root README and demo startup notes. ✓
 3. Capture screenshots for problem page, AI diagnosis, and Dashboard.
-4. Add frontend SSE step display.
-5. Move preset problem hints from frontend static mapping to backend data when the demo loop is stable.
+4. Frontend SSE step display. ✓
+5. Move preset problem hints from frontend static mapping to backend data. ✓
+6. Prepare resume descriptions and interview Q&A.

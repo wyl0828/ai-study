@@ -31,6 +31,12 @@ public class Problem {
 
     private String solutionOutline;
 
+    private String hintLevel1;
+
+    private String hintLevel2;
+
+    private String hintLevel3;
+
     private Boolean enabled;
 
     private LocalDateTime createdAt;

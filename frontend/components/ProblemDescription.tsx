@@ -12,6 +12,7 @@ import {
 import { getProblemPresetHints } from "@/lib/problemHints";
 import DifficultyBadge from "./DifficultyBadge";
 import ProblemHintPanel from "./ProblemHintPanel";
+import ProblemNavigator from "./ProblemNavigator";
 
 interface ProblemDescriptionProps {
   problem: ProblemDetail;
@@ -22,21 +23,24 @@ export default function ProblemDescription({
 }: ProblemDescriptionProps) {
   const examples = displayExamples(problem);
   const showIoFormat = shouldShowIoFormat(problem);
-  const presetHints = getProblemPresetHints(problem.id);
+  const presetHints = problem.presetHints ?? getProblemPresetHints(problem.id);
 
   return (
     <section className="w-[25%] min-w-[280px] max-w-[420px] h-full border-r border-outline-variant/30 flex flex-col overflow-y-auto bg-surface-container-lowest">
       <div className="p-5 flex-1">
-        {/* 难度和题号 */}
-        <div className="flex items-center gap-2 mb-3">
-          <DifficultyBadge difficulty={problem.difficulty} />
-          <span className="text-outline text-xs">题目 #{problem.id}</span>
+        {/* 难度/题号/标题 + 上下题导航 */}
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <DifficultyBadge difficulty={problem.difficulty} />
+              <span className="text-outline text-xs">题目 #{problem.id}</span>
+            </div>
+            <h1 className="text-xl font-bold text-on-surface tracking-tight">
+              {problemTitle(problem.title)}
+            </h1>
+          </div>
+          <ProblemNavigator currentProblemId={problem.id} />
         </div>
-
-        {/* 题目标题 */}
-        <h1 className="text-xl font-bold text-on-surface mb-4 tracking-tight">
-          {problemTitle(problem.title)}
-        </h1>
 
         {/* 题目描述 */}
         <div className="text-sm text-on-surface-variant space-y-3 leading-relaxed">

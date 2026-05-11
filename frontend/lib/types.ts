@@ -28,6 +28,11 @@ export interface ProblemDetail {
   outputFormat: string;
   knowledgePoints: string[];
   sampleCases: TestCase[];
+  presetHints?: {
+    level1: string;
+    level2: string;
+    level3: string;
+  };
 }
 
 export interface TestCase {

@@ -14,16 +14,16 @@
 
 - **题目与提交闭环**：支持题目列表、题目详情、Java 模板加载、代码提交、Piston 判题、失败用例返回和提交记录持久化。
 - **混合提交模式**：`101/105/106/107/108` 保持 ACM `public class Main` 模式；`102/103/104` 支持 LeetCode 风格 `class Solution`，后端通过 `CodeWrapper` 只包装送入 Piston 的代码，数据库仍保存用户原始代码。
-- **Agent Workflow 后端**：已实现 `InterviewCoachAgent`、`AgentContext`、`AgentStep` 和核心 Tool 链，支持同步分析接口和 SSE 流式诊断接口。
+- **Agent Workflow 后端**：已实现 `InterviewCoachAgent`、`AgentContext`、`AgentStep` 和核心 Tool 链，支持同步分析接口和 SSE 流式诊断接口。`MEMORY_UPDATE` 和 `TRAINING_PLAN` 为非核心步骤，失败不阻塞后续流程。
 - **AI 诊断与学习数据**：失败提交后可生成结构化错误类型、知识点、具体错误、改进建议和训练计划，并持久化 `ai_diagnosis`、`hint_record`、`user_weakness`、`mistake_card`、`training_plan` 等数据。
-- **前端做题页**：已实现三栏布局：左侧题目描述和题目预设分层提示，中间 Monaco Editor，右侧测试结果和 AI 诊断。
+- **前端做题页**：已实现三栏布局：左侧题目描述和题目预设分层提示，中间 Monaco Editor，右侧测试结果和 AI 诊断。提交失败后通过 SSE 实时展示 Agent 执行步骤，完成后展示诊断结果。
 - **提示/诊断边界已理顺**：题目通用 Level 1/2/3 提示放在左侧，默认收起，不调用 AI；右侧 AI 诊断只解释本次提交为什么错，并展示改进建议和推荐训练。
 - **Dashboard 真实数据接入**：学习中心已从 mock 数据切到后端真实接口，展示统计、薄弱点、错题卡、最近提交和最新训练计划。
 - **固定演示样例**：`101`、`103`、`104` 的 bug / fixed 代码已沉淀到 `docs/demo-cases/`，使用说明见 `docs/DEMO_CASES.md`。
 
 ## 2. 当前进度判断
 
-整体进度处于 **Phase 4 完成、Phase 5 打磨与演示准备阶段**。
+整体进度处于 **Phase 5 打磨与演示准备阶段**。SSE 流式诊断已接入前端，Agent 步骤实时展示。
 
 从简历项目角度看，当前已经能讲清楚这些亮点：
 
@@ -31,7 +31,7 @@
 - MyBatis-Plus + MySQL：题目、提交、诊断、弱点、错题卡、训练计划均有持久化模型。
 - Piston 执行服务封装：Controller 不直接调用外部判题服务，代码执行通过 `JudgeService` 抽象。
 - Agent 工程化：代码执行是 Tool，判题结果是 Observation，错误诊断和学习更新由 Agent Workflow 串联。
-- SSE 能力：后端已具备 Agent Step 流式输出能力，虽然当前前端演示仍优先使用同步接口。
+- SSE 能力：前端已通过 `fetch + ReadableStream` 接入 SSE，实时展示 Agent 每一步执行过程。
 - 学习闭环：一次失败提交能影响弱点、错题卡和训练计划，不是一次性 AI 文本回答。
 
 当前还不适合继续扩大的方向：
@@ -44,7 +44,7 @@
 
 - **AI 诊断稳定性**：模型可能输出不稳定 JSON 或分类不准，需要准备固定 bug 样例和验证脚本。
 - **本地依赖较多**：MySQL、Redis、Piston、后端、前端都要启动，演示前需要一键化或清晰启动脚本。
-- **SSE 未接入前端**：后端能力存在，但前端目前是同步诊断；面试时需要说明这是 MVP 取舍。
+- **SSE 稳定性**：SSE 已接入前端，但客户端断开、多请求并发等边界情况仍需观察。
 - **题目提示暂在前端静态维护**：MVP 可以接受，但长期应迁移到数据库或 `ProblemDetailVO`。
 - **文档与代码容易漂移**：提示/诊断边界已调整，后续修改接口或页面时要同步更新 `docs/API.md` 和设计文档。
 
@@ -76,9 +76,6 @@
 - 将题目预设分层提示从前端静态映射迁移到后端：
   - MVP 可先加 `ProblemDetailVO.presetHints`。
   - 更正规时再新增 `problem_hint` 表。
-- 接入前端 SSE 展示 Agent 步骤：
-  - 先替换同步 `POST /api/agent/analyze` 的展示路径，或保留同步按钮作为 fallback。
-  - 重点展示 Planning、CodeExecution、Observation、ErrorClassification、MemoryUpdate、TrainingPlan。
 - 增加 Accepted 提交后的轻量代码点评：
   - 不生成完整答案。
   - 只点评复杂度、代码风格和可优化点。
@@ -95,10 +92,10 @@
 ## 5. 推荐近期任务顺序
 
 ```text
-1. 固定 3 个演示题和 bug 样例
-2. 写 README 和启动文档
+1. 固定 3 个演示题和 bug 样例 ✓
+2. 写 README 和启动文档 ✓
 3. 跑一遍完整 demo 并记录截图
-4. 补前端 SSE 步骤展示
+4. 前端 SSE 步骤展示 ✓
 5. 将题目预设提示迁移到后端数据
 6. 准备简历描述和面试问答
 ```

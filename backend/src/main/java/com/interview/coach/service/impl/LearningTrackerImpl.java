@@ -18,8 +18,11 @@ import com.interview.coach.service.LearningTracker;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+@Slf4j
 
 @Service
 @RequiredArgsConstructor
@@ -66,6 +69,10 @@ public class LearningTrackerImpl implements LearningTracker {
 
     private void insertHints(AgentContext context, LocalDateTime now) {
         HintGenerationResult hints = context.getHints();
+        if (hints == null) {
+            log.info("Skip insert hints because hint generation is disabled");
+            return;
+        }
         insertHint(context, HintLevelEnum.LEVEL_1, hints.getHintLevel1(), now);
         insertHint(context, HintLevelEnum.LEVEL_2, hints.getHintLevel2(), now);
         insertHint(context, HintLevelEnum.LEVEL_3, hints.getHintLevel3(), now);

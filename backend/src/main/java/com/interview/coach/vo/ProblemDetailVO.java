@@ -23,4 +23,16 @@ public class ProblemDetailVO {
     private List<String> knowledgePoints;
 
     private List<TestCaseVO> sampleCases;
+
+    private PresetHintsVO presetHints;
+
+    @Data
+    public static class PresetHintsVO {
+
+        private String level1;
+
+        private String level2;
+
+        private String level3;
+    }
 }

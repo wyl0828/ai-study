@@ -2,7 +2,23 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { X, AlertCircle } from "lucide-react";
-import type { SubmissionResult, AgentAnalyzeVO } from "@/lib/types";
+import type { SubmissionResult, AgentAnalyzeVO, AgentStepVO } from "@/lib/types";
+
+const STEP_ORDER = [
+  "PLANNING",
+  "CODE_EXECUTION",
+  "OBSERVATION",
+  "ERROR_CLASSIFICATION",
+  "MEMORY_UPDATE",
+  "TRAINING_PLAN",
+  "COMPLETED",
+  "FAILED",
+];
+
+const getStepRank = (stepName: string) => {
+  const index = STEP_ORDER.indexOf(stepName);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+};
 import { problemApi, submissionApi, agentApi } from "@/lib/api";
 import {
   clearDraft,
@@ -26,7 +42,6 @@ export default function ProblemWorkspace({
   const [code, setCode] = useState("");
   const skipNextAutosaveRef = useRef(false);
   const templateRequestIdRef = useRef(0);
-  const analysisRequestIdRef = useRef(0);
   const [isDraftReady, setIsDraftReady] = useState(false);
   const [isTemplateLoading, setIsTemplateLoading] = useState(true);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
@@ -34,10 +49,13 @@ export default function ProblemWorkspace({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agentSteps, setAgentSteps] = useState<AgentStepVO[]>([]);
+  const streamControllerRef = useRef<AbortController | null>(null);
+  const currentStreamIdRef = useRef(0);
+  const diagnosisCodeSnapshotRef = useRef<string | null>(null);
   const [submissionResult, setSubmissionResult] =
     useState<ProblemDraft["lastResult"] | null>(null);
-  const [diagnosis, setDiagnosis] =
-    useState<ProblemDraft["lastDiagnosis"] | null>(null);
+  const [diagnosis, setDiagnosis] = useState<AgentAnalyzeVO | null>(null);
   const [activeTab, setActiveTab] = useState<"test" | "diagnosis">(
     "test"
   );
@@ -61,7 +79,14 @@ export default function ProblemWorkspace({
         if (draft) {
           setCode(draft.code);
           setSubmissionResult(draft.lastResult ?? null);
-          setDiagnosis(draft.lastDiagnosis ?? null);
+          if (draft.lastDiagnosis) {
+            const { codeSnapshot, ...diagData } = draft.lastDiagnosis;
+            setDiagnosis(diagData);
+            diagnosisCodeSnapshotRef.current = codeSnapshot;
+          } else {
+            setDiagnosis(null);
+            diagnosisCodeSnapshotRef.current = null;
+          }
           setDraftSavedAt(draft.updatedAt);
           setShowDraftNotice(true);
           setActiveTab(draft.lastDiagnosis ? "diagnosis" : "test");
@@ -81,7 +106,14 @@ export default function ProblemWorkspace({
         if (draft) {
           setCode(draft.code);
           setSubmissionResult(draft.lastResult ?? null);
-          setDiagnosis(draft.lastDiagnosis ?? null);
+          if (draft.lastDiagnosis) {
+            const { codeSnapshot, ...diagData } = draft.lastDiagnosis;
+            setDiagnosis(diagData);
+            diagnosisCodeSnapshotRef.current = codeSnapshot;
+          } else {
+            setDiagnosis(null);
+            diagnosisCodeSnapshotRef.current = null;
+          }
           setDraftSavedAt(draft.updatedAt);
           setShowDraftNotice(true);
           setActiveTab(draft.lastDiagnosis ? "diagnosis" : "test");
@@ -109,6 +141,12 @@ export default function ProblemWorkspace({
   useEffect(() => {
     void loadTemplate(true);
   }, [loadTemplate]);
+
+  useEffect(() => {
+    return () => {
+      streamControllerRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (!isDraftReady) {
@@ -144,59 +182,92 @@ export default function ProblemWorkspace({
   }, [loadTemplate, problemId]);
 
   const startAiAnalysis = useCallback(
-    async (
+    (
       resultWithSnapshot: NonNullable<ProblemDraft["lastResult"]>,
-      codeSnapshot: string,
-      requestId: number
+      codeSnapshot: string
     ) => {
+      streamControllerRef.current?.abort();
+      currentStreamIdRef.current += 1;
+      const streamId = currentStreamIdRef.current;
+      let doneReceived = false;
+
+      // 清空旧诊断状态，只在新一次诊断开始前执行
       setIsAnalyzing(true);
+      setDiagnosis(null);
+      diagnosisCodeSnapshotRef.current = null;
+      setAgentSteps([]);
+      setError(null);
+      setActiveTab("test");
 
-      try {
-        const { data: diag } = await agentApi.analyze(
-          resultWithSnapshot.submissionId
-        );
-        if (requestId !== analysisRequestIdRef.current) {
-          return;
-        }
+      streamControllerRef.current = agentApi.streamDiagnosis(
+        resultWithSnapshot.submissionId,
+        {
+          onStep: (step) => {
+            if (streamId !== currentStreamIdRef.current) return;
+            setAgentSteps((prev) => {
+              const idx = prev.findIndex(
+                (s) => s.stepName === step.stepName
+              );
+              const next =
+                idx >= 0
+                  ? prev.map((s, i) => (i === idx ? step : s))
+                  : [...prev, step];
+              return next.sort(
+                (a, b) => getStepRank(a.stepName) - getStepRank(b.stepName)
+              );
+            });
+          },
+          onDone: (result) => {
+            if (streamId !== currentStreamIdRef.current) return;
+            doneReceived = true;
+            console.log("[ProblemWorkspace onDone]", result);
+            setDiagnosis(result);
+            diagnosisCodeSnapshotRef.current = codeSnapshot;
+            setIsAnalyzing(false);
+            setActiveTab("diagnosis");
 
-        const diagnosisWithSnapshot: ProblemDraft["lastDiagnosis"] = {
-          ...diag,
-          codeSnapshot,
-        };
-        setDiagnosis(diagnosisWithSnapshot);
-        saveDraft(DEMO_USER_ID, problemId, {
-          code: codeSnapshot,
-          language: "java",
-          lastResult: resultWithSnapshot,
-          lastDiagnosis: diagnosisWithSnapshot,
-        });
-        setDraftSavedAt(new Date().toISOString());
-        setActiveTab("diagnosis");
-      } catch (diagErr) {
-        if (requestId !== analysisRequestIdRef.current) {
-          return;
+            const diagnosisWithSnapshot: ProblemDraft["lastDiagnosis"] = {
+              ...result,
+              codeSnapshot,
+            };
+            saveDraft(DEMO_USER_ID, problemId, {
+              code: codeSnapshot,
+              language: "java",
+              lastResult: resultWithSnapshot,
+              lastDiagnosis: diagnosisWithSnapshot,
+            });
+            setDraftSavedAt(new Date().toISOString());
+          },
+          onError: (message) => {
+            if (streamId !== currentStreamIdRef.current) return;
+            console.error("[ProblemWorkspace onError]", message);
+            setError("AI 诊断失败，请稍后重试");
+            setIsAnalyzing(false);
+          },
+          onEnd: () => {
+            if (streamId !== currentStreamIdRef.current) return;
+            if (!doneReceived) {
+              console.warn("[SSE ended without done event]");
+            }
+            // onEnd 只能关闭 loading，不能清空诊断内容
+            setIsAnalyzing(false);
+          },
         }
-
-        console.error("AI 诊断失败:", diagErr);
-        setError("AI 诊断失败，请稍后重试");
-      } finally {
-        if (requestId === analysisRequestIdRef.current) {
-          setIsAnalyzing(false);
-        }
-      }
+      );
     },
     [problemId]
   );
 
   const handleSubmit = useCallback(async () => {
-    const analysisRequestId = analysisRequestIdRef.current + 1;
-    analysisRequestIdRef.current = analysisRequestId;
+    streamControllerRef.current?.abort();
+    currentStreamIdRef.current += 1;
 
     setIsSubmitting(true);
     setIsAnalyzing(false);
     setError(null);
     setSubmissionResult(null);
     setDiagnosis(null);
+    setAgentSteps([]);
     setActiveTab("test");
 
     try {
@@ -223,7 +294,7 @@ export default function ProblemWorkspace({
       setDraftSavedAt(new Date().toISOString());
 
       if (result.status !== "ACCEPTED") {
-        void startAiAnalysis(resultWithSnapshot, code, analysisRequestId);
+        startAiAnalysis(resultWithSnapshot, code);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "提交失败，请稍后重试");
@@ -237,7 +308,7 @@ export default function ProblemWorkspace({
     submissionResult.codeSnapshot === code;
 
   const isDiagnosisStale = Boolean(
-    diagnosis && diagnosis.codeSnapshot !== code
+    diagnosis && diagnosisCodeSnapshotRef.current !== code
   );
 
   const submitLabel = isCurrentCodeAccepted
@@ -288,6 +359,7 @@ export default function ProblemWorkspace({
           submissionResult={submissionResult as SubmissionResult | null}
           diagnosis={diagnosis as AgentAnalyzeVO | null}
           isAnalyzing={isAnalyzing}
+          agentSteps={agentSteps}
           isDiagnosisStale={isDiagnosisStale}
           isCurrentCodeAccepted={isCurrentCodeAccepted}
           activeTab={activeTab}

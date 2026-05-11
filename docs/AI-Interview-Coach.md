@@ -14,9 +14,8 @@ Agent 收到代码诊断任务
   -> CodeExecutionTool 执行 Java 代码和测试用例
   -> Observation 返回编译错误 / 运行错误 / 失败用例
   -> ErrorClassifierTool 分类错误类型和知识点
-  -> HintGeneratorTool 生成三层提示
-  -> WeaknessTrackerTool 更新长期弱点记忆
-  -> TrainingPlannerTool 生成后续训练建议
+  -> WeaknessTrackerTool 更新长期弱点记忆（非核心，失败不阻塞）
+  -> TrainingPlannerTool 生成后续训练建议（非核心，失败不阻塞）
   -> 输出完整诊断报告
 ```
 
@@ -59,7 +58,7 @@ Agent 收到代码诊断任务
 - 页面已按 `stitch_front_end_interface_design/mvp/` 下的 HTML 原型还原为紧凑 MVP 风格。
 - 页面文案已完成中文化，风格参考国内技术学习产品和 LeetCode 中文站。
 - 做题页已明确拆分“题目预设分层提示”和“AI 诊断”：左侧题目区域展示题目级 Level 1/2/3 静态提示，右侧只保留“测试结果”和“AI 诊断”两个 tab。
-- 提交失败后当前使用同步 `POST /api/agent/analyze` 展示本次错误类型、知识点、错误原因、改进建议和推荐训练；后端 SSE 接口已具备，前端流式接入留到后续增强。
+- 提交失败后通过 SSE 实时展示 Agent 执行步骤，完成后展示诊断结果；同步 `POST /api/agent/analyze` 保留作为 fallback。
 - 做题页模板加载已统一为浏览器端请求 `/api/problems/{id}/template`：`102/103/104` 显示 `class Solution`，`101/105/106/107/108` 仍显示 ACM `public class Main`。
 - Dashboard 已通过用户学习查询接口接入真实 MySQL 数据，展示弱点、错题卡、最近提交和训练计划。
 - 如果本地 Dashboard 接口提示不存在，需要确认 Spring Boot 后端已重启到包含 `UserController` 的最新代码，并确认新增后端文件已纳入版本控制。
@@ -109,7 +108,7 @@ Planner -> CodeExecutionTool -> Piston API
   ↓
 Observation -> ErrorClassifierTool -> Anthropic Compatible API
   ↓
-HintGeneratorTool -> WeaknessTrackerTool -> TrainingPlannerTool
+WeaknessTrackerTool -> TrainingPlannerTool
   ↓
 MySQL / Redis / SSE / Agent Trace
   ↓
@@ -243,9 +242,8 @@ Phase 1 本地开发说明：
 | --- | --- |
 | `CodeExecutionTool` | 调用 `JudgeService` 执行 Java 代码，生成判题 Observation |
 | `ErrorClassifierTool` | 根据题目、代码、失败用例和历史弱点分类错误 |
-| `HintGeneratorTool` | 根据错误分类生成 Level 1/2/3 分层提示 |
-| `WeaknessTrackerTool` | 更新用户薄弱知识点和错题卡片 |
-| `TrainingPlannerTool` | 根据弱点记忆生成下一步训练建议 |
+| `WeaknessTrackerTool` | 更新用户薄弱知识点和错题卡片（非核心，失败不阻塞） |
+| `TrainingPlannerTool` | 根据弱点记忆生成下一步训练建议（非核心，失败不阻塞） |
 
 Agent 执行过程会产生步骤记录：
 
@@ -291,7 +289,7 @@ AI 不直接替代后端业务流程，而是在 `ErrorClassifierTool`、`HintGe
 
 系统不直接给完整答案，而是模拟面试官引导过程，提供三级提示。当前产品上把提示分成两类：
 
-- **题目预设分层提示**：属于题目内容，当前 MVP 先在前端按 `problemId` 静态配置，展示在左侧题目描述下方，不调用 AI。
+- **题目预设分层提示**：属于题目内容，存储在后端 `problem` 表（`hint_level1/2/3`），通过 `GET /api/problems/{id}` 的 `presetHints` 字段返回，展示在左侧题目描述下方，不调用 AI。
 - **Agent 诊断中的提示数据**：后端 `HintGeneratorTool` 仍会生成并持久化 `hint_record`，用于保留 Agent Workflow 和后续扩展；当前前端右侧不再单独展示 AI 分层提示 tab，避免和“AI 诊断 / 改进建议”重复。
 
 题目预设分层提示的展示规则：
@@ -735,7 +733,7 @@ agent/
 - 已完成：Agent Workflow 编排
 - 已完成：SSE 流式返回 Agent 步骤的后端接口
 - 已完成：Agent Step / Trace 记录
-- 已完成：题目预设分层提示展示，后端 AI hint 生成与持久化保留
+- 已完成：题目预设分层提示展示（数据来自后端 problem 表），后端 AI hint 生成已移除
 - 已完成：Dashboard 查询接口和真实数据接入
 - 已完成：薄弱点统计、错题卡和 3 天训练计划从 MySQL 持久化数据读取
 - 已完成：无数据时 Dashboard 显示空状态引导文案
@@ -858,7 +856,7 @@ MVP 阶段不追求复杂自主规划，而是采用可解释的状态机式 Age
 3. 在左侧题目区逐层展开预设 Level 1/2/3 提示，说明这些提示属于题目内容，不调用 AI。
 4. 在 Monaco Editor 中写一段存在 bug 的 Java 代码。
 5. 提交代码并展示测试失败结果。
-6. 打开 AI 诊断面板，展示本次错误类型、关联知识点、错误原因、改进建议和推荐训练；当前前端使用同步诊断，后端 SSE 接口可在接口层演示。
+6. 右侧 AI 诊断面板实时展示 Agent 执行步骤，完成后显示错误类型、关联知识点、错误原因、改进建议和推荐训练。
 7. 展示学习中心中的真实薄弱点统计、错题卡片、最近提交和 3 天训练计划。
 8. 说明 Dashboard 数据来自 `user_weakness`、`mistake_card`、`training_plan`、`training_plan_item` 和 `submission` 表。
 9. 解释后端如何封装 Piston 代码执行服务、Agent Tool、Observation、Memory、Dashboard 查询接口和 SSE 步骤流。

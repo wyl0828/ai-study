@@ -48,10 +48,10 @@ ai-study/
 - **语言**: 固定为 java
 - **Dashboard**: 已使用真实 `/api/users/1/...` MySQL-backed 接口，不再使用 mock 数据
 - **做题页模板**: `/problem/[id]` 由客户端 `ProblemWorkspace` 请求 `/api/problems/{id}/template`，Monaco Editor 使用返回的 `templateCode`
-- **分层提示**: 题目预设提示放在 `frontend/lib/problemHints.ts`，由 `ProblemHintPanel` 显示在左侧，Level 1/2/3 默认收起
+- **分层提示**: 题目预设提示优先从后端 `GET /api/problems/{id}` 返回的 `presetHints` 读取，fallback 到 `frontend/lib/problemHints.ts`；由 `ProblemHintPanel` 显示在左侧，Level 1/2/3 默认收起
 - **结果面板**: `ResultPanel` 只保留“测试结果”和“AI 诊断”，不要恢复右侧“分层提示”tab
 - **草稿**: 通过 `frontend/lib/draft.ts` 使用 localStorage，仅保存临时代码、最近提交结果和最近诊断快照
-- **SSE**: 后端已实现 SSE；当前主 demo 前端仍使用同步 `POST /api/agent/analyze`
+- **SSE**: 前端已通过 `fetch + ReadableStream` 接入 SSE，实时展示 Agent 步骤；同步 `POST /api/agent/analyze` 保留作为 fallback
 
 ### 后端
 
@@ -89,17 +89,18 @@ cd frontend && node lib\template-loading.node-test.cjs
 - [x] 后端: Dashboard 查询接口 `UserController`
 - [x] 后端: `102/103/104` Solution 提交模式试点
 - [x] 前端: `102/103/104` 统一动态模板加载
-- [x] 前端: 提示/诊断去重，右侧移除“分层提示”tab
+- [x] 前端: 提示/诊断去重，右侧移除”分层提示”tab
+- [x] 前端: SSE 流式展示 Agent 执行步骤
+- [x] 后端: 移除 HINT_GENERATION 步骤，MEMORY_UPDATE/TRAINING_PLAN 改为可失败
+- [x] 后端: 题目预设提示迁移到 problem 表 + ProblemDetailVO.presetHints
+- [x] 前端: ProblemNavigator 上一题/下一题切换
 
 ## 下一步重点
 
 优先参考 `docs/PROJECT_STATUS.md`：
 
-1. 固定 3 个演示题和 bug 样例。
-2. 编写根目录 README 和本地启动说明。
-3. 跑通完整 demo 并准备截图。
-4. 接入前端 SSE 展示 Agent 步骤。
-5. 稳定后再把题目预设提示迁移到后端数据。
+1. 跑通完整 demo 并记录截图。
+2. 准备简历描述和面试问答。
 
 ## 当前题目提交模式
 
