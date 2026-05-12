@@ -41,7 +41,7 @@ Agent 收到代码诊断任务
 | `docs/IMPLEMENTATION_PLAN.md` | 实际开发计划，按阶段推进实现 |
 | `docs/API.md` | 当前已实现后端 REST / SSE 接口规范 |
 | `docs/PROJECT_STATUS.md` | 当前成果、进度判断、主要风险和下一步开发大纲 |
-| `docs/KNOWLEDGE_TRAINING_DESIGN.md` | 后端知识训练模块设计、数据来源、训练计划接入边界 |
+| `docs/KNOWLEDGE_TRAINING_DESIGN.md` | 知识训练模块设计、前端 V1 交互、数据来源和训练计划接入边界 |
 
 当前文档用于说明项目是什么、为什么值得做、有哪些模块、数据库和接口如何设计，以及如何写进简历。
 
@@ -62,7 +62,7 @@ Agent 收到代码诊断任务
 - 提交失败后通过 SSE 实时展示 Agent 执行步骤，完成后展示诊断结果；同步 `POST /api/agent/analyze` 保留作为 fallback。
 - 做题页模板加载已统一为浏览器端请求 `/api/problems/{id}/template`：`102/103/104` 显示 `class Solution`，`101/105/106/107/108` 仍显示 ACM `public class Main`。
 - Dashboard 已通过用户学习查询接口接入真实 MySQL 数据，展示弱点、错题卡、最近提交、训练计划和后端知识训练入口。
-- 已新增 `/knowledge` 后端知识训练页，分类固定为 Java / JVM / Spring / MySQL / Redis，Java 基础、集合、并发只作为 tags 展示。
+- 已新增 `/knowledge` 知识训练页 V1，优先读取后端知识接口和 `knowledge_card` 真实数据，接口不可用时回退前端示例数据；页面完成搜索、筛选、AI 自测模拟评分、AI 点评、标杆回答解析、高频追问和标记已掌握。
 - 如果本地 Dashboard 接口提示不存在，需要确认 Spring Boot 后端已重启到包含 `UserController` 的最新代码，并确认新增后端文件已纳入版本控制。
 
 ### 后端
@@ -367,7 +367,9 @@ AI 不直接替代后端业务流程，而是在 `ErrorClassifierTool` 和 `Trai
 
 - `/knowledge` 页面
 - `JAVA/JVM/SPRING/MYSQL/REDIS` 五个一级分类
-- 每张卡片包含问题、答案、追问、记忆点、难度、tags 和来源链接
+- 当前前端 V1 优先读取后端知识接口，分类展示为 Java / MySQL / Redis / Spring / JVM；接口失败时回退本地示例数据
+- 每张卡片包含问题、AI 自测、AI 点评、标杆回答解析、核心记忆要点、面试官高频追问、难度和 tags
+- 展开后默认先自测，提交自测或跳过自测后才显示解析区
 - Dashboard 仅提供入口卡片，不在首页展开大量知识内容
 - 训练计划轻量展示 `KNOWLEDGE_CARD` 类型 item
 
@@ -375,7 +377,8 @@ AI 不直接替代后端业务流程，而是在 `ErrorClassifierTool` 和 `Trai
 
 - RAG 知识库检索
 - AI 模拟追问
-- 知识掌握度评分
+- 真实 AI 自测调用
+- 知识掌握度持久化
 - 知识卡收藏和浏览记录
 - `knowledge_weakness` 表
 
@@ -449,7 +452,7 @@ CREATE TABLE knowledge_card (
 
 - 一级分类固定为 `JAVA/JVM/SPRING/MYSQL/REDIS`。
 - Java 基础、集合、并发只写入 `tags`，不作为独立一级分类。
-- 当前数据来自 `data/knowledge_cards.sql`，参考小林 coding 选题并重新整理。
+- 当前数据来自 `data/knowledge_cards.sql`，参考小林 coding 和 JavaGuide 选题覆盖并重新整理。
 
 ### 5.4 problem_knowledge_point
 
@@ -817,7 +820,7 @@ agent/
 - 已完成：Dashboard 查询接口和真实数据接入
 - 已完成：薄弱点统计、错题卡和 3 天训练计划从 MySQL 持久化数据读取
 - 已完成：无数据时 Dashboard 显示空状态引导文案
-- 已完成：后端知识训练一期，包含 `/knowledge` 页面、知识卡 API、`knowledge_card` 表和 35 张左右结构化知识卡片
+- 已完成：知识训练页 V1，`/knowledge` 优先使用后端知识卡 API 和 `knowledge_card` 真实数据，接口不可用时回退本地示例数据；页面形成 AI 自测、AI 点评、标杆回答解析、高频追问和标记已掌握闭环
 - 已完成：训练计划支持 `PROBLEM` / `KNOWLEDGE_CARD` 两类 item，知识卡片最多轻量混入 1-2 条
 
 ### 暂不实现
@@ -944,7 +947,7 @@ MVP 阶段不追求复杂自主规划，而是采用可解释的状态机式 Age
 6. 右侧 AI 诊断面板实时展示 Agent 执行步骤，完成后显示错误类型、关联知识点、错误原因、改进建议和推荐训练。
 7. 展示学习中心中的真实薄弱点统计、错题卡片、最近提交和 3 天训练计划。
 8. 说明 Dashboard 数据来自 `user_weakness`、`mistake_card`、`training_plan`、`training_plan_item` 和 `submission` 表。
-9. 打开 `/knowledge`，展示 Java / JVM / Spring / MySQL / Redis 知识卡片作为独立训练入口。
+9. 打开 `/knowledge`，展示 Java / MySQL / Redis / Spring / JVM 知识训练作为独立入口，并演示先自测、再查看标杆回答解析和高频追问。
 10. 解释后端如何封装 Piston 代码执行服务、Agent Tool、Observation、Memory、Dashboard 查询接口、知识卡 API 和 SSE 步骤流。
 
 ## 12. README 标题建议

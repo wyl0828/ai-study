@@ -20,13 +20,14 @@
 - **前端做题页**：已实现三栏布局：左侧题目描述和题目预设分层提示，中间 Monaco Editor，右侧测试结果和 AI 诊断。提交失败后通过 SSE 实时展示 Agent 执行步骤，完成后展示诊断结果。
 - **提示/诊断边界已理顺**：题目通用 Level 1/2/3 提示放在左侧，默认收起，不调用 AI；右侧 AI 诊断只解释本次提交为什么错，并展示改进建议和推荐训练。
 - **Dashboard 真实数据接入**：学习中心已从 mock 数据切到后端真实接口，展示统计、薄弱点、错题卡、最近提交和最新训练计划。
-- **后端知识训练一期**：已新增 `/knowledge` 页面、`KnowledgeController`、`KnowledgeCardService` 和 `knowledge_card` 表；当前内置约 35 张 Java / JVM / Spring / MySQL / Redis 知识卡片，内容为结构化种子数据。
+- **知识训练页 V1**：已新增 `/knowledge` 前端训练页，优先读取后端知识接口和 `knowledge_card` 真实数据；接口失败时回退 3 条本地示例数据，搜索、难度筛选、分类筛选、卡片展开、AI 自测模拟评分、AI 点评、标杆回答解析、高频追问和标记已掌握均可用。
+- **后端知识训练一期能力**：后端已有 `KnowledgeController`、`KnowledgeCardService` 和 `knowledge_card` 表；`data/knowledge_cards.sql` 提供 15 张原创整理的 Java 后端面试知识卡。
 - **训练计划轻接入知识卡片**：`training_plan_item` 已支持 `PROBLEM` 和 `KNOWLEDGE_CARD` 两类条目；`TrainingPlannerTool` 保留原有 3 条算法训练项，只额外混入最多 1-2 条高优先级知识卡，不根据算法错因强行推荐八股。
 - **固定演示样例**：`101`、`103`、`104` 的 bug / fixed 代码已沉淀到 `docs/demo-cases/`，使用说明见 `docs/DEMO_CASES.md`。
 
 ## 2. 当前进度判断
 
-整体进度处于 **Phase 5 打磨与演示准备阶段**，并完成了“后端知识训练一期”扩展。SSE 流式诊断已接入前端，Agent 步骤实时展示。
+整体进度处于 **Phase 5 打磨与演示准备阶段**，并完成了知识训练页 V1。SSE 流式诊断已接入前端，Agent 步骤实时展示。
 
 从简历项目角度看，当前已经能讲清楚这些亮点：
 
@@ -50,8 +51,8 @@
 - **本地依赖较多**：MySQL、Redis、Piston、后端、前端都要启动，演示前需要一键化或清晰启动脚本。
 - **SSE 稳定性**：SSE 已接入前端，但客户端断开、多请求并发等边界情况仍需观察。
 - **题目提示已迁移到后端**：`problem` 表存储 `hint_level1/2/3`，通过 `ProblemDetailVO.presetHints` 返回。
-- **已有本地数据库需要升级**：旧库访问 `/knowledge` 前需要执行 `data/knowledge_training_migration.sql` 和 `data/knowledge_cards.sql`；PowerShell 下使用 `cmd /c "mysql ... < file.sql"`。
-- **知识卡内容边界**：当前知识卡参考小林 coding 选题并重新整理，不是 RAG，也不应直接复制外部文章长文本。
+- **知识数据导入依赖**：新库可直接执行 `data/schema.sql` 和 `data/knowledge_cards.sql`；旧库需要先执行 `data/knowledge_training_migration.sql`，再执行 `data/knowledge_cards.sql`。
+- **知识卡内容边界**：当前知识卡参考小林 coding 和 JavaGuide 选题覆盖并重新整理，不是 RAG，也不应直接复制外部文章长文本。
 - **文档与代码容易漂移**：提示/诊断边界已调整，后续修改接口或页面时要同步更新 `docs/API.md` 和设计文档。
 
 ## 4. 下一步大纲
@@ -66,7 +67,7 @@
 - 写清楚本地启动顺序：MySQL、Redis、Piston、Spring Boot、Next.js。
 - 确认 Dashboard 在触发一次诊断后能看到新增弱点、错题卡和训练计划。
 - 确认训练计划中算法题显示为“算法题：xxx”，知识卡片显示为“知识卡片：xxx”。
-- 确认 `/knowledge` 能展示五个一级分类，Java 基础/集合/并发只作为 tags 出现。
+- 确认 `/knowledge` 能展示搜索、难度筛选、分类筛选、AI 自测、提交后解析和标记已掌握。
 
 ### 4.2 第二优先级：README 与面试材料
 
@@ -81,9 +82,10 @@
 
 ### 4.3 第三优先级：小范围产品增强
 
-- 给知识卡片增加轻量自测状态：
-  - 只记录是否看过、是否答错、是否收藏。
-  - 暂不新增复杂 `knowledge_weakness` 体系。
+- 增强知识训练反馈：
+  - AI 点评区补充“缺失要点”。
+  - 低分点评文案更接近面试官反馈。
+  - 后续再决定是否把掌握状态、自测记录持久化。
 - 增加 Accepted 提交后的轻量代码点评：
   - 不生成完整答案。
   - 只点评复杂度、代码风格和可优化点。
@@ -105,7 +107,7 @@
 3. 跑一遍完整 demo 并记录截图
 4. 前端 SSE 步骤展示 ✓
 5. 将题目预设提示迁移到后端数据 ✓
-6. 后端知识训练一期 ✓
+6. 知识训练页 V1 ✓
 7. 准备简历描述和面试问答
 ```
 

@@ -196,6 +196,7 @@ export interface KnowledgeCardListItem {
   title: string;
   question: string;
   difficulty: string;
+  keyPoints: string[];
   tags: string[];
   sourceName: string | null;
   sourceUrl: string | null;

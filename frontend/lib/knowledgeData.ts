@@ -1,3 +1,8 @@
+import type {
+  KnowledgeCardDetail as ApiKnowledgeCardDetail,
+  KnowledgeCardListItem,
+} from "./types";
+
 export type KnowledgeCategory = "Java" | "MySQL" | "Redis" | "Spring" | "JVM";
 export type KnowledgeDifficulty = "简单" | "中等" | "困难";
 
@@ -12,6 +17,8 @@ export interface KnowledgeTopic {
   referenceAnswer: string;
   keyPoints: string[];
   followUpQuestions: string[];
+  sourceName?: string | null;
+  sourceUrl?: string | null;
   mastered: boolean;
 }
 
@@ -124,6 +131,83 @@ export const knowledgeDifficulties: Array<"全部" | KnowledgeDifficulty> = [
   "困难",
 ];
 
+const categoryMap: Record<string, KnowledgeCategory> = {
+  JAVA: "Java",
+  MYSQL: "MySQL",
+  REDIS: "Redis",
+  SPRING: "Spring",
+  JVM: "JVM",
+  Java: "Java",
+  MySQL: "MySQL",
+  Redis: "Redis",
+  Spring: "Spring",
+};
+
+const difficultyMap: Record<string, KnowledgeDifficulty> = {
+  EASY: "简单",
+  MEDIUM: "中等",
+  HARD: "困难",
+  简单: "简单",
+  中等: "中等",
+  困难: "困难",
+};
+
+export function toKnowledgeTopic(
+  card: KnowledgeCardListItem | ApiKnowledgeCardDetail
+): KnowledgeTopic {
+  const detail = card as Partial<ApiKnowledgeCardDetail>;
+  const keyPoints = normalizeKeyPoints(detail.keyPoints, card.question);
+  const followUpQuestions = splitFollowUp(detail.followUp);
+
+  return {
+    id: card.id,
+    title: card.title,
+    category: categoryMap[card.category] || categoryMap[card.label] || "Java",
+    difficulty: difficultyMap[card.difficulty] || "中等",
+    tags: card.tags || [],
+    question: card.question,
+    answerKeywords: keyPoints.map(toKeywordGroup),
+    referenceAnswer: detail.answer || "暂无标杆回答，请先围绕核心记忆点组织自己的面试回答。",
+    keyPoints,
+    followUpQuestions,
+    sourceName: card.sourceName,
+    sourceUrl: card.sourceUrl,
+    mastered: false,
+  };
+}
+
+function normalizeKeyPoints(
+  keyPoints: string[] | undefined,
+  fallback: string
+): string[] {
+  const points = (keyPoints || [])
+    .map((point) => point.trim())
+    .filter(Boolean);
+
+  if (points.length > 0) {
+    return points;
+  }
+
+  return [fallback];
+}
+
+function splitFollowUp(followUp: string | null | undefined): string[] {
+  if (!followUp) return [];
+  return followUp
+    .split(/\r?\n/)
+    .map((question) => question.trim())
+    .filter(Boolean);
+}
+
+function toKeywordGroup(point: string): string[] {
+  const fragments = point
+    .split(/[：:，,、+（）()\/\s]+/)
+    .map((fragment) => fragment.trim())
+    .filter((fragment) => fragment.length >= 2);
+
+  return Array.from(new Set([point, ...fragments]));
+}
+
 export function evaluateSelfTest(
   answer: string,
   topic: KnowledgeTopic
@@ -135,7 +219,7 @@ export function evaluateSelfTest(
     )
   );
 
-  const matchRatio = matchedKeyPoints.length / topic.keyPoints.length;
+  const matchRatio = matchedKeyPoints.length / Math.max(topic.keyPoints.length, 1);
   if (matchRatio >= 0.75) {
     return {
       score: 85,

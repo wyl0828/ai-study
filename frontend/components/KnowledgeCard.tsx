@@ -159,6 +159,23 @@ export default function KnowledgeCard({
                       </div>
                     ))}
                   </div>
+                  {topic.sourceName && (
+                    <div className="mt-4 border-t border-outline-variant/20 pt-3 text-xs text-on-surface-variant">
+                      选题参考：
+                      {topic.sourceUrl ? (
+                        <a
+                          href={topic.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-medium text-primary hover:underline"
+                        >
+                          {topic.sourceName}
+                        </a>
+                      ) : (
+                        <span>{topic.sourceName}</span>
+                      )}
+                    </div>
+                  )}
                 </section>
 
                 <section className="rounded-lg border border-outline-variant/30 bg-surface-container-low p-4">

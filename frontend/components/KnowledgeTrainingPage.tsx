@@ -1,32 +1,99 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { BookOpenCheck, Search, SearchX } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, BookOpenCheck, Search, SearchX } from "lucide-react";
 import KnowledgeCard from "./KnowledgeCard";
+import { knowledgeApi } from "@/lib/api";
 import {
   knowledgeCategories,
   knowledgeDifficulties,
   knowledgeTopics,
+  toKnowledgeTopic,
   type KnowledgeCategory,
   type KnowledgeDifficulty,
+  type KnowledgeTopic,
 } from "@/lib/knowledgeData";
 
 type CategoryFilter = "全部分类" | KnowledgeCategory;
 type DifficultyFilter = "全部" | KnowledgeDifficulty;
+
+const categoryLabels: KnowledgeCategory[] = ["Java", "MySQL", "Redis", "Spring", "JVM"];
+
+function isKnowledgeCategory(value: string): value is KnowledgeCategory {
+  return categoryLabels.includes(value as KnowledgeCategory);
+}
 
 export default function KnowledgeTrainingPage() {
   const [search, setSearch] = useState("");
   const [difficulty, setDifficulty] = useState<DifficultyFilter>("全部");
   const [category, setCategory] = useState<CategoryFilter>("全部分类");
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [topics, setTopics] = useState<KnowledgeTopic[]>(knowledgeTopics);
+  const [categories, setCategories] =
+    useState<Array<"全部分类" | KnowledgeCategory>>(knowledgeCategories);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState("");
+  const [detailIds, setDetailIds] = useState<Set<number>>(() => new Set());
   const [masteredIds, setMasteredIds] = useState<Set<number>>(
     () => new Set(knowledgeTopics.filter((topic) => topic.mastered).map((topic) => topic.id))
   );
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadKnowledgeCards() {
+      setLoading(true);
+      setNotice("");
+      try {
+        const [categoryResponse, cardResponse] = await Promise.all([
+          knowledgeApi.categories(),
+          knowledgeApi.cards(),
+        ]);
+
+        if (cancelled) return;
+
+        const nextTopics = cardResponse.data.map(toKnowledgeTopic);
+        const availableCategories = new Set(
+          categoryResponse.data.map((item) => item.label).filter(isKnowledgeCategory)
+        );
+        const nextCategories = categoryLabels.filter((item) => availableCategories.has(item));
+
+        if (nextTopics.length === 0) {
+          throw new Error("后端知识卡为空");
+        }
+
+        setTopics(nextTopics);
+        setCategories(["全部分类", ...nextCategories]);
+        setMasteredIds(new Set());
+        setDetailIds(new Set());
+      } catch {
+        if (!cancelled) {
+          setTopics(knowledgeTopics);
+          setCategories(knowledgeCategories);
+          setMasteredIds(
+            new Set(knowledgeTopics.filter((topic) => topic.mastered).map((topic) => topic.id))
+          );
+          setDetailIds(new Set(knowledgeTopics.map((topic) => topic.id)));
+          setNotice("后端知识卡暂不可用，当前使用本地示例数据。");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadKnowledgeCards();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const filteredTopics = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
-    return knowledgeTopics.filter((topic) => {
+    return topics.filter((topic) => {
       if (difficulty !== "全部" && topic.difficulty !== difficulty) return false;
       if (category !== "全部分类" && topic.category !== category) return false;
       if (!keyword) return true;
@@ -43,7 +110,7 @@ export default function KnowledgeTrainingPage() {
         .toLowerCase()
         .includes(keyword);
     });
-  }, [category, difficulty, search]);
+  }, [category, difficulty, search, topics]);
 
   const markMastered = (id: number) => {
     setMasteredIds((current) => {
@@ -51,6 +118,32 @@ export default function KnowledgeTrainingPage() {
       next.add(id);
       return next;
     });
+  };
+
+  const toggleTopic = (topic: KnowledgeTopic) => {
+    const opening = expandedId !== topic.id;
+    setExpandedId((current) => (current === topic.id ? null : topic.id));
+
+    if (!opening || detailIds.has(topic.id)) {
+      return;
+    }
+
+    knowledgeApi
+      .detail(topic.id)
+      .then((response) => {
+        const detailTopic = toKnowledgeTopic(response.data);
+        setTopics((current) =>
+          current.map((item) => (item.id === detailTopic.id ? detailTopic : item))
+        );
+        setDetailIds((current) => {
+          const next = new Set(current);
+          next.add(topic.id);
+          return next;
+        });
+      })
+      .catch(() => {
+        setNotice("部分知识卡解析加载失败，当前显示列表数据或本地示例。");
+      });
   };
 
   return (
@@ -100,7 +193,7 @@ export default function KnowledgeTrainingPage() {
           <div className="hidden h-5 w-px bg-outline-variant/40 lg:block" />
 
           <div className="flex flex-wrap items-center gap-2">
-            {knowledgeCategories.map((item) => (
+            {categories.map((item) => (
               <button
                 key={item}
                 type="button"
@@ -118,14 +211,22 @@ export default function KnowledgeTrainingPage() {
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-outline-variant/25 pt-3 text-xs text-on-surface-variant">
-          <span>总知识点 {knowledgeTopics.length}</span>
+          <span>总知识点 {topics.length}</span>
           <span className="flex items-center gap-1">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
             已掌握 {masteredIds.size}
           </span>
           <span>当前显示 {filteredTopics.length}</span>
+          {loading && <span>正在加载真实知识卡...</span>}
         </div>
       </section>
+
+      {notice && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{notice}</span>
+        </div>
+      )}
 
       {filteredTopics.length === 0 ? (
         <div className="rounded-xl border border-outline-variant/30 bg-surface-container-lowest py-16 text-center text-on-surface-variant">
@@ -140,9 +241,7 @@ export default function KnowledgeTrainingPage() {
               topic={topic}
               expanded={expandedId === topic.id}
               mastered={masteredIds.has(topic.id)}
-              onToggle={() =>
-                setExpandedId((current) => (current === topic.id ? null : topic.id))
-              }
+              onToggle={() => toggleTopic(topic)}
               onMarkMastered={() => markMastered(topic.id)}
             />
           ))}

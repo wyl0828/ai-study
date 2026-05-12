@@ -66,7 +66,8 @@ Agent 收到任务
 - 当前真实暴露的 Controller：`ProblemController`、`SubmissionController`、`AgentController`、`UserController`、`KnowledgeController`。
 - 当前真实暴露的 Agent 接口：`POST /api/agent/analyze`、`GET /api/submissions/{submissionId}/diagnosis/stream`。
 - Phase 3 前端核心页面已完成：`/`、`/problem/[id]`、`/dashboard` 均已按 `stitch_front_end_interface_design/mvp/` HTML 原型做紧凑 MVP 风格还原，并完成中文化。
-- 后端知识训练一期已完成：新增 `/knowledge` 页面、`knowledge_card` 表和约 35 张结构化知识卡片；一级分类固定为 `JAVA/JVM/SPRING/MYSQL/REDIS`，Java 基础、集合、并发只作为 tags 展示。
+- 知识训练页 V1 已完成：`/knowledge` 优先调用后端知识接口读取 `knowledge_card` 真实数据，接口失败时回退本地示例数据；支持搜索、难度筛选、分类筛选、AI 自测模拟评分、AI 点评、标杆回答解析、高频追问和标记已掌握。
+- 后端知识训练一期能力已具备：已有 `knowledge_card` 表和 15 张结构化知识卡片，内容参考小林 coding 和 JavaGuide 选题覆盖后原创整理。
 - 当前做题页已完成提示/诊断去重：左侧展示题目预设 Level 1/2/3 分层提示（优先从后端 `presetHints` 读取），右侧只保留测试结果和 AI 诊断；提交失败后通过 SSE 实时展示 Agent 步骤，完成后展示诊断结果。
 - Dashboard 已通过 `UserController` 接入真实 MySQL 学习数据，展示统计、薄弱点、错题卡、最近提交、最新训练计划和后端知识训练入口；单独 hint 查询、accepted-code review 和手动重新生成训练计划留到后续阶段。
 - 训练计划 item 已兼容扩展为 `PROBLEM` / `KNOWLEDGE_CARD` 两类，`TrainingPlannerTool` 保留原有 3 条算法训练项，只额外混入最多 1-2 条知识卡片，不根据算法错因强行推荐八股。
@@ -102,15 +103,16 @@ interview-coach/
 │   │   ├── MistakeCards.tsx
 │   │   ├── SubmissionHistory.tsx
 │   │   ├── TrainingPlan.tsx
-│   │   ├── KnowledgeTrainingClient.tsx
-│   │   ├── KnowledgeCategoryTabs.tsx
-│   │   ├── KnowledgeCardList.tsx
-│   │   ├── KnowledgeCardDetail.tsx
+│   │   ├── KnowledgeTrainingPage.tsx
+│   │   ├── KnowledgeCard.tsx
+│   │   ├── KnowledgeSelfTest.tsx
+│   │   ├── KnowledgeFeedback.tsx
 │   │   └── KnowledgeTrainingEntry.tsx
 │   └── lib/
 │       ├── api.ts
 │       ├── draft.ts
 │       ├── i18n.ts
+│       ├── knowledgeData.ts
 │       ├── problemHints.ts
 │       └── types.ts
 │
@@ -475,7 +477,7 @@ handler：全局异常处理和统一响应处理
 
 ### 阶段 4.5：后端知识训练一期
 
-状态：已完成。
+状态：后端基础能力已完成；前端 `/knowledge` 页面 V1 已接入真实知识接口，并保留本地示例数据兜底。
 
 目标：在不改变算法诊断主线的前提下，增加独立后端知识训练入口，并让训练计划可以同时展示算法题训练和知识卡片复习。
 
@@ -483,17 +485,18 @@ handler：全局异常处理和统一响应处理
 
 1. 新增 `knowledge_card` 表和 `KnowledgeCard`、`KnowledgeCardMapper`、`KnowledgeCardService`、`KnowledgeController`。
 2. 新增 `GET /api/knowledge/categories`、`GET /api/knowledge/cards`、`GET /api/knowledge/cards/{id}`。
-3. 新增 `/knowledge` 页面，分类固定为 Java / JVM / Spring / MySQL / Redis。
-4. 新增约 35 张结构化知识卡片种子数据，来源字段标记为“小林 coding”，来源链接为 `https://xiaolincoding.com/interview/`。
+3. 新增 `/knowledge` 页面，前端 V1 分类固定为 Java / MySQL / Redis / Spring / JVM。
+4. 新增 15 张结构化知识卡片种子数据，来源字段标记为“小林 coding / JavaGuide”或“小林 coding, JavaGuide”，来源链接使用对应栏目或首页 URL。
 5. 扩展 `training_plan_item`：`item_type`、`knowledge_card_id`、`knowledge_card_title`。
 6. 训练计划展示区支持区分“算法题：xxx”和“知识卡片：xxx”。
+7. 前端 V1 优先使用 `GET /api/knowledge/categories`、`GET /api/knowledge/cards` 和 `GET /api/knowledge/cards/{id}`，接口失败时回退 3 条本地示例知识点。
 
 边界约束：
 
 - 第一版不是 RAG，知识内容来自 MySQL 结构化种子数据。
 - 算法错误只推荐算法相关训练，不强行映射到 MySQL / Redis / Spring。
 - 每个训练计划最多混入 1-2 条知识卡片，不覆盖、不减少原有算法训练项。
-- 暂不做收藏、掌握度、自测记录或 `knowledge_weakness` 表。
+- 暂不把收藏、掌握度、自测记录或 `knowledge_weakness` 表落到后端。
 
 ### 阶段 5：打磨与演示准备，Day 17-20
 
@@ -861,8 +864,12 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 - 提交代码，确认测试结果展示。
 - 提交失败后，确认同步 `POST /api/agent/analyze` 返回的 AI 诊断能展示；右侧不再出现“分层提示”tab。
 - 打开 Dashboard，确认统计、弱点、错题卡、最近提交和训练计划来自真实查询接口。
-- 打开 `/knowledge`，确认知识卡片能加载，分类只显示全部 / Java / JVM / Spring / MySQL / Redis。
-- 在 Java 分类中确认基础、集合、并发只作为 tags 展示。
+- 打开 `/knowledge`，确认知识训练页能加载，分类只显示全部分类 / Java / MySQL / Redis / Spring / JVM。
+- 确认搜索、难度筛选、分类筛选有效。
+- 展开知识点后默认只显示 AI 自测输入框、提交按钮和“跳过自测，直接查看解析”。
+- 提交自测后确认出现 AI 点评/评分、命中记忆点、标杆回答解析、核心记忆要点、面试官高频追问和标记已掌握。
+- 点击“跳过自测，直接查看解析”时确认显示解析区但不显示 AI 评分。
+- 点击“标记已掌握”后确认顶部已掌握数量变化。
 - 在 Dashboard 点击“后端知识训练”入口，确认能跳转到 `/knowledge`。
 - 在训练计划中确认算法题和知识卡片能用 `itemType` 区分展示。
 - 首次无数据时，确认 Dashboard 显示空状态引导文案。
@@ -911,7 +918,7 @@ hintLevel3: 只给检查顺序/伪代码，不给完整 Java 答案
 10. 通过数据库或后端日志展示 `agent_run`、`agent_step`、`ai_diagnosis`、`hint_record`、`user_weakness`、`mistake_card`、`training_plan`。
 11. 讲解后端设计：Piston 封装、Agent Tool、Observation、Memory、SSE、MySQL、Redis。
 12. 打开 Dashboard，展示真实 MySQL 数据驱动的薄弱点、错题卡、最近提交和训练计划。
-13. 打开 `/knowledge`，展示后端知识训练作为独立模块进入统一训练计划，而不是由算法错误强行推荐八股。
+13. 打开 `/knowledge`，展示知识训练作为独立模块：先 AI 自测，再看标杆回答解析和高频追问，而不是由算法错误强行推荐八股。
 
 ## 10. 简历准备
 
