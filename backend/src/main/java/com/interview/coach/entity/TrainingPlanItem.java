@@ -14,11 +14,17 @@ public class TrainingPlanItem {
 
     private Long planId;
 
+    private String itemType;
+
+    private Long knowledgeCardId;
+
     private Integer dayIndex;
 
     private String knowledgePoint;
 
     private String problemTitle;
+
+    private String knowledgeCardTitle;
 
     private String reason;
 

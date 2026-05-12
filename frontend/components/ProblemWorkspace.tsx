@@ -220,7 +220,8 @@ export default function ProblemWorkspace({
           onDone: (result) => {
             if (streamId !== currentStreamIdRef.current) return;
             doneReceived = true;
-            console.log("[ProblemWorkspace onDone]", result);
+            console.log("[ProblemWorkspace onDone] result:", result);
+            console.log("[ProblemWorkspace onDone] codeReview:", result.codeReview);
             setDiagnosis(result);
             diagnosisCodeSnapshotRef.current = codeSnapshot;
             setIsAnalyzing(false);
@@ -247,10 +248,39 @@ export default function ProblemWorkspace({
           onEnd: () => {
             if (streamId !== currentStreamIdRef.current) return;
             if (!doneReceived) {
-              console.warn("[SSE ended without done event]");
+              console.warn("[SSE ended without done event, falling back to sync API]");
+              // SSE done 丢失，降级到同步 POST 接口
+              agentApi.analyze(resultWithSnapshot.submissionId)
+                .then((res) => {
+                  if (streamId !== currentStreamIdRef.current) return;
+                  const result = res.data;
+                  console.log("[fallback sync] result:", result);
+                  setDiagnosis(result);
+                  diagnosisCodeSnapshotRef.current = codeSnapshot;
+                  setActiveTab("diagnosis");
+
+                  const diagnosisWithSnapshot: ProblemDraft["lastDiagnosis"] = {
+                    ...result,
+                    codeSnapshot,
+                  };
+                  saveDraft(DEMO_USER_ID, problemId, {
+                    code: codeSnapshot,
+                    language: "java",
+                    lastResult: resultWithSnapshot,
+                    lastDiagnosis: diagnosisWithSnapshot,
+                  });
+                  setDraftSavedAt(new Date().toISOString());
+                })
+                .catch((err) => {
+                  console.error("[fallback sync failed]", err);
+                })
+                .finally(() => {
+                  if (streamId !== currentStreamIdRef.current) return;
+                  setIsAnalyzing(false);
+                });
+            } else {
+              setIsAnalyzing(false);
             }
-            // onEnd 只能关闭 loading，不能清空诊断内容
-            setIsAnalyzing(false);
           },
         }
       );
@@ -293,9 +323,7 @@ export default function ProblemWorkspace({
       });
       setDraftSavedAt(new Date().toISOString());
 
-      if (result.status !== "ACCEPTED") {
-        startAiAnalysis(resultWithSnapshot, code);
-      }
+      startAiAnalysis(resultWithSnapshot, code);
     } catch (err) {
       setError(err instanceof Error ? err.message : "提交失败，请稍后重试");
     } finally {

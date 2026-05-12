@@ -15,6 +15,7 @@ DROP TABLE IF EXISTS agent_run;
 DROP TABLE IF EXISTS submission;
 DROP TABLE IF EXISTS test_case;
 DROP TABLE IF EXISTS problem_knowledge_point;
+DROP TABLE IF EXISTS knowledge_card;
 DROP TABLE IF EXISTS knowledge_point;
 DROP TABLE IF EXISTS problem;
 DROP TABLE IF EXISTS `user`;
@@ -55,6 +56,26 @@ CREATE TABLE knowledge_point (
     category VARCHAR(64) NOT NULL,
     description TEXT,
     UNIQUE KEY uk_knowledge_point_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE knowledge_card (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    category VARCHAR(64) NOT NULL,
+    title VARCHAR(128) NOT NULL,
+    question TEXT NOT NULL,
+    answer TEXT NOT NULL,
+    follow_up TEXT,
+    key_points TEXT,
+    difficulty VARCHAR(32) NOT NULL,
+    tags VARCHAR(255),
+    source_name VARCHAR(128),
+    source_url VARCHAR(512),
+    enabled TINYINT(1) NOT NULL DEFAULT 1,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    INDEX idx_knowledge_card_category (category, enabled, sort_order),
+    INDEX idx_knowledge_card_enabled (enabled, sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE problem_knowledge_point (
@@ -205,11 +226,15 @@ CREATE TABLE training_plan (
 CREATE TABLE training_plan_item (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     plan_id BIGINT NOT NULL,
+    item_type VARCHAR(32) NOT NULL DEFAULT 'PROBLEM',
+    knowledge_card_id BIGINT,
     day_index INT NOT NULL,
     knowledge_point VARCHAR(64) NOT NULL,
     problem_title VARCHAR(128),
+    knowledge_card_title VARCHAR(128),
     reason TEXT NOT NULL,
     review_focus TEXT NOT NULL,
     status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
-    INDEX idx_training_plan_item_plan_id (plan_id, day_index)
+    INDEX idx_training_plan_item_plan_id (plan_id, day_index),
+    INDEX idx_training_plan_item_type (plan_id, item_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

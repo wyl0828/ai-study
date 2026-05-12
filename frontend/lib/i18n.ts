@@ -110,6 +110,7 @@ const agentStepMap: Record<string, string> = {
   CODE_EXECUTION: "重新执行代码",
   OBSERVATION: "分析测试结果",
   ERROR_CLASSIFICATION: "定位错误原因",
+  CODE_REVIEW: "代码点评",
   MEMORY_UPDATE: "更新薄弱点记录",
   TRAINING_PLAN: "生成训练建议",
   COMPLETED: "诊断完成",
@@ -171,7 +172,8 @@ const trainingCopyMap: Record<string, string> = {
   "containsKey": "键存在性判断",
 };
 
-function replaceKnownPhrases(text: string, phrases: Record<string, string>): string {
+function replaceKnownPhrases(text: string | null | undefined, phrases: Record<string, string>): string {
+  if (text == null) return "";
   return Object.entries(phrases)
     .sort(([a], [b]) => b.length - a.length)
     .reduce((value, [source, target]) => value.replaceAll(source, target), text)
@@ -187,57 +189,65 @@ function replaceKnownPhrases(text: string, phrases: Record<string, string>): str
     .replace(": ", "：");
 }
 
-export function problemTitle(text: string): string {
+export function problemTitle(text: string | null | undefined): string {
+  if (text == null) return "";
   return problemTitleMap[text] || text;
 }
 
-export function knowledgePoint(text: string): string {
+export function knowledgePoint(text: string | null | undefined): string {
+  if (text == null) return "";
   return replaceKnownPhrases(knowledgePointMap[text] || text, trainingPhraseMap);
 }
 
-export function categoryName(text: string): string {
+export function categoryName(text: string | null | undefined): string {
+  if (text == null) return "";
   return categoryMap[text] || text;
 }
 
-export function difficultyName(text: string): string {
+export function difficultyName(text: string | null | undefined): string {
+  if (text == null) return "";
   return difficultyMap[text] || text;
 }
 
-export function problemDescription(text: string): string {
+export function problemDescription(text: string | null | undefined): string {
+  if (text == null) return "";
   return descriptionMap[text] || text;
 }
 
-export function formatText(text: string): string {
+export function formatText(text: string | null | undefined): string {
+  if (text == null) return "";
   return formatMap[text] || text;
 }
 
-export function errorTypeName(text: string): string {
+export function errorTypeName(text: string | null | undefined): string {
+  if (text == null) return "";
   return errorTypeMap[text] || text;
 }
 
-export function agentStepName(text: string): string {
+export function agentStepName(text: string | null | undefined): string {
+  if (text == null) return "";
   return agentStepMap[text] || text;
 }
 
-export function trainingPlanTitle(text: string): string {
+export function trainingPlanTitle(text: string | null | undefined): string {
   return replaceKnownPhrases(text, trainingPhraseMap);
 }
 
-export function trainingPlanText(text: string): string {
+export function trainingPlanText(text: string | null | undefined): string {
   return replaceKnownPhrases(text, trainingCopyMap);
 }
 
-export function learningText(text: string): string {
+export function learningText(text: string | null | undefined): string {
   return replaceKnownPhrases(text, { ...trainingPhraseMap, ...trainingCopyMap });
 }
 
 export function diagnosisDisplay(
-  diagnosis: string,
-  specificError: string
+  diagnosis: string | null | undefined,
+  specificError: string | null | undefined
 ): { diagnosisText: string; suggestionText: string } {
   return {
-    diagnosisText: normalizeDiagnosisText(diagnosis),
-    suggestionText: normalizeSuggestionText(specificError),
+    diagnosisText: normalizeDiagnosisText(diagnosis ?? ""),
+    suggestionText: normalizeSuggestionText(specificError ?? ""),
   };
 }
 

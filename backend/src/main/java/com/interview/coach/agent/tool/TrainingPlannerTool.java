@@ -3,7 +3,10 @@ package com.interview.coach.agent.tool;
 import com.interview.coach.agent.AgentContext;
 import com.interview.coach.dto.TrainingPlanResult;
 import com.interview.coach.dto.TrainingPlanResult.TrainingPlanItemResult;
+import com.interview.coach.service.KnowledgeCardService;
 import com.interview.coach.service.TrainingPlanService;
+import com.interview.coach.vo.KnowledgeCardVO;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +15,8 @@ import org.springframework.stereotype.Component;
 public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResult> {
 
     private final TrainingPlanService trainingPlanService;
+
+    private final KnowledgeCardService knowledgeCardService;
 
     @Override
     public String name() {
@@ -43,17 +48,35 @@ public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResul
         result.getItems().add(item(3, knowledgePoint, problemTitle,
                 "回顾错题卡后重新挑战原题。",
                 "编码前先写出不变量或边界条件。"));
+        addKnowledgeCards(result);
         return result;
     }
 
     private TrainingPlanItemResult item(Integer dayIndex, String knowledgePoint, String problemTitle,
             String reason, String reviewFocus) {
         TrainingPlanItemResult item = new TrainingPlanItemResult();
+        item.setItemType("PROBLEM");
         item.setDayIndex(dayIndex);
         item.setKnowledgePoint(knowledgePoint);
         item.setProblemTitle(problemTitle);
         item.setReason(reason);
         item.setReviewFocus(reviewFocus);
         return item;
+    }
+
+    private void addKnowledgeCards(TrainingPlanResult result) {
+        List<KnowledgeCardVO> cards = knowledgeCardService.listReviewCards(2);
+        for (int i = 0; i < cards.size() && i < 2; i++) {
+            KnowledgeCardVO card = cards.get(i);
+            TrainingPlanItemResult item = new TrainingPlanItemResult();
+            item.setItemType("KNOWLEDGE_CARD");
+            item.setKnowledgeCardId(card.getId());
+            item.setKnowledgeCardTitle(card.getTitle());
+            item.setDayIndex(i + 1);
+            item.setKnowledgePoint(card.getLabel());
+            item.setReason("穿插一个 Java 后端高频知识点，保持面试表达训练。");
+            item.setReviewFocus(String.join("、", card.getTags()));
+            result.getItems().add(item);
+        }
     }
 }

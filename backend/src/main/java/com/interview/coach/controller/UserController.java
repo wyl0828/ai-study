@@ -3,6 +3,7 @@ package com.interview.coach.controller;
 import com.interview.coach.service.UserLearningService;
 import com.interview.coach.vo.ApiResponse;
 import com.interview.coach.vo.DashboardStatsVO;
+import com.interview.coach.vo.ErrorStatsVO;
 import com.interview.coach.vo.MistakeCardVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
 import com.interview.coach.vo.TrainingPlanVO;
@@ -44,5 +45,10 @@ public class UserController {
     @GetMapping("/{userId}/submissions/recent")
     public ApiResponse<List<SubmissionHistoryVO>> getRecentSubmissions(@PathVariable Long userId) {
         return ApiResponse.success(userLearningService.getRecentSubmissions(userId));
+    }
+
+    @GetMapping("/{userId}/dashboard/error-stats")
+    public ApiResponse<ErrorStatsVO> getErrorStats(@PathVariable Long userId) {
+        return ApiResponse.success(userLearningService.getErrorStats(userId));
     }
 }

@@ -1,6 +1,6 @@
 # AI Interview Coach Agent
 
-基于 Agent Workflow 的 Java 代码诊断与面试训练系统。
+基于 Agent Workflow 的 Java 代码诊断、后端知识训练与统一训练计划系统。
 
 ## 项目定位
 
@@ -12,6 +12,8 @@
 题目预设提示 → 提交代码 → Piston 判题 → Agent Observation
 → AI 错误诊断 → 弱点记忆 → 错题卡 → 训练计划
 ```
+
+同时提供独立的后端知识训练入口，将 Java、JVM、Spring、MySQL、Redis 高频面试知识整理为结构化知识卡片，并与算法题训练一起进入学习中心展示。
 
 ## 技术栈
 
@@ -33,7 +35,9 @@ ai-study/
 ├── frontend/                          # Next.js 前端
 ├── data/                              # 数据库脚本
 │   ├── schema.sql                     # 建表语句
-│   └── problems.sql                   # 题目数据
+│   ├── problems.sql                   # 题目数据
+│   ├── knowledge_cards.sql            # 后端知识卡片数据
+│   └── knowledge_training_migration.sql # 本地数据库升级脚本
 ├── docs/                              # 项目文档
 │   ├── API.md                         # 接口文档
 │   ├── IMPLEMENTATION_PLAN.md         # 实现计划
@@ -65,6 +69,7 @@ mysql -u root -p -e "CREATE DATABASE ai_interview_coach CHARACTER SET utf8mb4;"
 # 导入表结构和数据
 mysql -u root -p ai_interview_coach < data/schema.sql
 mysql -u root -p ai_interview_coach < data/problems.sql
+mysql -u root -p ai_interview_coach < data/knowledge_cards.sql
 ```
 
 ### 2. 配置环境变量
@@ -135,10 +140,17 @@ npm run dev
 
 - **弱点记忆**：按知识点统计错误次数和薄弱分数
 - **错题卡片**：记录每次错误的原因和正确思路
-- **训练计划**：根据弱点生成 3 天针对性训练
+- **训练计划**：根据弱点生成 3 天针对性训练，可同时展示算法题和后端知识卡片复习任务
 - **Dashboard**：展示统计、薄弱点、错题卡、最近提交和训练计划
 
-### 4. 分层提示机制
+### 4. 后端知识训练
+
+- `/knowledge` 独立页面展示 Java、JVM、Spring、MySQL、Redis 知识卡片
+- 每张卡包含问题、标准回答、面试追问、记忆要点和参考来源
+- 内容参考公开面试题目录后重新整理，不做第一版 RAG
+- Dashboard 提供“后端知识训练”入口
+
+### 5. 分层提示机制
 
 - **题目预设提示**：存储在后端 `problem` 表，通过 API 返回，Level 1/2/3 展示在左侧题目区，不调用 AI
 - **AI 诊断**：针对本次提交解释错误原因，展示在右侧结果区，通过 SSE 实时展示 Agent 步骤

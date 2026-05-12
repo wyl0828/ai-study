@@ -5,11 +5,17 @@ import lombok.Data;
 @Data
 public class TrainingPlanItemVO {
 
+    private String itemType;
+
+    private Long knowledgeCardId;
+
     private Integer dayIndex;
 
     private String knowledgePoint;
 
     private String problemTitle;
+
+    private String knowledgeCardTitle;
 
     private String reason;
 

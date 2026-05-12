@@ -1,5 +1,6 @@
 package com.interview.coach.vo;
 
+import com.interview.coach.dto.CodeReviewResult;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
@@ -18,6 +19,8 @@ public class AgentAnalyzeVO {
     private String specificError;
 
     private String diagnosis;
+
+    private CodeReviewResult codeReview;
 
     private String hintLevel1;
 
