@@ -3,6 +3,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { X, AlertCircle } from "lucide-react";
 import type { SubmissionResult, AgentAnalyzeVO, AgentStepVO } from "@/lib/types";
+import {
+  createAgentStreamSession,
+  isCurrentAgentStream,
+  shouldRunSyncFallback,
+} from "@/lib/agentStreamState";
 
 const STEP_ORDER = [
   "PLANNING",
@@ -19,7 +24,7 @@ const getStepRank = (stepName: string) => {
   const index = STEP_ORDER.indexOf(stepName);
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 };
-import { problemApi, submissionApi, agentApi } from "@/lib/api";
+import { agentApi, formatApiError, problemApi, submissionApi } from "@/lib/api";
 import {
   clearDraft,
   formatDraftTime,
@@ -125,9 +130,7 @@ export default function ProblemWorkspace({
           setShowDraftNotice(false);
           setActiveTab("test");
         }
-        setError(
-          err instanceof Error ? err.message : "代码模板加载失败，请稍后重试"
-        );
+        setError(formatApiError(err, "template"));
       } finally {
         if (requestId === templateRequestIdRef.current) {
           setIsDraftReady(true);
@@ -187,7 +190,9 @@ export default function ProblemWorkspace({
       codeSnapshot: string
     ) => {
       streamControllerRef.current?.abort();
-      currentStreamIdRef.current += 1;
+      currentStreamIdRef.current = createAgentStreamSession(
+        currentStreamIdRef.current
+      );
       const streamId = currentStreamIdRef.current;
       let doneReceived = false;
 
@@ -199,11 +204,47 @@ export default function ProblemWorkspace({
       setError(null);
       setActiveTab("test");
 
+      const applyDiagnosisResult = (result: AgentAnalyzeVO) => {
+        setDiagnosis(result);
+        diagnosisCodeSnapshotRef.current = codeSnapshot;
+        setActiveTab("diagnosis");
+
+        const diagnosisWithSnapshot: ProblemDraft["lastDiagnosis"] = {
+          ...result,
+          codeSnapshot,
+        };
+        saveDraft(DEMO_USER_ID, problemId, {
+          code: codeSnapshot,
+          language: "java",
+          lastResult: resultWithSnapshot,
+          lastDiagnosis: diagnosisWithSnapshot,
+        });
+        setDraftSavedAt(new Date().toISOString());
+      };
+
+      const runSyncFallback = (reason: unknown) => {
+        setError(formatApiError(reason, "sse"));
+        agentApi.analyze(resultWithSnapshot.submissionId)
+          .then((res) => {
+            if (!isCurrentAgentStream(streamId, currentStreamIdRef.current)) return;
+            applyDiagnosisResult(res.data);
+            setError(null);
+          })
+          .catch((err) => {
+            if (!isCurrentAgentStream(streamId, currentStreamIdRef.current)) return;
+            setError(formatApiError(err, "sse"));
+          })
+          .finally(() => {
+            if (!isCurrentAgentStream(streamId, currentStreamIdRef.current)) return;
+            setIsAnalyzing(false);
+          });
+      };
+
       streamControllerRef.current = agentApi.streamDiagnosis(
         resultWithSnapshot.submissionId,
         {
           onStep: (step) => {
-            if (streamId !== currentStreamIdRef.current) return;
+            if (!isCurrentAgentStream(streamId, currentStreamIdRef.current)) return;
             setAgentSteps((prev) => {
               const idx = prev.findIndex(
                 (s) => s.stepName === step.stepName
@@ -218,66 +259,25 @@ export default function ProblemWorkspace({
             });
           },
           onDone: (result) => {
-            if (streamId !== currentStreamIdRef.current) return;
+            if (!isCurrentAgentStream(streamId, currentStreamIdRef.current)) return;
             doneReceived = true;
-            console.log("[ProblemWorkspace onDone] result:", result);
-            console.log("[ProblemWorkspace onDone] codeReview:", result.codeReview);
-            setDiagnosis(result);
-            diagnosisCodeSnapshotRef.current = codeSnapshot;
+            applyDiagnosisResult(result);
             setIsAnalyzing(false);
-            setActiveTab("diagnosis");
-
-            const diagnosisWithSnapshot: ProblemDraft["lastDiagnosis"] = {
-              ...result,
-              codeSnapshot,
-            };
-            saveDraft(DEMO_USER_ID, problemId, {
-              code: codeSnapshot,
-              language: "java",
-              lastResult: resultWithSnapshot,
-              lastDiagnosis: diagnosisWithSnapshot,
-            });
-            setDraftSavedAt(new Date().toISOString());
           },
           onError: (message) => {
-            if (streamId !== currentStreamIdRef.current) return;
+            if (!isCurrentAgentStream(streamId, currentStreamIdRef.current)) return;
             console.error("[ProblemWorkspace onError]", message);
-            setError("AI 诊断失败，请稍后重试");
-            setIsAnalyzing(false);
+            doneReceived = true;
+            if (shouldRunSyncFallback("error", doneReceived)) {
+              runSyncFallback(message);
+            }
           },
           onEnd: () => {
-            if (streamId !== currentStreamIdRef.current) return;
-            if (!doneReceived) {
+            if (!isCurrentAgentStream(streamId, currentStreamIdRef.current)) return;
+            if (shouldRunSyncFallback("end", doneReceived)) {
               console.warn("[SSE ended without done event, falling back to sync API]");
               // SSE done 丢失，降级到同步 POST 接口
-              agentApi.analyze(resultWithSnapshot.submissionId)
-                .then((res) => {
-                  if (streamId !== currentStreamIdRef.current) return;
-                  const result = res.data;
-                  console.log("[fallback sync] result:", result);
-                  setDiagnosis(result);
-                  diagnosisCodeSnapshotRef.current = codeSnapshot;
-                  setActiveTab("diagnosis");
-
-                  const diagnosisWithSnapshot: ProblemDraft["lastDiagnosis"] = {
-                    ...result,
-                    codeSnapshot,
-                  };
-                  saveDraft(DEMO_USER_ID, problemId, {
-                    code: codeSnapshot,
-                    language: "java",
-                    lastResult: resultWithSnapshot,
-                    lastDiagnosis: diagnosisWithSnapshot,
-                  });
-                  setDraftSavedAt(new Date().toISOString());
-                })
-                .catch((err) => {
-                  console.error("[fallback sync failed]", err);
-                })
-                .finally(() => {
-                  if (streamId !== currentStreamIdRef.current) return;
-                  setIsAnalyzing(false);
-                });
+              runSyncFallback("SSE ended without done event");
             } else {
               setIsAnalyzing(false);
             }
@@ -290,7 +290,9 @@ export default function ProblemWorkspace({
 
   const handleSubmit = useCallback(async () => {
     streamControllerRef.current?.abort();
-    currentStreamIdRef.current += 1;
+    currentStreamIdRef.current = createAgentStreamSession(
+      currentStreamIdRef.current
+    );
 
     setIsSubmitting(true);
     setIsAnalyzing(false);
@@ -325,7 +327,7 @@ export default function ProblemWorkspace({
 
       startAiAnalysis(resultWithSnapshot, code);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "提交失败，请稍后重试");
+      setError(formatApiError(err, "submit"));
     } finally {
       setIsSubmitting(false);
     }
@@ -334,6 +336,7 @@ export default function ProblemWorkspace({
   const isCurrentCodeAccepted =
     submissionResult?.status === "ACCEPTED" &&
     submissionResult.codeSnapshot === code;
+  const isAcceptedSubmission = submissionResult?.status === "ACCEPTED";
 
   const isDiagnosisStale = Boolean(
     diagnosis && diagnosisCodeSnapshotRef.current !== code
@@ -389,7 +392,7 @@ export default function ProblemWorkspace({
           isAnalyzing={isAnalyzing}
           agentSteps={agentSteps}
           isDiagnosisStale={isDiagnosisStale}
-          isCurrentCodeAccepted={isCurrentCodeAccepted}
+          isAcceptedSubmission={isAcceptedSubmission}
           activeTab={activeTab}
           onTabChange={setActiveTab}
         />

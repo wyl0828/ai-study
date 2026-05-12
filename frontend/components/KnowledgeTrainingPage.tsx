@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, BookOpenCheck, Search, SearchX } from "lucide-react";
 import KnowledgeCard from "./KnowledgeCard";
-import { knowledgeApi } from "@/lib/api";
+import { formatApiError, knowledgeApi } from "@/lib/api";
 import {
   knowledgeCategories,
   knowledgeDifficulties,
@@ -66,7 +66,7 @@ export default function KnowledgeTrainingPage() {
         setCategories(["全部分类", ...nextCategories]);
         setMasteredIds(new Set());
         setDetailIds(new Set());
-      } catch {
+      } catch (err) {
         if (!cancelled) {
           setTopics(knowledgeTopics);
           setCategories(knowledgeCategories);
@@ -74,7 +74,7 @@ export default function KnowledgeTrainingPage() {
             new Set(knowledgeTopics.filter((topic) => topic.mastered).map((topic) => topic.id))
           );
           setDetailIds(new Set(knowledgeTopics.map((topic) => topic.id)));
-          setNotice("后端知识卡暂不可用，当前使用本地示例数据。");
+          setNotice(formatApiError(err, "knowledge"));
         }
       } finally {
         if (!cancelled) {
@@ -141,8 +141,8 @@ export default function KnowledgeTrainingPage() {
           return next;
         });
       })
-      .catch(() => {
-        setNotice("部分知识卡解析加载失败，当前显示列表数据或本地示例。");
+      .catch((err) => {
+        setNotice(formatApiError(err, "knowledge"));
       });
   };
 

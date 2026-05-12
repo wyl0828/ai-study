@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Lightbulb } from "lucide-react";
-import { userApi } from "@/lib/api";
+import { formatApiError, userApi } from "@/lib/api";
 import type {
   DashboardStatsVO,
   ErrorStatsVO,
@@ -74,7 +74,7 @@ export default function DashboardPage() {
         setErrorStats(errorStatsResponse.data);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "仪表盘数据加载失败");
+          setError(formatApiError(err, "dashboard"));
         }
       } finally {
         if (!cancelled) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { knowledgeApi } from "@/lib/api";
+import { formatApiError, knowledgeApi } from "@/lib/api";
 import type {
   KnowledgeCardDetail,
   KnowledgeCardListItem,
@@ -47,7 +47,7 @@ export default function KnowledgeTrainingClient({
         setActiveId(response.data[0]?.id ?? null);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "知识卡片加载失败");
+          setError(formatApiError(err, "knowledge"));
           setCards([]);
           setActiveId(null);
         }
@@ -78,7 +78,7 @@ export default function KnowledgeTrainingClient({
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "知识卡片详情加载失败");
+          setError(formatApiError(err, "knowledge"));
           setDetail(null);
         }
       } finally {

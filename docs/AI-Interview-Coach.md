@@ -836,6 +836,8 @@ agent/
 - 已完成：无数据时 Dashboard 显示空状态引导文案
 - 已完成：知识训练页 V1，`/knowledge` 优先使用后端知识卡 API 和 `knowledge_card` 真实数据，接口不可用时回退本地示例数据；页面形成 AI 自测、AI 点评、标杆回答解析、高频追问和标记已掌握闭环
 - 已完成：训练计划支持 `PROBLEM` / `KNOWLEDGE_CARD` 两类 item，知识卡片最多轻量混入 1-2 条
+- 已完成：Phase 5 小范围产品增强，知识训练反馈展示缺失要点，AC 代码点评有兜底文案和 stale warning，本地服务 / AI / SSE 错误提示更具体
+- 已完成：核心闭环回归护栏，`ProblemWorkspace` 以 SSE 为主路径、同步 analyze 仅作 fallback；`agentStreamState` 与前端 Node 测试覆盖旧流拦截、abort、Dashboard no mock 和页面 tab 边界
 
 ### 暂不实现
 
@@ -843,10 +845,23 @@ agent/
 - 完整 LeetCode 题库
 - 本地 Docker 沙箱
 - RAG 知识库和复杂知识掌握度模型
+- 单独 hint 查询接口
+- 单独 accepted-code review REST 接口
+- 手动重新生成训练计划
+- 知识卡掌握状态和自测记录持久化
+- Redis 热点缓存真正接入
 - 视频或语音面试
 - 多 Agent 协作
 - 企业级权限系统
 - 复杂 UI 动画
+
+### 近期产品增强优先级
+
+第一优先级小范围产品增强已落地：知识训练反馈补“缺失要点”并优化低分点评口吻；AC 提交复用已有 `CodeReviewTool` / `codeReview` 分支，把复杂度、代码风格、面试表达建议展示清楚；后端、Piston、AI、SSE 任一服务不可用时，前端给出更明确的排查提示。
+
+第二优先级稳定核心闭环已补回归护栏：问题页继续保持左侧题目预设提示、右侧测试结果和 AI 诊断 / AC 点评；SSE 通过 streamId、AbortController 和 `agentStreamState` 保护多次提交、旧流覆盖、用户中断和同步 fallback；Dashboard 统计、薄弱点、错题卡、错误分布和训练计划继续来自 MySQL，不回退 mock。
+
+第三优先级暂不实现但保留设计入口：单独 hint 查询、单独 accepted-code review REST 接口、手动重新生成训练计划、知识卡掌握状态与自测记录持久化、Redis 热点缓存真正接入。
 
 ## 9. 简历亮点写法
 

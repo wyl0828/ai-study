@@ -20,11 +20,67 @@ import type {
 
 const API_BASE = "http://localhost:8080";
 
+type ApiErrorContext =
+  | "backend"
+  | "template"
+  | "knowledge"
+  | "sse"
+  | "submit"
+  | "dashboard";
+
+export function formatApiError(
+  error: unknown,
+  context: ApiErrorContext = "backend"
+): string {
+  const raw =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+      ? error
+      : "";
+  const detail = raw ? `（${raw}）` : "";
+  const backendUnreachable =
+    /failed to fetch|fetch failed|networkerror|load failed|econnrefused|后端服务不可达/i.test(
+      raw
+    );
+
+  if (backendUnreachable) {
+    return "后端服务不可达，请检查 Spring Boot 是否已启动并监听 localhost:8080。";
+  }
+
+  if (context === "template") {
+    return `代码模板接口加载失败，已尝试保留本地草稿；请检查题目模板接口是否正常。${detail}`;
+  }
+
+  if (context === "knowledge") {
+    return `知识卡接口暂不可用，当前使用本地示例或已有列表兜底。${detail}`;
+  }
+
+  if (context === "sse") {
+    return `AI 诊断 SSE/AI 调用失败，可稍后重试；同步 fallback 会尝试补救。${detail}`;
+  }
+
+  if (context === "submit") {
+    return `提交接口请求失败，请检查后端服务和代码执行服务是否正常。${detail}`;
+  }
+
+  if (context === "dashboard") {
+    return `仪表盘接口加载失败，请检查后端服务是否正常。${detail}`;
+  }
+
+  return raw || "接口请求失败，请稍后重试。";
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${url}`, {
-    ...init,
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${url}`, {
+      ...init,
+      cache: "no-store",
+    });
+  } catch (err) {
+    throw new Error(formatApiError(err));
+  }
   if (!res.ok) {
     throw new Error(`请求失败：${res.status}`);
   }

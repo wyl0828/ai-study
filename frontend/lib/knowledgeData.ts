@@ -27,6 +27,7 @@ export interface SelfTestFeedback {
   level: "low" | "medium" | "high";
   comment: string;
   matchedKeyPoints: string[];
+  missingKeyPoints: string[];
 }
 
 export const knowledgeTopics: KnowledgeTopic[] = [
@@ -218,6 +219,10 @@ export function evaluateSelfTest(
       normalized.includes(keyword.toLowerCase())
     )
   );
+  const matchedSet = new Set(matchedKeyPoints);
+  const missingKeyPoints = topic.keyPoints.filter(
+    (point) => !matchedSet.has(point)
+  );
 
   const matchRatio = matchedKeyPoints.length / Math.max(topic.keyPoints.length, 1);
   if (matchRatio >= 0.75) {
@@ -226,6 +231,7 @@ export function evaluateSelfTest(
       level: "high",
       comment: "回答较完整，基本覆盖面试核心点",
       matchedKeyPoints,
+      missingKeyPoints,
     };
   }
 
@@ -235,13 +241,16 @@ export function evaluateSelfTest(
       level: "medium",
       comment: "覆盖了部分要点，但缺少触发条件或优化目的",
       matchedKeyPoints,
+      missingKeyPoints,
     };
   }
 
   return {
     score: 45,
     level: "low",
-    comment: "回答过于简略，没有覆盖核心机制",
+    comment:
+      "回答过短，面试官会继续追问机制/触发条件/优化目的，建议先把核心概念和为什么这样优化说清楚。",
     matchedKeyPoints,
+    missingKeyPoints,
   };
 }
