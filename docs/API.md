@@ -476,7 +476,7 @@ Accept: text/event-stream
 | `done` | `AgentAnalyzeVO` JSON | Agent 工作流成功完成 |
 | `error` | `ApiResponse<Void>` JSON | Agent 工作流失败 |
 
-> 前端已通过 `fetch + ReadableStream` 接入 SSE，实时展示 Agent 步骤。`done` 事件数据兼容 `ApiResponse` 包裹和裸 `AgentAnalyzeVO` 两种结构。
+> 前端已通过 `fetch + ReadableStream` 接入 SSE，实时展示 Agent 步骤。`done` 事件数据兼容 `ApiResponse` 包裹和裸 `AgentAnalyzeVO` 两种结构。`ProblemWorkspace` 使用递增 `streamId` 和 `AbortController` 保护多次提交、页面卸载和旧流回包；同步 `POST /api/agent/analyze` 仅在 SSE error、SSE 正常结束但没有 `done`、或 `done` 数据无效时作为 fallback。
 
 **示例：**
 
@@ -797,7 +797,7 @@ GET /api/knowledge/cards/{id}
 5. 提交后前端调用 GET /api/submissions/{submissionId}/diagnosis/stream（SSE）
    实时接收 agent_step 事件展示 Agent 执行步骤
    收到 done 事件后展示最终诊断结果或 AC 代码点评
-   同步接口 POST /api/agent/analyze 保留作为 fallback
+   同步接口 POST /api/agent/analyze 仅作为 fallback
 6. 失败提交展示 errorType、knowledgePoint、diagnosis、specificError、trainingPlanTitle 和 steps
 7. AC 提交展示 codeReview、steps，不生成错题卡和训练计划
 ```

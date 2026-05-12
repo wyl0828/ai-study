@@ -40,8 +40,6 @@ export default function AiDiagnosis({
   isAccepted,
   isDiagnosisStale,
 }: AiDiagnosisProps) {
-  console.log("[AiDiagnosis] isAccepted:", isAccepted, "isAnalyzing:", isAnalyzing, "diagnosis:", diagnosis);
-
   // 兼容 ApiResponse 包裹和裸 AgentAnalyzeVO
   const unwrap = (d: AgentAnalyzeVO | null): AgentAnalyzeVO | null => {
     if (!d) return null;
@@ -52,7 +50,13 @@ export default function AiDiagnosis({
   if (isAccepted) {
     const du = unwrap(diagnosis);
     if (du?.codeReview) {
-      return <CodeReviewPanel review={du.codeReview} steps={du.steps ?? []} />;
+      return (
+        <CodeReviewPanel
+          review={du.codeReview}
+          steps={du.steps ?? []}
+          isDiagnosisStale={isDiagnosisStale}
+        />
+      );
     }
     if (isAnalyzing) {
       return (
@@ -66,11 +70,11 @@ export default function AiDiagnosis({
     // diagnosis 已到达但没有 codeReview（兜底）
     if (du) {
       return (
-        <div className="flex flex-col items-center justify-center h-full text-on-surface-variant p-6">
-          <CheckCircle className="w-12 h-12 text-emerald-500 mb-3" />
-          <p className="text-lg font-medium mb-1">本次提交已通过</p>
-          <p className="text-sm">面试点评生成完成</p>
-        </div>
+        <CodeReviewPanel
+          review={{}}
+          steps={du.steps ?? []}
+          isDiagnosisStale={isDiagnosisStale}
+        />
       );
     }
     return (
@@ -87,7 +91,7 @@ export default function AiDiagnosis({
       <div className="p-5 space-y-3">
         <div className="flex items-center gap-2 text-sm font-medium text-primary">
           <Loader2 className="w-4 h-4 animate-spin" />
-          AI 正在诊断你的代码...
+          AI 正在诊断错误原因并生成训练建议...
         </div>
         {agentSteps.length > 0 && (
           <AgentTimeline steps={agentSteps} />
@@ -195,12 +199,23 @@ export default function AiDiagnosis({
 function CodeReviewPanel({
   review,
   steps,
+  isDiagnosisStale,
 }: {
-  review: CodeReviewResult;
+  review: Partial<CodeReviewResult>;
   steps: AgentStepVO[];
+  isDiagnosisStale: boolean;
 }) {
+  const optimizationPoints = review.optimizationPoints?.filter(Boolean) ?? [];
+
   return (
     <div className="p-5 space-y-4">
+      {isDiagnosisStale && (
+        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>该点评基于上次提交，当前代码已修改，仅供参考。</span>
+        </div>
+      )}
+
       {/* 通过标签 */}
       <div className="flex items-center gap-2">
         <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold px-2.5 py-1 rounded-full">
@@ -219,7 +234,10 @@ function CodeReviewPanel({
         </h3>
         <div className="bg-surface-container rounded-lg border border-outline-variant/40 p-4">
           <p className="text-sm text-on-surface-variant leading-relaxed">
-            {review.complexity}
+            {formatReviewField(
+              review.complexity,
+              "暂未返回复杂度分析。面试讲解时可以先说明时间复杂度、空间复杂度，以及主要循环或数据结构的成本。"
+            )}
           </p>
         </div>
       </div>
@@ -232,7 +250,10 @@ function CodeReviewPanel({
         </h3>
         <div className="bg-surface-container rounded-lg border border-outline-variant/40 p-4">
           <p className="text-sm text-on-surface-variant leading-relaxed">
-            {review.codeStyle}
+            {formatReviewField(
+              review.codeStyle,
+              "暂未返回代码风格点评。建议检查变量命名、边界处理、重复逻辑和是否便于面试官快速读懂。"
+            )}
           </p>
         </div>
       </div>
@@ -245,20 +266,23 @@ function CodeReviewPanel({
         </h3>
         <div className="bg-primary/5 rounded-lg border border-primary/20 p-4">
           <p className="text-sm text-on-surface-variant leading-relaxed">
-            {review.interviewSuggestion}
+            {formatReviewField(
+              review.interviewSuggestion,
+              "暂未返回面试建议。复盘时可以主动说明解题思路、关键判断和可优化空间。"
+            )}
           </p>
         </div>
       </div>
 
       {/* 优化点 */}
-      {review.optimizationPoints?.length > 0 && (
+      {optimizationPoints.length > 0 ? (
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-on-surface flex items-center gap-1.5">
             <Target className="w-[18px] h-[18px] text-primary" />
             优化建议
           </h3>
           <div className="space-y-2">
-            {review.optimizationPoints.map((point, i) => (
+            {optimizationPoints.map((point, i) => (
               <div
                 key={i}
                 className="flex items-start gap-2 bg-surface-container rounded-lg border border-outline-variant/40 p-3"
@@ -271,6 +295,18 @@ function CodeReviewPanel({
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-on-surface flex items-center gap-1.5">
+            <Target className="w-[18px] h-[18px] text-primary" />
+            优化建议
+          </h3>
+          <div className="bg-surface-container rounded-lg border border-outline-variant/40 p-4">
+            <p className="text-sm text-on-surface-variant leading-relaxed">
+              暂未返回具体优化点。本次提交已通过，可以优先复盘边界条件、复杂度表达和是否有更清晰的写法。
+            </p>
           </div>
         </div>
       )}
@@ -294,4 +330,9 @@ function CodeReviewPanel({
       )}
     </div>
   );
+}
+
+function formatReviewField(value: string | null | undefined, fallback: string) {
+  const text = value?.trim();
+  return text || fallback;
 }

@@ -483,6 +483,20 @@ Near-term work should follow `docs/PROJECT_STATUS.md`:
 3. Frontend SSE step display. ✓
 4. Move preset problem hints from frontend static mapping to backend data. ✓
 5. Knowledge training page V1. ✓
-6. Small-scope product polish: knowledge feedback, AC code review display, and clearer error states.
+6. First priority: small-scope product polish. ✓
+   - Improve knowledge training feedback with missing key points and more interviewer-like low-score comments; do not persist mastery or self-test records yet.
+   - Improve AC code review display by reusing the existing `CodeReviewTool` / `codeReview` branch; do not add a standalone accepted-code review REST endpoint.
+   - Improve error states so backend, Piston, AI, and SSE failures point to concrete local troubleshooting steps instead of only "request failed".
+7. Second priority: stabilize the core loop. ✓
+   - Keep problem page boundaries: left side preset hints only; right side test result and AI diagnosis / AC review only.
+   - Keep SSE as the primary frontend path, with `POST /api/agent/analyze` only as fallback; protect repeated submissions, stale streams, user interruption, and unmount through stream id checks and abort.
+   - Keep Dashboard data sourced from MySQL for stats, weaknesses, mistake cards, error distribution, and training plans; do not return to mock data.
+   - Keep `frontend/lib/core-loop-stability.node-test.cjs` as the regression guard for page boundaries, SSE fallback conditions, stale stream blocking, abort behavior, Dashboard no mock, and empty states.
+8. Third priority: keep but do not implement yet.
+   - Single-hint lookup endpoint.
+   - Standalone accepted-code review REST endpoint.
+   - Manual training-plan regeneration.
+   - Knowledge-card mastery state and self-test record persistence.
+   - Real Redis hot-cache wiring.
 
 Final-stage-only work: full 101/103/104 demo replay, screenshots or recording, broad document polish, `hint_record` final strategy, and interview Q&A.

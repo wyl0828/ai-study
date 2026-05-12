@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Lightbulb } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Lightbulb } from "lucide-react";
 import type { SelfTestFeedback } from "@/lib/knowledgeData";
 
 interface KnowledgeFeedbackProps {
@@ -48,7 +48,8 @@ export default function KnowledgeFeedback({ feedback }: KnowledgeFeedbackProps) 
         {feedback.comment}
       </p>
 
-      <div>
+      <div className="space-y-4">
+        <div>
         <div className="mb-2 text-xs font-semibold text-on-surface-variant">
           命中的核心记忆点
         </div>
@@ -65,6 +66,26 @@ export default function KnowledgeFeedback({ feedback }: KnowledgeFeedbackProps) 
           <p className="text-xs text-on-surface-variant">
             暂未命中核心记忆点，建议先围绕题目中的机制、触发条件和优化目的补全回答。
           </p>
+        )}
+        </div>
+
+        {feedback.missingKeyPoints.length > 0 && (
+          <div>
+            <div className="mb-2 text-xs font-semibold text-on-surface-variant">
+              缺失要点
+            </div>
+            <ul className="space-y-2">
+              {feedback.missingKeyPoints.map((point) => (
+                <li
+                  key={point}
+                  className="flex gap-2 text-xs text-on-surface-variant"
+                >
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
     </div>

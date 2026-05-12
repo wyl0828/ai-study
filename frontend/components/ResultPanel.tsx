@@ -11,7 +11,7 @@ interface ResultPanelProps {
   isAnalyzing: boolean;
   agentSteps: AgentStepVO[];
   isDiagnosisStale: boolean;
-  isCurrentCodeAccepted: boolean;
+  isAcceptedSubmission: boolean;
   activeTab: "test" | "diagnosis";
   onTabChange: (tab: "test" | "diagnosis") => void;
 }
@@ -27,7 +27,7 @@ export default function ResultPanel({
   isAnalyzing,
   agentSteps,
   isDiagnosisStale,
-  isCurrentCodeAccepted,
+  isAcceptedSubmission,
   activeTab,
   onTabChange,
 }: ResultPanelProps) {
@@ -67,7 +67,7 @@ export default function ResultPanel({
             diagnosis={diagnosis}
             isAnalyzing={isAnalyzing}
             agentSteps={agentSteps}
-            isAccepted={isCurrentCodeAccepted}
+            isAccepted={isAcceptedSubmission}
             isDiagnosisStale={isDiagnosisStale}
           />
         )}

@@ -1,9 +1,22 @@
-import { problemApi } from "@/lib/api";
+import { formatApiError, problemApi } from "@/lib/api";
 import HomeClient from "@/components/HomeClient";
-import type { HomeProblem, ProblemDetail } from "@/lib/types";
+import type { HomeProblem, ProblemDetail, ProblemListItem } from "@/lib/types";
 
 export default async function HomePage() {
-  const { data: problems } = await problemApi.list();
+  let problems: ProblemListItem[];
+  try {
+    const response = await problemApi.list();
+    problems = response.data;
+  } catch (err) {
+    return (
+      <main className="mx-auto max-w-3xl px-6 py-10">
+        <div className="rounded-lg border border-error/20 bg-error/5 px-4 py-3 text-sm text-error">
+          {formatApiError(err)}
+        </div>
+      </main>
+    );
+  }
+
   const details = await Promise.all(
     problems.map(async (problem) => {
       try {
