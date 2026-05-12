@@ -98,6 +98,9 @@ public class AgentServiceImpl implements AgentService {
             vo.setSpecificError(diagnosis.getSpecificError());
             vo.setDiagnosis(diagnosis.getDiagnosis());
         }
+        if (context.getCodeReview() != null) {
+            vo.setCodeReview(context.getCodeReview());
+        }
         HintGenerationResult hints = context.getHints();
         if (hints != null) {
             vo.setHintLevel1(hints.getHintLevel1());

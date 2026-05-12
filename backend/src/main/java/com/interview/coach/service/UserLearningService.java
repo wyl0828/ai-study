@@ -1,6 +1,7 @@
 package com.interview.coach.service;
 
 import com.interview.coach.vo.DashboardStatsVO;
+import com.interview.coach.vo.ErrorStatsVO;
 import com.interview.coach.vo.MistakeCardVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
 import com.interview.coach.vo.TrainingPlanVO;
@@ -18,4 +19,6 @@ public interface UserLearningService {
     TrainingPlanVO getLatestTrainingPlan(Long userId);
 
     List<SubmissionHistoryVO> getRecentSubmissions(Long userId);
+
+    ErrorStatsVO getErrorStats(Long userId);
 }

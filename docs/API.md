@@ -598,6 +598,7 @@ GET /api/users/{userId}/training-plans/latest
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
+<<<<<<< HEAD
 | `itemType` | String | 条目类型：`PROBLEM` / `KNOWLEDGE_CARD`，为空时前端按 `PROBLEM` 兼容 |
 | `dayIndex` | Integer | 第几天 |
 | `knowledgePoint` | String | 知识点 |
@@ -605,6 +606,14 @@ GET /api/users/{userId}/training-plans/latest
 | `problemTitle` | String | 题目标题 |
 | `knowledgeCardId` | Long | 知识卡片 ID，算法题项为空 |
 | `knowledgeCardTitle` | String | 知识卡片标题，算法题项为空 |
+=======
+| `itemType` | String | `PROBLEM` / `KNOWLEDGE_CARD`，老数据默认为 `PROBLEM` |
+| `knowledgeCardId` | Long / null | 知识卡片 ID，仅知识卡任务使用 |
+| `dayIndex` | Integer | 第几天 |
+| `knowledgePoint` | String | 知识点 |
+| `problemTitle` | String / null | 算法题标题，仅算法题任务使用 |
+| `knowledgeCardTitle` | String / null | 知识卡片标题，仅知识卡任务使用 |
+>>>>>>> 8cd715104841d23c89411a310c43493a0d629405
 | `reason` | String | 推荐原因 |
 | `reviewFocus` | String | 复习重点 |
 | `status` | String | 训练状态 |
@@ -703,6 +712,9 @@ GET /api/knowledge/cards/{id}
 | `GET` | `/api/problems` | 获取题目列表 |
 | `GET` | `/api/problems/{id}` | 获取题目详情 |
 | `GET` | `/api/problems/{id}/template` | 获取 Java 代码模板 |
+| `GET` | `/api/knowledge/categories` | 获取后端知识卡片分类 |
+| `GET` | `/api/knowledge/cards` | 获取后端知识卡片列表 |
+| `GET` | `/api/knowledge/cards/{id}` | 获取后端知识卡片详情 |
 | `POST` | `/api/submissions` | 提交 Java 代码并判题 |
 | `POST` | `/api/agent/analyze` | 同步执行 Agent 诊断 |
 | `GET` | `/api/submissions/{submissionId}/diagnosis/stream` | SSE 流式 Agent 诊断 |
@@ -719,6 +731,106 @@ GET /api/knowledge/cards/{id}
 
 ## 9. 当前前端调用时序
 
+<<<<<<< HEAD
+=======
+## 8. 后端知识训练接口
+
+后端知识训练接口读取 `knowledge_card` 表，用于 `/knowledge` 独立页面。第一版使用结构化 MySQL 知识卡片，不接 RAG，不把算法错误强行映射到 MySQL / Redis / Spring 等八股知识。
+
+### 8.1 获取知识分类
+
+```http
+GET /api/knowledge/categories
+```
+
+**响应 `data`：** `KnowledgeCategoryVO[]`
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    { "category": "JAVA", "label": "Java", "count": 12 },
+    { "category": "JVM", "label": "JVM", "count": 5 },
+    { "category": "SPRING", "label": "Spring", "count": 6 },
+    { "category": "MYSQL", "label": "MySQL", "count": 6 },
+    { "category": "REDIS", "label": "Redis", "count": 6 }
+  ]
+}
+```
+
+分类固定顺序：`JAVA`、`JVM`、`SPRING`、`MYSQL`、`REDIS`。Java 基础、集合、并发不作为一级分类，而是放在卡片 `tags` 中。
+
+### 8.2 获取知识卡片列表
+
+```http
+GET /api/knowledge/cards
+GET /api/knowledge/cards?category=JAVA
+```
+
+**响应 `data`：** `KnowledgeCardVO[]`
+
+列表接口不返回完整 `answer` 和 `followUp`，用于页面列表展示。
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "category": "JAVA",
+      "label": "Java",
+      "title": "HashMap 底层结构",
+      "question": "HashMap 在 JDK 1.8 中的底层结构是什么？",
+      "answer": null,
+      "followUp": null,
+      "keyPoints": ["数组定位桶", "链表处理哈希冲突"],
+      "difficulty": "MEDIUM",
+      "tags": ["基础", "集合", "HashMap"],
+      "sourceName": "小林 coding",
+      "sourceUrl": "https://xiaolincoding.com/interview/"
+    }
+  ]
+}
+```
+
+### 8.3 获取知识卡片详情
+
+```http
+GET /api/knowledge/cards/{id}
+```
+
+**响应 `data`：** `KnowledgeCardVO`
+
+详情接口返回完整回答、追问和记忆要点。
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "category": "JAVA",
+    "label": "Java",
+    "title": "HashMap 底层结构",
+    "question": "HashMap 在 JDK 1.8 中的底层结构是什么？",
+    "answer": "HashMap 底层主要由数组、链表和红黑树组成。",
+    "followUp": "为什么链表长度超过阈值后不是一定立即转红黑树？",
+    "keyPoints": ["数组定位桶", "链表处理哈希冲突", "红黑树优化极端冲突"],
+    "difficulty": "MEDIUM",
+    "tags": ["基础", "集合", "HashMap"],
+    "sourceName": "小林 coding",
+    "sourceUrl": "https://xiaolincoding.com/interview/"
+  }
+}
+```
+
+---
+
+## 9. 当前前端调用时序
+
+>>>>>>> 8cd715104841d23c89411a310c43493a0d629405
 ### 9.1 做题与诊断流程
 
 ```text
@@ -754,17 +866,34 @@ GET /api/knowledge/cards/{id}
 - 训练计划
 - 后端知识训练入口
 - AI 教练建议
+- 后端知识训练入口
 
 前端加载时会并发请求统计、薄弱点、错题、最新训练计划和最近提交记录。无数据时显示空状态引导文案，不回退 mock 数据。
 
 ### 9.3 知识训练页面当前状态
 
+<<<<<<< HEAD
 当前 `/knowledge` 页面服务端并发请求：
 
 - `GET /api/knowledge/categories`
 - `GET /api/knowledge/cards`
 
 用户切换分类 tab 时在前端按已加载卡片过滤；桌面端为左侧列表、右侧详情，移动端为单列展开详情。
+=======
+当前 `/knowledge` 页面展示以下模块：
+
+- 分类筛选：全部 / Java / JVM / Spring / MySQL / Redis
+- 知识卡片列表
+- 卡片详情：问题、标准回答、面试追问、记忆要点和来源链接
+
+页面调用：
+
+```text
+GET /api/knowledge/categories
+GET /api/knowledge/cards
+GET /api/knowledge/cards/{id}
+```
+>>>>>>> 8cd715104841d23c89411a310c43493a0d629405
 
 ### 9.4 Dashboard 联调排查
 

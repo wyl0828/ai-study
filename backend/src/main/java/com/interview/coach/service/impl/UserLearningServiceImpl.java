@@ -16,6 +16,7 @@ import com.interview.coach.mapper.TrainingPlanMapper;
 import com.interview.coach.mapper.UserWeaknessMapper;
 import com.interview.coach.service.UserLearningService;
 import com.interview.coach.vo.DashboardStatsVO;
+import com.interview.coach.vo.ErrorStatsVO;
 import com.interview.coach.vo.MistakeCardVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
 import com.interview.coach.vo.TrainingPlanItemVO;
@@ -119,6 +120,46 @@ public class UserLearningServiceImpl implements UserLearningService {
                 .toList();
     }
 
+    @Override
+    public ErrorStatsVO getErrorStats(Long userId) {
+        List<UserWeakness> weaknesses = userWeaknessMapper.selectList(new LambdaQueryWrapper<UserWeakness>()
+                .eq(UserWeakness::getUserId, userId));
+
+        // 错误类型分布：按 errorType 分组统计 wrongCount 总和
+        Map<String, Integer> errorTypeMap = weaknesses.stream()
+                .collect(Collectors.groupingBy(
+                        UserWeakness::getErrorType,
+                        Collectors.summingInt(UserWeakness::getWrongCount)));
+        List<ErrorStatsVO.ErrorTypeCount> errorTypeDistribution = errorTypeMap.entrySet().stream()
+                .map(entry -> {
+                    ErrorStatsVO.ErrorTypeCount count = new ErrorStatsVO.ErrorTypeCount();
+                    count.setErrorType(entry.getKey());
+                    count.setCount(entry.getValue());
+                    return count;
+                })
+                .sorted((a, b) -> Integer.compare(b.getCount(), a.getCount()))
+                .toList();
+
+        // Top 5 薄弱点：按 weaknessScore 降序
+        List<ErrorStatsVO.KnowledgeWeakness> topWeakPoints = weaknesses.stream()
+                .sorted((a, b) -> b.getWeaknessScore().compareTo(a.getWeaknessScore()))
+                .limit(5)
+                .map(w -> {
+                    ErrorStatsVO.KnowledgeWeakness kw = new ErrorStatsVO.KnowledgeWeakness();
+                    kw.setKnowledgePoint(w.getKnowledgePoint());
+                    kw.setErrorType(w.getErrorType());
+                    kw.setWrongCount(w.getWrongCount());
+                    kw.setWeaknessScore(w.getWeaknessScore().doubleValue());
+                    return kw;
+                })
+                .toList();
+
+        ErrorStatsVO vo = new ErrorStatsVO();
+        vo.setErrorTypeDistribution(errorTypeDistribution);
+        vo.setTopWeakPoints(topWeakPoints);
+        return vo;
+    }
+
     private UserWeaknessVO toUserWeaknessVO(UserWeakness weakness) {
         UserWeaknessVO vo = new UserWeaknessVO();
         vo.setId(weakness.getId());
@@ -143,9 +184,12 @@ public class UserLearningServiceImpl implements UserLearningService {
 
     private TrainingPlanItemVO toTrainingPlanItemVO(TrainingPlanItem item) {
         TrainingPlanItemVO vo = new TrainingPlanItemVO();
+        vo.setItemType(item.getItemType() == null ? "PROBLEM" : item.getItemType());
+        vo.setKnowledgeCardId(item.getKnowledgeCardId());
         vo.setDayIndex(item.getDayIndex());
         vo.setKnowledgePoint(item.getKnowledgePoint());
         vo.setProblemTitle(item.getProblemTitle());
+        vo.setKnowledgeCardTitle(item.getKnowledgeCardTitle());
         vo.setReason(item.getReason());
         vo.setReviewFocus(item.getReviewFocus());
         vo.setStatus(item.getStatus());

@@ -12,6 +12,10 @@ import type {
   MistakeCard,
   TrainingPlan,
   SubmissionHistoryVO,
+  ErrorStatsVO,
+  KnowledgeCategory,
+  KnowledgeCardDetail,
+  KnowledgeCardListItem,
 } from "./types";
 
 const API_BASE = "http://localhost:8080";
@@ -90,65 +94,51 @@ export const agentApi = {
         }
 
         const decoder = new TextDecoder();
-        let buffer = "";
+        let raw = "";
 
-        const processLine = (line: string, event: string): string => {
-          if (line.startsWith("event:")) {
-            return line.slice(6).trim();
-          }
-          if (line.startsWith("data:")) {
-            const data = line.slice(5).trim();
-            if (!data) return "";
+        const dispatch = (block: string) => {
+          const evMatch = block.match(/^event:\s*(.+)$/m);
+          const dataMatch = block.match(/^data:\s*(.+)$/m);
+          const event = evMatch ? evMatch[1].trim() : "";
+          const data = dataMatch ? dataMatch[1].trim() : "";
+          if (!data) return;
 
-            try {
-              const parsed = JSON.parse(data);
-
-              if (event === "agent_step") {
-                callbacks.onStep(parsed);
-              } else if (event === "done") {
-                const finalResult = parsed?.data ?? parsed;
-                console.log("[SSE done raw]", parsed);
-                console.log("[SSE done finalResult]", finalResult);
-                if (!finalResult || typeof finalResult !== "object") {
-                  callbacks.onError("SSE done 事件缺少诊断数据");
-                } else {
-                  callbacks.onDone(finalResult as AgentAnalyzeVO);
-                }
-              } else if (event === "error") {
-                callbacks.onError(parsed.message || "Agent 诊断失败");
+          try {
+            const parsed = JSON.parse(data);
+            if (event === "agent_step") {
+              callbacks.onStep(parsed);
+            } else if (event === "done") {
+              const finalResult = parsed?.data ?? parsed;
+              if (!finalResult || typeof finalResult !== "object") {
+                callbacks.onError("SSE done 事件缺少诊断数据");
+              } else {
+                callbacks.onDone(finalResult as AgentAnalyzeVO);
               }
-            } catch {
-              // 忽略无法解析的行
+            } else if (event === "error") {
+              callbacks.onError(parsed.message || "Agent 诊断失败");
             }
-
-            return "";
+          } catch {
+            // ignore unparseable blocks
           }
-          return event;
         };
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
+          raw += decoder.decode(value, { stream: true });
 
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
+          // 按空行分割完整 event block
+          const parts = raw.split(/\n\n+/);
+          raw = parts.pop() || ""; // 最后一个可能是不完整的 block
 
-          let currentEvent = "";
-          for (const line of lines) {
-            currentEvent = processLine(line, currentEvent);
+          for (const block of parts) {
+            if (block.trim()) dispatch(block);
           }
         }
 
-        // 处理流结束后 buffer 中剩余的内容
-        buffer += decoder.decode();
-        if (buffer.trim()) {
-          const lines = buffer.split("\n");
-          let currentEvent = "";
-          for (const line of lines) {
-            currentEvent = processLine(line, currentEvent);
-          }
-        }
+        // 流结束后处理残余
+        raw += decoder.decode();
+        if (raw.trim()) dispatch(raw);
 
         // 流正常结束，通知调用方
         callbacks.onEnd();
@@ -173,4 +163,19 @@ export const userApi = {
     request<ApiResponse<TrainingPlan | null>>(`/api/users/${userId}/training-plans/latest`),
   recentSubmissions: (userId: number) =>
     request<ApiResponse<SubmissionHistoryVO[]>>(`/api/users/${userId}/submissions/recent`),
+  errorStats: (userId: number) =>
+    request<ApiResponse<ErrorStatsVO>>(`/api/users/${userId}/dashboard/error-stats`),
+};
+
+export const knowledgeApi = {
+  categories: () =>
+    request<ApiResponse<KnowledgeCategory[]>>("/api/knowledge/categories"),
+  cards: (category?: string) =>
+    request<ApiResponse<KnowledgeCardListItem[]>>(
+      category && category !== "ALL"
+        ? `/api/knowledge/cards?category=${encodeURIComponent(category)}`
+        : "/api/knowledge/cards"
+    ),
+  detail: (id: number) =>
+    request<ApiResponse<KnowledgeCardDetail>>(`/api/knowledge/cards/${id}`),
 };

@@ -57,6 +57,7 @@ export const mockTrainingPlan: TrainingPlan = {
     "根据你最近的错误记录，系统检测到 HashMap 查找和链表指针操作是主要薄弱点。",
   items: [
     {
+      itemType: "PROBLEM",
       dayIndex: 1,
       knowledgePoint: "HashMap",
       problemTitle: "两数之和",
@@ -65,6 +66,7 @@ export const mockTrainingPlan: TrainingPlan = {
       status: "待完成",
     },
     {
+      itemType: "PROBLEM",
       dayIndex: 1,
       knowledgePoint: "HashMap",
       problemTitle: "有效字母异位词",
@@ -73,6 +75,7 @@ export const mockTrainingPlan: TrainingPlan = {
       status: "待完成",
     },
     {
+      itemType: "PROBLEM",
       dayIndex: 2,
       knowledgePoint: "LinkedList",
       problemTitle: "反转链表",
@@ -81,6 +84,7 @@ export const mockTrainingPlan: TrainingPlan = {
       status: "待完成",
     },
     {
+      itemType: "PROBLEM",
       dayIndex: 2,
       knowledgePoint: "LinkedList",
       problemTitle: "合并两个有序链表",
@@ -89,6 +93,7 @@ export const mockTrainingPlan: TrainingPlan = {
       status: "需要重做",
     },
     {
+      itemType: "PROBLEM",
       dayIndex: 3,
       knowledgePoint: "Tree",
       problemTitle: "二叉树的最大深度",
