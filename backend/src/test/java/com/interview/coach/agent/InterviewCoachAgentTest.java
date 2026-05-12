@@ -53,7 +53,10 @@ class InterviewCoachAgentTest {
         context.setAgentRunId(99L);
         context.setSubmissionId(11L);
         AgentExecutionObservation observation = new AgentExecutionObservation();
+        observation.setStatus("WRONG_ANSWER");
+        context.setObservation(observation);
         AiDiagnosisResult diagnosis = new AiDiagnosisResult();
+        context.setDiagnosis(diagnosis);
         TrainingPlanResult plan = new TrainingPlanResult();
         when(codeExecutionTool.execute(eq(11L), eq(context))).thenReturn(observation);
         when(errorClassifierTool.execute(eq(context), eq(context))).thenReturn(diagnosis);

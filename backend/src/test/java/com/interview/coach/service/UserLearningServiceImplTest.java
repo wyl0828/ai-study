@@ -7,6 +7,8 @@ import static org.mockito.Mockito.when;
 import com.interview.coach.entity.MistakeCard;
 import com.interview.coach.entity.Problem;
 import com.interview.coach.entity.Submission;
+import com.interview.coach.entity.TrainingPlan;
+import com.interview.coach.entity.TrainingPlanItem;
 import com.interview.coach.mapper.MistakeCardMapper;
 import com.interview.coach.mapper.ProblemMapper;
 import com.interview.coach.mapper.SubmissionMapper;
@@ -17,6 +19,9 @@ import com.interview.coach.service.impl.UserLearningServiceImpl;
 import com.interview.coach.vo.DashboardStatsVO;
 import com.interview.coach.vo.MistakeCardVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
+import com.interview.coach.vo.TrainingPlanVO;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -76,6 +81,49 @@ class UserLearningServiceImplTest {
     }
 
     @Test
+    void getLatestTrainingPlanDefaultsOldItemsToProblemType() {
+        TrainingPlan plan = trainingPlan();
+        TrainingPlanItem item = new TrainingPlanItem();
+        item.setDayIndex(1);
+        item.setKnowledgePoint("HashMap Lookup");
+        item.setProblemTitle("Two Sum");
+        item.setReason("Replay the failed case.");
+        item.setReviewFocus("Check complement before insert.");
+        item.setStatus("PENDING");
+        when(trainingPlanMapper.selectOne(any())).thenReturn(plan);
+        when(trainingPlanItemMapper.selectList(any())).thenReturn(List.of(item));
+
+        TrainingPlanVO result = userLearningService.getLatestTrainingPlan(1L);
+
+        assertThat(result.getItems()).hasSize(1);
+        assertThat(result.getItems().get(0).getItemType()).isEqualTo("PROBLEM");
+        assertThat(result.getItems().get(0).getProblemTitle()).isEqualTo("Two Sum");
+    }
+
+    @Test
+    void getLatestTrainingPlanReturnsKnowledgeCardItemFields() {
+        TrainingPlan plan = trainingPlan();
+        TrainingPlanItem item = new TrainingPlanItem();
+        item.setItemType("KNOWLEDGE_CARD");
+        item.setKnowledgeCardId(7L);
+        item.setKnowledgeCardTitle("HashMap 底层结构");
+        item.setDayIndex(2);
+        item.setKnowledgePoint("Java 集合");
+        item.setReason("复习 Java 后端高频知识点。");
+        item.setReviewFocus("数组、链表、红黑树、扩容。");
+        item.setStatus("PENDING");
+        when(trainingPlanMapper.selectOne(any())).thenReturn(plan);
+        when(trainingPlanItemMapper.selectList(any())).thenReturn(List.of(item));
+
+        TrainingPlanVO result = userLearningService.getLatestTrainingPlan(1L);
+
+        assertThat(result.getItems()).hasSize(1);
+        assertThat(result.getItems().get(0).getItemType()).isEqualTo("KNOWLEDGE_CARD");
+        assertThat(result.getItems().get(0).getKnowledgeCardId()).isEqualTo(7L);
+        assertThat(result.getItems().get(0).getKnowledgeCardTitle()).isEqualTo("HashMap 底层结构");
+    }
+
+    @Test
     void getMistakesAddsProblemTitleFromBatchProblemLookup() {
         MistakeCard mistake = new MistakeCard();
         mistake.setId(9L);
@@ -125,5 +173,17 @@ class UserLearningServiceImplTest {
         problem.setId(id);
         problem.setTitle(title);
         return problem;
+    }
+
+    private TrainingPlan trainingPlan() {
+        TrainingPlan plan = new TrainingPlan();
+        plan.setId(100L);
+        plan.setUserId(1L);
+        plan.setTitle("3 天专项训练");
+        plan.setSummary("算法训练和复习。");
+        plan.setStartDate(LocalDate.now());
+        plan.setEndDate(LocalDate.now().plusDays(2));
+        plan.setCreatedAt(LocalDateTime.now());
+        return plan;
     }
 }

@@ -1,6 +1,7 @@
 package com.interview.coach.agent;
 
 import com.interview.coach.agent.tool.CodeExecutionTool;
+import com.interview.coach.agent.tool.CodeReviewTool;
 import com.interview.coach.agent.tool.ErrorClassifierTool;
 import com.interview.coach.agent.tool.TrainingPlannerTool;
 import com.interview.coach.agent.tool.WeaknessTrackerTool;
@@ -27,6 +28,8 @@ public class InterviewCoachAgent {
 
     private final CodeExecutionTool codeExecutionTool;
 
+    private final CodeReviewTool codeReviewTool;
+
     private final ErrorClassifierTool errorClassifierTool;
 
     private final WeaknessTrackerTool weaknessTrackerTool;
@@ -46,17 +49,27 @@ public class InterviewCoachAgent {
                     "Execution observation ready", sink,
                     () -> codeExecutionTool.execute(context.getSubmissionId(), context));
             runStep(context, AgentState.OBSERVATION, null, "Read execution result", "Observation captured", sink, () -> context.getObservation());
-            runStep(context, AgentState.ERROR_CLASSIFICATION, errorClassifierTool.name(), "Classify execution observation",
-                    "Diagnosis ready", sink,
-                    () -> errorClassifierTool.execute(context, context));
 
-            // 非核心步骤：失败只 warn，不阻塞后续流程
-            runOptionalStep(context, AgentState.MEMORY_UPDATE, weaknessTrackerTool.name(), "Persist diagnosis and weakness memory",
-                    "Learning memory updated", sink,
-                    () -> weaknessTrackerTool.execute(context, context));
-            runOptionalStep(context, AgentState.TRAINING_PLAN, trainingPlannerTool.name(), "Create short training plan",
-                    "Training plan ready", sink,
-                    () -> trainingPlannerTool.execute(context, context));
+            boolean accepted = "ACCEPTED".equals(context.getObservation().getStatus());
+            if (accepted) {
+                // AC 走代码点评
+                runStep(context, AgentState.CODE_REVIEW, codeReviewTool.name(), "Review accepted code",
+                        "Code review ready", sink,
+                        () -> codeReviewTool.execute(context, context));
+            } else {
+                // 失败走错误诊断
+                runStep(context, AgentState.ERROR_CLASSIFICATION, errorClassifierTool.name(), "Classify execution observation",
+                        "Diagnosis ready", sink,
+                        () -> errorClassifierTool.execute(context, context));
+
+                // 非核心步骤：失败只 warn，不阻塞后续流程
+                runOptionalStep(context, AgentState.MEMORY_UPDATE, weaknessTrackerTool.name(), "Persist diagnosis and weakness memory",
+                        "Learning memory updated", sink,
+                        () -> weaknessTrackerTool.execute(context, context));
+                runOptionalStep(context, AgentState.TRAINING_PLAN, trainingPlannerTool.name(), "Create short training plan",
+                        "Training plan ready", sink,
+                        () -> trainingPlannerTool.execute(context, context));
+            }
 
             // 最终步骤：始终执行
             runStep(context, AgentState.COMPLETED, null, "Finalize agent run", "Agent run completed", sink, () -> context);

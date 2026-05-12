@@ -1,6 +1,8 @@
 "use client";
 
 import { Sparkles, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, Code2 } from "lucide-react";
 import type { TrainingPlan as TrainingPlanType } from "@/lib/types";
 import {
   knowledgePoint,
@@ -48,6 +50,16 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
     return { label: "待完成", className: "text-primary" };
   };
 
+  const itemTitle = (item: TrainingPlanType["items"][number]) => {
+    if (item.itemType === "KNOWLEDGE_CARD") {
+      return item.knowledgeCardTitle || "后端知识卡片";
+    }
+    return problemTitle(item.problemTitle);
+  };
+
+  const itemPrefix = (item: TrainingPlanType["items"][number]) =>
+    item.itemType === "KNOWLEDGE_CARD" ? "知识卡片" : "算法题";
+
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
@@ -93,9 +105,16 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
                     className="bg-surface-container rounded-lg border border-outline-variant/30 p-3"
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-on-surface">
-                        {problemTitle(item.problemTitle)}
-                      </span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        {item.itemType === "KNOWLEDGE_CARD" ? (
+                          <BookOpen className="w-4 h-4 text-primary shrink-0" />
+                        ) : (
+                          <Code2 className="w-4 h-4 text-primary shrink-0" />
+                        )}
+                        <span className="text-sm font-medium text-on-surface truncate">
+                          {itemPrefix(item)}：{itemTitle(item)}
+                        </span>
+                      </div>
                       <span
                         className={`text-xs font-medium ${
                           getStatus(item.status).className
@@ -107,6 +126,14 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
                     <p className="text-xs text-on-surface-variant">
                       {trainingPlanText(item.reason)}
                     </p>
+                    {item.itemType === "KNOWLEDGE_CARD" && item.knowledgeCardId && (
+                      <Link
+                        href="/knowledge"
+                        className="inline-flex mt-2 text-xs font-medium text-primary hover:underline"
+                      >
+                        去知识训练查看
+                      </Link>
+                    )}
                   </div>
                 ))}
               </div>

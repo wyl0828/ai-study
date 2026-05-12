@@ -2,6 +2,7 @@ package com.interview.coach.agent;
 
 import com.interview.coach.dto.AgentExecutionObservation;
 import com.interview.coach.dto.AiDiagnosisResult;
+import com.interview.coach.dto.CodeReviewResult;
 import com.interview.coach.dto.HintGenerationResult;
 import com.interview.coach.dto.TrainingPlanResult;
 import com.interview.coach.entity.Problem;
@@ -30,6 +31,8 @@ public class AgentContext {
     private AgentExecutionObservation observation;
 
     private AiDiagnosisResult diagnosis;
+
+    private CodeReviewResult codeReview;
 
     private HintGenerationResult hints;
 

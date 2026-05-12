@@ -79,6 +79,13 @@ export interface AgentAnalyzeRequest {
   submissionId: number;
 }
 
+export interface CodeReviewResult {
+  complexity: string;
+  codeStyle: string;
+  interviewSuggestion: string;
+  optimizationPoints: string[];
+}
+
 export interface AgentAnalyzeVO {
   agentRunId: number;
   submissionId: number;
@@ -86,6 +93,7 @@ export interface AgentAnalyzeVO {
   knowledgePoint: string;
   specificError: string;
   diagnosis: string;
+  codeReview?: CodeReviewResult;
   hintLevel1: string;
   hintLevel2: string;
   hintLevel3: string;
@@ -136,9 +144,12 @@ export interface TrainingPlan {
 }
 
 export interface TrainingPlanItem {
+  itemType: "PROBLEM" | "KNOWLEDGE_CARD";
+  knowledgeCardId?: number | null;
   dayIndex: number;
   knowledgePoint: string;
-  problemTitle: string;
+  problemTitle: string | null;
+  knowledgeCardTitle?: string | null;
   reason: string;
   reviewFocus: string;
   status: string;
@@ -151,4 +162,47 @@ export interface SubmissionHistoryVO {
   passedCount: number;
   totalCount: number;
   createdAt: string | null;
+}
+
+// 错误统计
+export interface ErrorTypeCount {
+  errorType: string;
+  count: number;
+}
+
+export interface KnowledgeWeakness {
+  knowledgePoint: string;
+  errorType: string;
+  wrongCount: number;
+  weaknessScore: number;
+}
+
+export interface ErrorStatsVO {
+  errorTypeDistribution: ErrorTypeCount[];
+  topWeakPoints: KnowledgeWeakness[];
+}
+
+// 后端知识训练
+export interface KnowledgeCategory {
+  category: string;
+  label: string;
+  count: number;
+}
+
+export interface KnowledgeCardListItem {
+  id: number;
+  category: string;
+  label: string;
+  title: string;
+  question: string;
+  difficulty: string;
+  tags: string[];
+  sourceName: string | null;
+  sourceUrl: string | null;
+}
+
+export interface KnowledgeCardDetail extends KnowledgeCardListItem {
+  answer: string | null;
+  followUp: string | null;
+  keyPoints: string[];
 }

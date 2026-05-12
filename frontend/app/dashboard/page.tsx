@@ -5,6 +5,7 @@ import { Lightbulb } from "lucide-react";
 import { userApi } from "@/lib/api";
 import type {
   DashboardStatsVO,
+  ErrorStatsVO,
   MistakeCard as MistakeCardType,
   SubmissionHistoryVO,
   TrainingPlan as TrainingPlanType,
@@ -14,6 +15,8 @@ import WeaknessList from "@/components/WeaknessList";
 import SubmissionHistory from "@/components/SubmissionHistory";
 import MistakeCards from "@/components/MistakeCards";
 import TrainingPlan from "@/components/TrainingPlan";
+import ErrorStats from "@/components/ErrorStats";
+import KnowledgeTrainingEntry from "@/components/KnowledgeTrainingEntry";
 import { trainingPlanText } from "@/lib/i18n";
 import { aggregateWeaknesses } from "@/lib/learningView";
 
@@ -32,6 +35,7 @@ export default function DashboardPage() {
   const [mistakes, setMistakes] = useState<MistakeCardType[]>([]);
   const [trainingPlan, setTrainingPlan] = useState<TrainingPlanType | null>(null);
   const [submissions, setSubmissions] = useState<SubmissionHistoryVO[]>([]);
+  const [errorStats, setErrorStats] = useState<ErrorStatsVO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,12 +52,14 @@ export default function DashboardPage() {
           mistakesResponse,
           planResponse,
           submissionsResponse,
+          errorStatsResponse,
         ] = await Promise.all([
           userApi.stats(DEMO_USER_ID),
           userApi.weaknesses(DEMO_USER_ID),
           userApi.mistakes(DEMO_USER_ID),
           userApi.latestPlan(DEMO_USER_ID),
           userApi.recentSubmissions(DEMO_USER_ID),
+          userApi.errorStats(DEMO_USER_ID),
         ]);
 
         if (cancelled) {
@@ -65,6 +71,7 @@ export default function DashboardPage() {
         setMistakes(mistakesResponse.data);
         setTrainingPlan(planResponse.data);
         setSubmissions(submissionsResponse.data);
+        setErrorStats(errorStatsResponse.data);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : "仪表盘数据加载失败");
@@ -142,6 +149,8 @@ export default function DashboardPage() {
         {/* 右栏 */}
         <aside className="lg:col-span-5">
           <div className="sticky top-20 space-y-6">
+            <ErrorStats stats={errorStats} loading={loading} />
+            <KnowledgeTrainingEntry />
             <TrainingPlan plan={trainingPlan} />
 
             {/* AI 教练建议 */}

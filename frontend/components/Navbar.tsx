@@ -6,7 +6,8 @@ import { Terminal, Bell } from "lucide-react";
 
 const links = [
   { href: "/", label: "题目" },
-  { href: "/dashboard", label: "仪表盘" },
+  { href: "/knowledge", label: "知识训练" },
+  { href: "/dashboard", label: "学习中心" },
 ];
 
 export default function Navbar() {

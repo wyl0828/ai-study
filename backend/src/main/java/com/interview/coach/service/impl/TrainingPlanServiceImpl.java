@@ -32,20 +32,35 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         plan.setTitle(result.getTitle());
         plan.setSummary(result.getSummary());
         plan.setStartDate(startDate);
-        plan.setEndDate(startDate.plusDays(Math.max(result.getItems().size(), 1) - 1L));
+        plan.setEndDate(startDate.plusDays(Math.max(maxDayIndex(result), 1) - 1L));
         plan.setCreatedAt(LocalDateTime.now());
         trainingPlanMapper.insert(plan);
 
         for (TrainingPlanItemResult itemResult : result.getItems()) {
             TrainingPlanItem item = new TrainingPlanItem();
             item.setPlanId(plan.getId());
+            item.setItemType(itemType(itemResult));
+            item.setKnowledgeCardId(itemResult.getKnowledgeCardId());
             item.setDayIndex(itemResult.getDayIndex());
             item.setKnowledgePoint(itemResult.getKnowledgePoint());
             item.setProblemTitle(itemResult.getProblemTitle());
+            item.setKnowledgeCardTitle(itemResult.getKnowledgeCardTitle());
             item.setReason(itemResult.getReason());
             item.setReviewFocus(itemResult.getReviewFocus());
             item.setStatus("PENDING");
             trainingPlanItemMapper.insert(item);
         }
+    }
+
+    private int maxDayIndex(TrainingPlanResult result) {
+        return result.getItems().stream()
+                .map(TrainingPlanItemResult::getDayIndex)
+                .filter(dayIndex -> dayIndex != null && dayIndex > 0)
+                .max(Integer::compareTo)
+                .orElse(1);
+    }
+
+    private String itemType(TrainingPlanItemResult itemResult) {
+        return itemResult.getItemType() == null ? "PROBLEM" : itemResult.getItemType();
     }
 }
