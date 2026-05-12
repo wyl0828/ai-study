@@ -7,14 +7,15 @@ This repository is for **AI Interview Coach Agent**, a Java code diagnosis and i
 The project must not drift into a generic LeetCode clone, a generic AI chatbot, a broad education platform, or a Spring Boot wrapper around an LLM API. Its core value is the Agent-driven interview-training loop:
 
 ```text
-agent task -> planner -> tool call -> observation -> error diagnosis -> layered hints -> weakness memory -> training plan
+agent task -> planner -> tool call -> observation -> error diagnosis / code review -> weakness memory -> training plan
 ```
 
 Current product distinction:
 
 - Problem-level layered hints are preset problem content shown on the left problem panel.
 - AI diagnosis is generated only after a failed submission and explains this user's current error on the right result panel.
-- Backend Agent hint fields and `hint_record` persistence remain part of the Agent workflow, but the frontend no longer shows a separate right-side "layered hints" tab.
+- Accepted submissions may receive lightweight code review through the Agent flow; this is not a full accepted answer generator.
+- `hint_record` and legacy hint fields are retained for schema compatibility and future expansion, but the current Agent flow no longer writes new AI hint records and the frontend no longer shows a separate right-side "layered hints" tab.
 
 Primary audience:
 
@@ -47,7 +48,7 @@ If this file conflicts with those documents, prefer this file for engineering co
 
 ## Current Implementation Status
 
-As of Phase 4 plus the Solution-mode pilot and prompt/diagnosis UI cleanup, the project has a demoable end-to-end Agent workflow, real Dashboard data, a mixed ACM/Solution Java submission model, and clearer frontend separation between preset hints and AI diagnosis:
+As of Phase 5 product polish, the project has a demoable end-to-end Agent workflow, real Dashboard data, a mixed ACM/Solution Java submission model, SSE frontend diagnosis, AC code review branch, and clearer frontend separation between preset hints and AI diagnosis:
 
 ```text
 POST /api/submissions
@@ -56,17 +57,19 @@ POST /api/submissions
   -> judge Java submission through Piston
 
 POST /api/agent/analyze
-  -> run the Agent workflow synchronously for the current frontend demo flow
-  -> frontend displays error type, knowledge point, diagnosis, improvement suggestion, training plan title, and trace steps
+  -> run the Agent workflow synchronously as fallback and API-level demo
+  -> failed submissions return error type, knowledge point, diagnosis, improvement suggestion, training plan title, and trace steps
+  -> accepted submissions return a lightweight codeReview object and trace steps
   -> frontend does not show hintLevel1/2/3 as a separate right-side tab
 
 GET /api/submissions/{submissionId}/diagnosis/stream
   -> create AgentRun
   -> emit AgentStep events through SSE
   -> rejudge submission through CodeExecutionTool
-  -> classify error through AI
+  -> for failed submissions: classify error through AI
   -> persist diagnosis, weakness memory, and mistake card
-  -> create deterministic 3-day training plan (optional, failure does not block)
+  -> create deterministic 3-day training plan with optional knowledge-card items (optional, failure does not block)
+  -> for accepted submissions: run CodeReviewTool and skip weakness/mistake/training-plan writes
   -> emit final AgentAnalyzeVO
 
 Frontend SSE integration:
@@ -83,11 +86,12 @@ Current implemented controllers:
 - `SubmissionController`
 - `AgentController`
 - `UserController`
+- `KnowledgeController`
 
 Not yet exposed as REST controllers:
 
 - single-hint lookup
-- accepted-code review
+- standalone accepted-code review endpoint (current accepted review is returned by `/api/agent/analyze` and SSE through `codeReview`)
 - manual training plan regeneration
 
 ## Fixed Technical Stack
@@ -114,7 +118,7 @@ AI:
 
 - Anthropic-compatible API
 - Structured JSON outputs whenever AI results are persisted or consumed by business logic
-- AI is used for error classification, Agent hint data, code review, and training plan generation
+- AI is used for error classification and code review; current training plans use deterministic fallback; AI hint generation is disabled
 - Current frontend treats problem-level layered hints as preset content, not as an on-click AI generation flow
 
 Code execution:
@@ -160,8 +164,8 @@ Always optimize for a demoable end-to-end loop before adding breadth.
 
 Priority order:
 
-1. Complete demo loop: submit Java code, run tests, diagnose error, show preset hints, record weakness, generate plan.
-2. AI diagnosis and three-level hint quality.
+1. Protect the core loop: submit Java code, run tests, diagnose failed submissions, show preset hints, record weakness, generate plan.
+2. AI diagnosis quality and AC code review quality.
 3. Weakness tracking and training plan.
 4. Problem count, dashboard polish, charts, UI animations.
 
@@ -186,7 +190,7 @@ Use Java-backend-style package responsibilities:
 - `service`: business interfaces
 - `service/impl`: business implementations and orchestration
 - `agent`: Agent orchestration classes such as `InterviewCoachAgent`, `AgentState`, `AgentContext`, and `AgentStep`
-- `agent/tool`: Tool implementations such as `CodeExecutionTool`, `ErrorClassifierTool`, `WeaknessTrackerTool`, and `TrainingPlannerTool`
+- `agent/tool`: Tool implementations such as `CodeExecutionTool`, `ErrorClassifierTool`, `CodeReviewTool`, `WeaknessTrackerTool`, and `TrainingPlannerTool`
 - `integration/piston`: Piston API client and request/response adapters
 - `integration/ai`: Anthropic-compatible API client and model adapters
 - `entity`: MySQL table mapping objects
@@ -278,11 +282,11 @@ Planner -> CodeExecutionTool -> Observation -> ErrorClassifierTool -> WeaknessTr
 
 Agent concepts:
 
-- `AgentContext` carries submission, problem, execution result, diagnosis, hints, weakness update, and training plan data.
+- `AgentContext` carries submission, problem, execution result, diagnosis or code review, optional legacy hints, weakness update, and training plan data.
 - `AgentStep` records each step name, tool name, status, input summary, output summary, duration, and error message.
 - `Tool` implementations must have clear inputs and outputs and should call service-layer abstractions instead of controllers.
 - `CodeExecutionTool` must call a service-layer execution abstraction such as `SubmissionService.rejudge(...)`, which in turn uses `JudgeService`; it must not call Piston directly.
-- LLM calls belong only in tools that need semantic judgment, such as error classification, hint generation, code review, or training plan generation.
+- LLM calls belong only in tools that need semantic judgment, such as error classification or code review; hint generation and AI training-plan generation are not active in the current MVP.
 - Tool outputs that affect business state must be converted into structured data before persistence.
 
 AI must not directly provide full accepted Java solutions by default.
@@ -292,7 +296,7 @@ Use layered hints:
 - Level 1: direction only
 - Level 2: related knowledge point and likely issue
 - Level 3: pseudocode or key idea, not full Java answer
-- For the current MVP UI, problem-level hints are preset and shown on the left; AI-generated hint fields are still persisted for Agent workflow completeness and future expansion.
+- For the current MVP UI, problem-level hints are preset and shown on the left; expanding them must not call AI. AI-generated hint fields are legacy-compatible response fields and should remain null unless the product direction changes.
 
 Persist AI outputs only after converting them to structured data. Prefer JSON fields such as:
 
@@ -300,16 +304,17 @@ Persist AI outputs only after converting them to structured data. Prefer JSON fi
 - `knowledgePoint`
 - `specificError`
 - `diagnosis`
-- `hintLevel1`
-- `hintLevel2`
-- `hintLevel3`
 - `confidence`
 - `weaknessScoreDelta`
+- `complexity`
+- `codeStyle`
+- `interviewSuggestion`
+- `optimizationPoints`
 
 AI output should support the learning loop:
 
 ```text
-failed submission -> tool observation -> diagnosis -> hints -> weakness update -> mistake card -> training plan
+failed submission -> tool observation -> diagnosis -> weakness update -> mistake card -> training plan
 ```
 
 Frontend display should present this as:
@@ -428,9 +433,9 @@ Frontend verification:
 - submit button calls backend
 - test result is displayed
 - preset layered hints are visible on the left problem panel and all levels are collapsed by default
-- AI diagnosis is displayed after a failed submission through the synchronous analyze endpoint
+- SSE is the primary frontend diagnosis path; synchronous analyze remains as fallback
+- AI diagnosis is displayed after a failed submission; AC submissions can display lightweight code review
 - the right result panel has no separate layered hints tab
-- backend SSE diagnosis stream remains available for API-level demonstration
 - preset layered hints can be expanded manually without calling AI
 - draft code, last result, and last diagnosis can be restored after refresh
 - stale diagnosis warning appears after editing code that differs from the diagnosis snapshot
@@ -475,7 +480,9 @@ Near-term work should follow `docs/PROJECT_STATUS.md`:
 
 1. Stabilize three demo problems and known bug samples. ✓
 2. Write root README and demo startup notes. ✓
-3. Capture screenshots for problem page, AI diagnosis, and Dashboard.
-4. Frontend SSE step display. ✓
-5. Move preset problem hints from frontend static mapping to backend data. ✓
-6. Prepare resume descriptions and interview Q&A.
+3. Frontend SSE step display. ✓
+4. Move preset problem hints from frontend static mapping to backend data. ✓
+5. Knowledge training page V1. ✓
+6. Small-scope product polish: knowledge feedback, AC code review display, and clearer error states.
+
+Final-stage-only work: full 101/103/104 demo replay, screenshots or recording, broad document polish, `hint_record` final strategy, and interview Q&A.

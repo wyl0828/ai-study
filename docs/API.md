@@ -338,14 +338,18 @@ Content-Type: application/json
 
 ## 4. Agent 诊断接口
 
-Agent 诊断会重新执行提交代码，然后按以下工作流处理：
+Agent 诊断会重新执行提交代码，然后按判题结果进入不同分支：
 
 ```text
+失败提交：
 PLANNING -> CODE_EXECUTION -> OBSERVATION -> ERROR_CLASSIFICATION
 -> MEMORY_UPDATE -> TRAINING_PLAN -> COMPLETED
+
+AC 提交：
+PLANNING -> CODE_EXECUTION -> OBSERVATION -> CODE_REVIEW -> COMPLETED
 ```
 
-其中 `MEMORY_UPDATE` 和 `TRAINING_PLAN` 为非核心步骤，失败不阻塞后续流程。
+其中 `MEMORY_UPDATE` 和 `TRAINING_PLAN` 为失败诊断后的非核心步骤，失败不阻塞最终诊断结果。
 
 诊断会产生并持久化：
 
@@ -357,7 +361,7 @@ PLANNING -> CODE_EXECUTION -> OBSERVATION -> ERROR_CLASSIFICATION
 - `training_plan`
 - `training_plan_item`
 
-> 说明：`HINT_GENERATION` 步骤已移除。题目预设分层提示由前端静态配置提供，AI 诊断不再生成 hintLevel1/2/3。`hint_record` 表保留但不再写入新数据。
+> 说明：`HINT_GENERATION` 步骤已移除。题目预设分层提示由后端 `problem` 表通过 `presetHints` 返回，前端仅保留静态 fallback。AI 诊断不再生成 `hintLevel1/2/3`，`hint_record` 表保留为历史兼容和未来扩展入口，当前流程不写入新数据。
 
 ### 4.1 触发 Agent 分析（同步）
 
@@ -391,9 +395,10 @@ Content-Type: application/json
     "knowledgePoint": "HashMap Lookup in Array Traversal",
     "specificError": "Self-matching due to incorrect map operation order",
     "diagnosis": "Code adds current element before checking, allowing same-element pairing.",
-    "hintLevel1": "Consider the order of inserting elements into the map and checking for complements.",
-    "hintLevel2": "The error is self-matching due to adding current element before lookup.",
-    "hintLevel3": "For each element, first check if its complement exists in the map, then add it.",
+    "codeReview": null,
+    "hintLevel1": null,
+    "hintLevel2": null,
+    "hintLevel3": null,
     "trainingPlanTitle": "3-day recovery plan: HashMap Lookup in Array Traversal",
     "steps": [
       {
@@ -420,11 +425,21 @@ Content-Type: application/json
 | `knowledgePoint` | String | 关联知识点 |
 | `specificError` | String | 具体错误 |
 | `diagnosis` | String | 诊断说明 |
+| `codeReview` | CodeReviewResult / null | AC 提交的轻量代码点评；失败诊断时为 null |
 | `hintLevel1` | String | 已废弃，不再生成，保留字段兼容 |
 | `hintLevel2` | String | 已废弃，不再生成，保留字段兼容 |
 | `hintLevel3` | String | 已废弃，不再生成，保留字段兼容 |
 | `trainingPlanTitle` | String | 生成的训练计划标题 |
 | `steps` | AgentStepVO[] | Agent 步骤记录 |
+
+**CodeReviewResult：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `complexity` | String | 复杂度点评 |
+| `codeStyle` | String | 代码风格点评 |
+| `interviewSuggestion` | String | 面试表达建议 |
+| `optimizationPoints` | String[] | 可优化点列表，不包含完整答案 |
 
 **AgentStepVO：**
 
@@ -473,7 +488,7 @@ event:agent_step
 data:{"stepName":"ERROR_CLASSIFICATION","toolName":"ErrorClassifierTool","status":"SUCCESS","inputSummary":"Classify execution observation","outputSummary":"Diagnosis ready","durationMs":23548,"errorMessage":null}
 
 event:done
-data:{"agentRunId":1,"submissionId":1,"errorType":"LOGIC_ERROR","knowledgePoint":"HashMap Lookup in Array Traversal","specificError":"Self-matching due to incorrect map operation order","diagnosis":"Code adds current element before checking, allowing same-element pairing.","hintLevel1":"...","hintLevel2":"...","hintLevel3":"...","trainingPlanTitle":"3-day recovery plan: HashMap Lookup in Array Traversal","steps":[...]}
+data:{"agentRunId":1,"submissionId":1,"errorType":"LOGIC_ERROR","knowledgePoint":"HashMap Lookup in Array Traversal","specificError":"Self-matching due to incorrect map operation order","diagnosis":"Code adds current element before checking, allowing same-element pairing.","codeReview":null,"hintLevel1":null,"hintLevel2":null,"hintLevel3":null,"trainingPlanTitle":"3-day recovery plan: HashMap Lookup in Array Traversal","steps":[...]}
 ```
 
 失败示例：
@@ -609,7 +624,59 @@ GET /api/users/{userId}/training-plans/latest
 | `reviewFocus` | String | 复习重点 |
 | `status` | String | 训练状态 |
 
-### 6.5 最近提交记录
+### 6.5 错误统计
+
+```http
+GET /api/users/{userId}/dashboard/error-stats
+```
+
+**响应 `data`：** `ErrorStatsVO`
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "errorTypeDistribution": [
+      {
+        "errorType": "LOGIC_ERROR",
+        "count": 3
+      }
+    ],
+    "topWeakPoints": [
+      {
+        "knowledgePoint": "HashMap 基础查找",
+        "errorType": "LOGIC_ERROR",
+        "wrongCount": 2,
+        "weaknessScore": 15.0
+      }
+    ]
+  }
+}
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `errorTypeDistribution` | ErrorTypeCount[] | 按错误类型聚合的错题次数 |
+| `topWeakPoints` | KnowledgeWeakness[] | 按薄弱分数排序的前 5 个薄弱点 |
+
+**ErrorTypeCount：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `errorType` | String | 错误类型 |
+| `count` | Integer | 该错误类型累计错误次数 |
+
+**KnowledgeWeakness：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `knowledgePoint` | String | 知识点 |
+| `errorType` | String | 错误类型 |
+| `wrongCount` | Integer | 累计错误次数 |
+| `weaknessScore` | Double | 薄弱分数 |
+
+### 6.6 最近提交记录
 
 ```http
 GET /api/users/{userId}/submissions/recent
@@ -713,6 +780,7 @@ GET /api/knowledge/cards/{id}
 | `GET` | `/api/users/{userId}/weaknesses` | 获取薄弱点排行 |
 | `GET` | `/api/users/{userId}/mistakes` | 获取错题卡片列表 |
 | `GET` | `/api/users/{userId}/training-plans/latest` | 获取最新训练计划 |
+| `GET` | `/api/users/{userId}/dashboard/error-stats` | 获取错误类型分布和 Top 薄弱点 |
 | `GET` | `/api/users/{userId}/submissions/recent` | 获取最近提交记录 |
 
 ---
@@ -726,12 +794,12 @@ GET /api/knowledge/cards/{id}
 2. GET  /api/problems/{id}
 3. 浏览器端 ProblemWorkspace 请求 GET /api/problems/{id}/template
 4. POST /api/submissions
-5. 如果提交失败：
-   前端调用 GET /api/submissions/{submissionId}/diagnosis/stream（SSE）
+5. 提交后前端调用 GET /api/submissions/{submissionId}/diagnosis/stream（SSE）
    实时接收 agent_step 事件展示 Agent 执行步骤
-   收到 done 事件后展示最终诊断结果
+   收到 done 事件后展示最终诊断结果或 AC 代码点评
    同步接口 POST /api/agent/analyze 保留作为 fallback
-6. 前端从 AgentAnalyzeVO 中展示 errorType、knowledgePoint、diagnosis、specificError、trainingPlanTitle 和 steps
+6. 失败提交展示 errorType、knowledgePoint、diagnosis、specificError、trainingPlanTitle 和 steps
+7. AC 提交展示 codeReview、steps，不生成错题卡和训练计划
 ```
 
 模板加载说明：
@@ -753,9 +821,10 @@ GET /api/knowledge/cards/{id}
 - 错题卡片
 - 训练计划
 - 后端知识训练入口
+- 错误类型分布和 Top 薄弱点
 - AI 教练建议
 
-前端加载时会并发请求统计、薄弱点、错题、最新训练计划和最近提交记录。无数据时显示空状态引导文案，不回退 mock 数据。
+前端加载时会并发请求统计、薄弱点、错题、最新训练计划、最近提交记录和错误统计。无数据时显示空状态引导文案，不回退 mock 数据。
 
 ### 9.3 知识训练页面当前状态
 
@@ -778,7 +847,7 @@ GET /api/knowledge/cards/{id}
 如果访问 `/api/users/{userId}/...` 返回类似 `No static resource api/users/...`，通常不是前端路径写错，而是当前运行的 `localhost:8080` 后端进程不是包含 `UserController` 的最新代码。处理顺序：
 
 1. 确认当前工作区存在 `backend/src/main/java/com/interview/coach/controller/UserController.java`。
-2. 确认 `backend/src/main/java/com/interview/coach/service/impl/UserLearningServiceImpl.java` 存在并实现 5 个查询方法。
+2. 确认 `backend/src/main/java/com/interview/coach/service/impl/UserLearningServiceImpl.java` 存在并实现 6 个查询方法。
 3. 重启 Spring Boot 后端，让新 Controller 被重新扫描注册。
 4. 如果别人从 git 或远程仓库检查代码，确认新增的 `UserController`、`UserLearningService`、Dashboard VO 和测试文件已经被加入版本控制，而不是停留在 untracked 状态。
 5. 重新请求 `GET http://localhost:8080/api/users/1/dashboard/stats`，成功时应返回统一 `ApiResponse` JSON。
@@ -788,6 +857,6 @@ GET /api/knowledge/cards/{id}
 以下增强能力当前尚未暴露为 REST Controller：
 
 - 单独获取某一级 hint
-- 对已通过提交做代码 review
+- 单独暴露 accepted-code review REST 接口（当前通过 `/api/agent/analyze` 和 SSE 的 AC 分支返回 `codeReview`）
 - 手动重新生成训练计划
 - 知识卡片收藏、掌握度、自测记录和 RAG 检索
