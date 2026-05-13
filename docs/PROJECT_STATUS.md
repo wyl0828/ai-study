@@ -18,8 +18,8 @@
 - **Agent Workflow 后端**：已实现 `InterviewCoachAgent`、`AgentContext`、`AgentStep` 和核心 Tool 链，支持同步分析接口和 SSE 流式诊断接口。`MEMORY_UPDATE` 和 `TRAINING_PLAN` 为非核心步骤，失败不阻塞后续流程。
 - **AI 诊断与学习数据**：失败提交后可生成结构化错误类型、知识点、具体错误、改进建议和训练计划，并持久化 `ai_diagnosis`、`user_weakness`、`mistake_card`、`training_plan` 等数据；`hint_record` 保留为历史兼容表，当前 Agent 流程不写入新 AI hint。
 - **AC 代码点评**：提交通过后 Agent 可进入 `CodeReviewTool` 分支，返回复杂度、代码风格、面试表达建议和可优化点，不生成完整答案。
-- **前端做题页**：已实现三栏布局：左侧题目描述和题目预设分层提示，中间 Monaco Editor，右侧测试结果和 AI 诊断。提交后通过 SSE 实时展示 Agent 执行步骤，失败时展示诊断结果，AC 时展示轻量代码点评。
-- **提示/诊断边界已理顺**：题目通用 Level 1/2/3 提示放在左侧，默认收起，不调用 AI；右侧 AI 诊断只解释本次提交为什么错，并展示改进建议和推荐训练。
+- **前端做题页**：已实现三栏布局：左侧题目、题目预设分层提示和可主动查看的参考题解，中间 Monaco Editor，右侧测试结果和 AI 诊断。提交后通过 SSE 实时展示 Agent 执行步骤，失败时展示诊断结果，AC 时展示轻量代码点评。
+- **提示/题解/诊断边界已理顺**：题目通用 Level 1/2/3 提示和参考题解放在左侧，提示与完整 Java 参考实现默认不主动暴露且不调用 AI；右侧 AI 诊断只解释本次提交为什么错，并展示改进建议和推荐训练。
 - **Dashboard 真实数据接入**：学习中心已从 mock 数据切到后端真实接口，展示统计、薄弱点、错题卡、最近提交和最新训练计划。
 - **知识训练页 V1**：已新增 `/knowledge` 前端训练页，优先读取后端知识接口和 `knowledge_card` 真实数据；接口失败时回退 3 条本地示例数据，搜索、难度筛选、分类筛选、卡片展开、AI 自测模拟评分、AI 点评、标杆回答解析、高频追问和标记已掌握均可用。
 - **后端知识训练一期能力**：后端已有 `KnowledgeController`、`KnowledgeCardService` 和 `knowledge_card` 表；`data/knowledge_cards.sql` 提供 15 张原创整理的 Java 后端面试知识卡。
@@ -51,7 +51,7 @@
 - **AI 诊断稳定性**：模型可能输出不稳定 JSON 或分类不准，需要准备固定 bug 样例和验证脚本。
 - **本地依赖较多**：MySQL、Redis、Piston、后端、前端都要启动，演示前需要一键化或清晰启动脚本。
 - **SSE 稳定性**：SSE 已接入前端，并补充了 `agentStreamState` 状态决策和源码级回归测试；正式演示前仍建议用连续提交、用户中断和后端不可达场景做一次手动压测。
-- **题目提示已迁移到后端**：`problem` 表存储 `hint_level1/2/3`，通过 `ProblemDetailVO.presetHints` 返回。
+- **题目内容已迁移到后端**：`problem` 表存储 `hint_level1/2/3` 和 `solution_outline`，通过 `ProblemDetailVO.presetHints` 与 `solutionOutline` 返回。
 - **知识数据导入依赖**：新库可直接执行 `data/schema.sql` 和 `data/knowledge_cards.sql`；旧库需要先执行 `data/knowledge_training_migration.sql`，再执行 `data/knowledge_cards.sql`。
 - **知识卡内容边界**：当前知识卡参考小林 coding 和 JavaGuide 选题覆盖并重新整理，不是 RAG，也不应直接复制外部文章长文本。
 - **文档与代码容易漂移**：提示/诊断边界已调整，后续修改接口或页面时要同步更新 `docs/API.md` 和设计文档。

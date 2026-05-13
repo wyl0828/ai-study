@@ -7,6 +7,7 @@ import com.interview.coach.mapper.KnowledgeCardMapper;
 import com.interview.coach.service.KnowledgeCardService;
 import com.interview.coach.vo.KnowledgeCardVO;
 import com.interview.coach.vo.KnowledgeCategoryVO;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -65,10 +66,14 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
 
     @Override
     public List<KnowledgeCardVO> listReviewCards(int limit) {
-        return knowledgeCardMapper.selectList(enabledQuery()
-                        .orderByAsc(KnowledgeCard::getSortOrder)
-                        .orderByAsc(KnowledgeCard::getId)
-                        .last("LIMIT " + Math.max(0, limit)))
+        int safeLimit = Math.max(0, limit);
+        if (safeLimit == 0) {
+            return List.of();
+        }
+        List<KnowledgeCard> cards = knowledgeCardMapper.selectList(enabledQuery()
+                .orderByAsc(KnowledgeCard::getSortOrder)
+                .orderByAsc(KnowledgeCard::getId));
+        return pickDiverseReviewCards(cards, safeLimit)
                 .stream()
                 .map(card -> toVO(card, false))
                 .toList();
@@ -77,6 +82,28 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
     private LambdaQueryWrapper<KnowledgeCard> enabledQuery() {
         return new LambdaQueryWrapper<KnowledgeCard>()
                 .eq(KnowledgeCard::getEnabled, true);
+    }
+
+    private List<KnowledgeCard> pickDiverseReviewCards(List<KnowledgeCard> cards, int limit) {
+        List<KnowledgeCard> selected = new ArrayList<>();
+        for (CategoryMeta category : CATEGORIES) {
+            cards.stream()
+                    .filter(card -> category.category().equals(card.getCategory()))
+                    .findFirst()
+                    .ifPresent(selected::add);
+            if (selected.size() >= limit) {
+                return selected;
+            }
+        }
+        for (KnowledgeCard card : cards) {
+            if (!selected.contains(card)) {
+                selected.add(card);
+            }
+            if (selected.size() >= limit) {
+                return selected;
+            }
+        }
+        return selected;
     }
 
     private KnowledgeCategoryVO toCategoryVO(CategoryMeta meta, Long count) {

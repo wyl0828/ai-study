@@ -78,11 +78,33 @@ class KnowledgeCardServiceImplTest {
         assertThat(categories.get(4).getCount()).isZero();
     }
 
+    @Test
+    void listReviewCardsPrefersCategoryDiversityForDashboardPlan() {
+        when(knowledgeCardMapper.selectList(any())).thenReturn(List.of(
+                card(1L, "JAVA", "HashMap 底层结构", true),
+                card(2L, "JAVA", "ArrayList 和 LinkedList 的区别", true),
+                card(3L, "MYSQL", "MySQL 索引失效场景", true),
+                card(4L, "SPRING", "Spring 事务失效场景", true)));
+
+        List<KnowledgeCardVO> cards = knowledgeCardService.listReviewCards(3);
+
+        assertThat(cards)
+                .extracting(KnowledgeCardVO::getCategory)
+                .containsExactly("JAVA", "SPRING", "MYSQL");
+        assertThat(cards)
+                .extracting(KnowledgeCardVO::getTitle)
+                .containsExactly("HashMap 底层结构", "Spring 事务失效场景", "MySQL 索引失效场景");
+    }
+
     private KnowledgeCard card(Long id, String category, Boolean enabled) {
+        return card(id, category, "HashMap 底层结构", enabled);
+    }
+
+    private KnowledgeCard card(Long id, String category, String title, Boolean enabled) {
         KnowledgeCard card = new KnowledgeCard();
         card.setId(id);
         card.setCategory(category);
-        card.setTitle("HashMap 底层结构");
+        card.setTitle(title);
         card.setQuestion("HashMap 在 JDK 1.8 中的底层结构是什么？");
         card.setAnswer("HashMap 底层主要由数组、链表和红黑树组成。");
         card.setFollowUp("为什么链表长度超过阈值后不是一定立即转红黑树？");

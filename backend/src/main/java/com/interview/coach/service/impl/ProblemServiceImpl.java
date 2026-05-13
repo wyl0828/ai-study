@@ -53,6 +53,7 @@ public class ProblemServiceImpl implements ProblemService {
         vo.setOutputFormat(problem.getOutputFormat());
         vo.setKnowledgePoints(listKnowledgePointNames(problem.getId()));
         vo.setSampleCases(listSampleCases(problem.getId()));
+        vo.setSolutionOutline(problem.getSolutionOutline());
         if (problem.getHintLevel1() != null) {
             ProblemDetailVO.PresetHintsVO hints = new ProblemDetailVO.PresetHintsVO();
             hints.setLevel1(problem.getHintLevel1());

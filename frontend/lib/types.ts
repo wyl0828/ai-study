@@ -28,6 +28,7 @@ export interface ProblemDetail {
   outputFormat: string;
   knowledgePoints: string[];
   sampleCases: TestCase[];
+  solutionOutline?: string | null;
   presetHints?: {
     level1: string;
     level2: string;

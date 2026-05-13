@@ -24,6 +24,8 @@ public class ProblemDetailVO {
 
     private List<TestCaseVO> sampleCases;
 
+    private String solutionOutline;
+
     private PresetHintsVO presetHints;
 
     @Data

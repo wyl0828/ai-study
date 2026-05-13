@@ -9,6 +9,7 @@ import com.interview.coach.entity.Problem;
 import com.interview.coach.entity.Submission;
 import com.interview.coach.entity.TrainingPlan;
 import com.interview.coach.entity.TrainingPlanItem;
+import com.interview.coach.entity.UserWeakness;
 import com.interview.coach.mapper.MistakeCardMapper;
 import com.interview.coach.mapper.ProblemMapper;
 import com.interview.coach.mapper.SubmissionMapper;
@@ -20,6 +21,9 @@ import com.interview.coach.vo.DashboardStatsVO;
 import com.interview.coach.vo.MistakeCardVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
 import com.interview.coach.vo.TrainingPlanVO;
+import com.interview.coach.vo.UserWeaknessVO;
+import com.interview.coach.vo.ErrorStatsVO;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -56,8 +60,11 @@ class UserLearningServiceImplTest {
     @Test
     void getDashboardStatsCountsAcceptedDistinctProblems() {
         when(submissionMapper.selectCount(any())).thenReturn(4L);
-        when(userWeaknessMapper.selectCount(any())).thenReturn(3L);
         when(mistakeCardMapper.selectCount(any())).thenReturn(2L);
+        when(userWeaknessMapper.selectList(any())).thenReturn(List.of(
+                weakness(1L, "HashMap 基础查找", "LOGIC_ERROR", 1, "8.0"),
+                weakness(2L, "链表指针操作", "RUNTIME_ERROR", 1, "6.0"),
+                weakness(3L, "二叉树递归", "LOGIC_ERROR", 1, "5.0")));
 
         Submission firstAccepted = submission(101L, "ACCEPTED");
         Submission duplicateAccepted = submission(101L, "ACCEPTED");
@@ -71,6 +78,21 @@ class UserLearningServiceImplTest {
         assertThat(stats.getPassedProblems()).isEqualTo(2);
         assertThat(stats.getWeakPointCount()).isEqualTo(3);
         assertThat(stats.getMistakeCount()).isEqualTo(2);
+    }
+
+    @Test
+    void getDashboardStatsCountsAggregatedWeakPoints() {
+        when(submissionMapper.selectCount(any())).thenReturn(4L);
+        when(mistakeCardMapper.selectCount(any())).thenReturn(2L);
+        when(submissionMapper.selectList(any())).thenReturn(List.of(submission(101L, "ACCEPTED")));
+        when(userWeaknessMapper.selectList(any())).thenReturn(List.of(
+                weakness(1L, "HashMap 在两数之和中的应用", "LOGIC_ERROR", 6, "38.0"),
+                weakness(2L, "HashMap in Two Sum", "ALGORITHM_ERROR", 4, "31.0"),
+                weakness(3L, "链表指针操作", "RUNTIME_ERROR", 1, "8.0")));
+
+        DashboardStatsVO stats = userLearningService.getDashboardStats(1L);
+
+        assertThat(stats.getWeakPointCount()).isEqualTo(2);
     }
 
     @Test
@@ -121,6 +143,42 @@ class UserLearningServiceImplTest {
         assertThat(result.getItems().get(0).getItemType()).isEqualTo("KNOWLEDGE_CARD");
         assertThat(result.getItems().get(0).getKnowledgeCardId()).isEqualTo(7L);
         assertThat(result.getItems().get(0).getKnowledgeCardTitle()).isEqualTo("HashMap 底层结构");
+    }
+
+    @Test
+    void getWeaknessesMergesSameKnowledgePointAcrossLegacyNamesAndErrorTypes() {
+        when(userWeaknessMapper.selectList(any())).thenReturn(List.of(
+                weakness(1L, "HashMap 在两数之和中的应用", "LOGIC_ERROR", 6, "38.0"),
+                weakness(2L, "HashMap in Two Sum", "ALGORITHM_ERROR", 4, "31.0"),
+                weakness(3L, "HashMap 基础查找", "LOGIC_ERROR", 3, "20.0")));
+
+        List<UserWeaknessVO> result = userLearningService.getWeaknesses(1L);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getKnowledgePoint()).isEqualTo("HashMap 在两数之和中的应用");
+        assertThat(result.get(0).getWrongCount()).isEqualTo(10);
+        assertThat(result.get(0).getWeaknessScore()).isEqualByComparingTo("69.0");
+        assertThat(result.get(0).getErrorType()).isEqualTo("LOGIC_ERROR");
+        assertThat(result.get(1).getKnowledgePoint()).isEqualTo("HashMap 基础查找");
+    }
+
+    @Test
+    void getErrorStatsAggregatesTopWeakPointsWithSameDisplayKnowledgePoint() {
+        when(userWeaknessMapper.selectList(any())).thenReturn(List.of(
+                weakness(1L, "HashMap 在两数之和中的应用", "LOGIC_ERROR", 6, "38.0"),
+                weakness(2L, "HashMap in Two Sum", "ALGORITHM_ERROR", 4, "31.0"),
+                weakness(3L, "HashMap 字符串计数", "SYSTEM_ERROR", 2, "16.0")));
+
+        ErrorStatsVO result = userLearningService.getErrorStats(1L);
+
+        assertThat(result.getTopWeakPoints()).hasSize(2);
+        assertThat(result.getTopWeakPoints().get(0).getKnowledgePoint())
+                .isEqualTo("HashMap 在两数之和中的应用");
+        assertThat(result.getTopWeakPoints().get(0).getWrongCount()).isEqualTo(10);
+        assertThat(result.getTopWeakPoints().get(0).getWeaknessScore()).isEqualTo(69.0);
+        assertThat(result.getErrorTypeDistribution())
+                .extracting(ErrorStatsVO.ErrorTypeCount::getCount)
+                .containsExactly(6, 4, 2);
     }
 
     @Test
@@ -185,5 +243,18 @@ class UserLearningServiceImplTest {
         plan.setEndDate(LocalDate.now().plusDays(2));
         plan.setCreatedAt(LocalDateTime.now());
         return plan;
+    }
+
+    private UserWeakness weakness(Long id, String knowledgePoint, String errorType,
+            Integer wrongCount, String weaknessScore) {
+        UserWeakness weakness = new UserWeakness();
+        weakness.setId(id);
+        weakness.setUserId(1L);
+        weakness.setKnowledgePoint(knowledgePoint);
+        weakness.setErrorType(errorType);
+        weakness.setWrongCount(wrongCount);
+        weakness.setSubmitCount(wrongCount);
+        weakness.setWeaknessScore(new BigDecimal(weaknessScore));
+        return weakness;
     }
 }

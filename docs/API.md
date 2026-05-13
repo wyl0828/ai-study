@@ -171,6 +171,7 @@ GET /api/problems/{id}
         "sample": true
       }
     ],
+    "solutionOutline": "解题思路：...\n\nJava 参考实现：\n```java\n...\n```",
     "presetHints": {
       "level1": "思考每个数需要寻找的另一个数是什么，不要只靠双重循环枚举。",
       "level2": "可以用 HashMap 记录已经遍历过的数值和下标，重点注意查询和写入的顺序。",
@@ -191,6 +192,7 @@ GET /api/problems/{id}
 | `outputFormat` | String | 输出格式说明 |
 | `knowledgePoints` | String[] | 知识点名称 |
 | `sampleCases` | TestCaseVO[] | 示例测试用例 |
+| `solutionOutline` | String / null | 题目预设参考题解，包含复盘文字和可选 Java 参考实现 |
 | `presetHints` | PresetHintsVO / null | 题目预设分层提示，无数据时为 null |
 
 **PresetHintsVO：**

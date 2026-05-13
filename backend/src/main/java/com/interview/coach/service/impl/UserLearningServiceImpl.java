@@ -22,7 +22,10 @@ import com.interview.coach.vo.SubmissionHistoryVO;
 import com.interview.coach.vo.TrainingPlanItemVO;
 import com.interview.coach.vo.TrainingPlanVO;
 import com.interview.coach.vo.UserWeaknessVO;
+import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -58,8 +61,7 @@ public class UserLearningServiceImpl implements UserLearningService {
                 .map(Submission::getProblemId)
                 .distinct()
                 .count());
-        vo.setWeakPointCount(toInt(userWeaknessMapper.selectCount(new LambdaQueryWrapper<UserWeakness>()
-                .eq(UserWeakness::getUserId, userId))));
+        vo.setWeakPointCount(aggregateWeaknesses(loadWeaknesses(userId)).size());
         vo.setMistakeCount(toInt(mistakeCardMapper.selectCount(new LambdaQueryWrapper<MistakeCard>()
                 .eq(MistakeCard::getUserId, userId))));
         return vo;
@@ -67,10 +69,9 @@ public class UserLearningServiceImpl implements UserLearningService {
 
     @Override
     public List<UserWeaknessVO> getWeaknesses(Long userId) {
-        List<UserWeakness> weaknesses = userWeaknessMapper.selectList(new LambdaQueryWrapper<UserWeakness>()
-                .eq(UserWeakness::getUserId, userId)
-                .orderByDesc(UserWeakness::getWeaknessScore));
-        return weaknesses.stream().map(this::toUserWeaknessVO).toList();
+        return aggregateWeaknesses(loadWeaknesses(userId)).stream()
+                .map(this::toUserWeaknessVO)
+                .toList();
     }
 
     @Override
@@ -122,8 +123,7 @@ public class UserLearningServiceImpl implements UserLearningService {
 
     @Override
     public ErrorStatsVO getErrorStats(Long userId) {
-        List<UserWeakness> weaknesses = userWeaknessMapper.selectList(new LambdaQueryWrapper<UserWeakness>()
-                .eq(UserWeakness::getUserId, userId));
+        List<UserWeakness> weaknesses = loadWeaknesses(userId);
 
         // 错误类型分布：按 errorType 分组统计 wrongCount 总和
         Map<String, Integer> errorTypeMap = weaknesses.stream()
@@ -140,9 +140,7 @@ public class UserLearningServiceImpl implements UserLearningService {
                 .sorted((a, b) -> Integer.compare(b.getCount(), a.getCount()))
                 .toList();
 
-        // Top 5 薄弱点：按 weaknessScore 降序
-        List<ErrorStatsVO.KnowledgeWeakness> topWeakPoints = weaknesses.stream()
-                .sorted((a, b) -> b.getWeaknessScore().compareTo(a.getWeaknessScore()))
+        List<ErrorStatsVO.KnowledgeWeakness> topWeakPoints = aggregateWeaknesses(weaknesses).stream()
                 .limit(5)
                 .map(w -> {
                     ErrorStatsVO.KnowledgeWeakness kw = new ErrorStatsVO.KnowledgeWeakness();
@@ -158,6 +156,56 @@ public class UserLearningServiceImpl implements UserLearningService {
         vo.setErrorTypeDistribution(errorTypeDistribution);
         vo.setTopWeakPoints(topWeakPoints);
         return vo;
+    }
+
+    private List<UserWeakness> loadWeaknesses(Long userId) {
+        return userWeaknessMapper.selectList(new LambdaQueryWrapper<UserWeakness>()
+                .eq(UserWeakness::getUserId, userId)
+                .orderByDesc(UserWeakness::getWeaknessScore));
+    }
+
+    private List<UserWeakness> aggregateWeaknesses(List<UserWeakness> weaknesses) {
+        Map<String, AggregatedWeakness> groups = new LinkedHashMap<>();
+        for (UserWeakness weakness : weaknesses) {
+            String groupName = normalizeKnowledgePoint(weakness.getKnowledgePoint());
+            AggregatedWeakness group = groups.computeIfAbsent(groupName,
+                    ignored -> new AggregatedWeakness(weakness, groupName));
+            group.add(weakness);
+        }
+        return groups.values().stream()
+                .map(AggregatedWeakness::toEntity)
+                .sorted(Comparator.comparing(UserWeakness::getWeaknessScore).reversed())
+                .toList();
+    }
+
+    private String normalizeKnowledgePoint(String value) {
+        if (value == null || value.isBlank()) {
+            return "未分类知识点";
+        }
+        String source = value.trim();
+        String normalized = source.toLowerCase();
+        if (containsAny(normalized, "two sum", "两数之和")) {
+            return "HashMap 在两数之和中的应用";
+        }
+        if (containsAny(normalized, "duplicate", "重复", "冲突", "distinct indices", "self-match", "自匹配")) {
+            return "HashMap 冲突处理";
+        }
+        if (containsAny(normalized, "traversal", "遍历")) {
+            return "HashMap 遍历逻辑";
+        }
+        if (containsAny(normalized, "lookup", "查找", "hashmap")) {
+            return "HashMap 基础查找";
+        }
+        return source;
+    }
+
+    private boolean containsAny(String source, String... candidates) {
+        for (String candidate : candidates) {
+            if (source.contains(candidate)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private UserWeaknessVO toUserWeaknessVO(UserWeakness weakness) {
@@ -223,5 +271,53 @@ public class UserLearningServiceImpl implements UserLearningService {
 
     private Integer toInt(Long value) {
         return Math.toIntExact(value == null ? 0L : value);
+    }
+
+    private static class AggregatedWeakness {
+
+        private final Long id;
+
+        private final Long userId;
+
+        private final String knowledgePoint;
+
+        private String errorType;
+
+        private Integer wrongCount = 0;
+
+        private Integer submitCount = 0;
+
+        private BigDecimal weaknessScore = BigDecimal.ZERO;
+
+        private BigDecimal maxSingleScore = BigDecimal.ZERO;
+
+        AggregatedWeakness(UserWeakness first, String knowledgePoint) {
+            this.id = first.getId();
+            this.userId = first.getUserId();
+            this.knowledgePoint = knowledgePoint;
+        }
+
+        void add(UserWeakness weakness) {
+            BigDecimal score = weakness.getWeaknessScore() == null ? BigDecimal.ZERO : weakness.getWeaknessScore();
+            wrongCount += weakness.getWrongCount() == null ? 0 : weakness.getWrongCount();
+            submitCount += weakness.getSubmitCount() == null ? 0 : weakness.getSubmitCount();
+            weaknessScore = weaknessScore.add(score);
+            if (errorType == null || score.compareTo(maxSingleScore) > 0) {
+                errorType = weakness.getErrorType();
+                maxSingleScore = score;
+            }
+        }
+
+        UserWeakness toEntity() {
+            UserWeakness weakness = new UserWeakness();
+            weakness.setId(id);
+            weakness.setUserId(userId);
+            weakness.setKnowledgePoint(knowledgePoint);
+            weakness.setErrorType(errorType);
+            weakness.setWrongCount(wrongCount);
+            weakness.setSubmitCount(submitCount);
+            weakness.setWeaknessScore(weaknessScore);
+            return weakness;
+        }
     }
 }

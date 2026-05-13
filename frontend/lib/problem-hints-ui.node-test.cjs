@@ -28,6 +28,11 @@ test("problem description renders preset layered hints from problem data mapping
   const hints = read("lib/problemHints.ts");
 
   assert.match(description, /ProblemHintPanel/);
+  assert.match(description, /ProblemSolutionPanel/);
+  assert.match(description, /label:\s*"题目"/);
+  assert.match(description, /label:\s*"提示"/);
+  assert.match(description, /label:\s*"题解"/);
+  assert.match(description, /useState<ProblemTab>\("description"\)/);
   assert.match(description, /getProblemPresetHints\(problem\.id\)/);
   assert.doesNotMatch(description, /solutionModeHints/);
   assert.doesNotMatch(panel, /默认展开/);
@@ -43,7 +48,15 @@ test("problem description renders preset layered hints from problem data mapping
 test("AI diagnosis copy no longer says it generates hints", () => {
   const diagnosis = read("components/AiDiagnosis.tsx");
 
-  assert.match(diagnosis, /正在诊断错误原因并生成训练建议/);
+  assert.match(diagnosis, /AI 正在诊断你的代码/);
   assert.doesNotMatch(diagnosis, /正在诊断错误原因并生成提示/);
   assert.doesNotMatch(diagnosis, /hintLevel1|hintLevel2|hintLevel3/);
+});
+
+test("reference solution panel exposes a copy code action", () => {
+  const solutionPanel = read("components/ProblemSolutionPanel.tsx");
+
+  assert.match(solutionPanel, /Clipboard/);
+  assert.match(solutionPanel, /复制代码/);
+  assert.match(solutionPanel, /navigator\.clipboard\.writeText/);
 });

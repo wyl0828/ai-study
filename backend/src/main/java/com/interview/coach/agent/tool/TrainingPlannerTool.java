@@ -38,7 +38,7 @@ public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResul
 
         TrainingPlanResult result = new TrainingPlanResult();
         result.setTitle("3 天专项训练：" + knowledgePoint);
-        result.setSummary("围绕失败知识点、相邻题型和原题重做安排训练。");
+        result.setSummary("围绕失败知识点、相邻题型、原题重做和后端知识卡片安排训练。");
         result.getItems().add(item(1, knowledgePoint, problemTitle,
                 "趁错误记忆还清晰，先复盘本次失败的知识点。",
                 "说明失败用例为什么会击穿当前思路。"));
@@ -65,8 +65,8 @@ public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResul
     }
 
     private void addKnowledgeCards(TrainingPlanResult result) {
-        List<KnowledgeCardVO> cards = knowledgeCardService.listReviewCards(2);
-        for (int i = 0; i < cards.size() && i < 2; i++) {
+        List<KnowledgeCardVO> cards = knowledgeCardService.listReviewCards(3);
+        for (int i = 0; i < cards.size() && i < 3; i++) {
             KnowledgeCardVO card = cards.get(i);
             TrainingPlanItemResult item = new TrainingPlanItemResult();
             item.setItemType("KNOWLEDGE_CARD");
