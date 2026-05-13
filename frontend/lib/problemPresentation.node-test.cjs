@@ -22,7 +22,7 @@ const {
 
 test("formats reverse-list samples as LeetCode head arrays", () => {
   const problem = {
-    id: 103,
+    id: 206,
     sampleCases: [
       {
         id: 1,
@@ -53,13 +53,14 @@ test("formats reverse-list samples as LeetCode head arrays", () => {
 });
 
 test("hides input/output format only for reverse-list Solution mode", () => {
-  assert.equal(shouldShowIoFormat({ id: 103 }), false);
-  assert.equal(shouldShowIoFormat({ id: 101 }), true);
+  assert.equal(shouldShowIoFormat({ id: 206 }), false);
+  assert.equal(shouldShowIoFormat({ id: 1 }), false);
 });
 
-test("keeps ACM samples unchanged for other problems", () => {
+test("formats Solution-mode array samples with compact argument names", () => {
   const problem = {
-    id: 101,
+    id: 1,
+    title: "两数之和",
     sampleCases: [
       {
         id: 1,
@@ -71,6 +72,6 @@ test("keeps ACM samples unchanged for other problems", () => {
   };
 
   assert.deepEqual(displayExamples(problem), [
-    { id: 1, input: "4\n2 7 11 15\n9\n", output: "0 1" },
+    { id: 1, input: "nums = [2,7,11,15], target = 9", output: "[0,1]" },
   ]);
 });

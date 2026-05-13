@@ -35,7 +35,8 @@ ai-study/
 ├── frontend/                          # Next.js 前端
 ├── data/                              # 数据库脚本
 │   ├── schema.sql                     # 建表语句
-│   ├── problems.sql                   # 题目数据
+│   ├── problems.sql                   # Hot100 精选 12 题数据
+│   ├── hot100_solution_mode_migration.sql # 旧库统一 Solution 模式迁移
 │   ├── knowledge_cards.sql            # 后端知识卡片种子数据
 │   └── knowledge_training_migration.sql # 已有本地库升级脚本
 ├── docs/                              # 项目文档
@@ -73,9 +74,11 @@ mysql -u root -p ai_interview_coach < data/problems.sql
 mysql -u root -p ai_interview_coach < data/knowledge_cards.sql
 ```
 
-如果数据库已经存在并且只需要升级本次知识训练功能，执行：
+如果数据库已经存在，先执行 Hot100 / Solution 模式幂等迁移，再导入题库和知识卡：
 
 ```powershell
+cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\hot100_solution_mode_migration.sql"
+cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\problems.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\knowledge_training_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\knowledge_cards.sql"
 ```
@@ -128,10 +131,10 @@ npm run dev
 
 ### 1. 题目与提交
 
-- 内置 8 道 Java 算法题（数组、哈希表、链表、二叉树、动态规划）
-- 支持 ACM 模式（完整 `public class Main`）和 Solution 模式（`class Solution`）
+- 内置 Hot100 精选 12 道 Java 算法题（数组、哈希表、链表、二叉树、动态规划、贪心）
+- 当前题库统一使用 LeetCode 风格 Solution 模式（用户提交非 `public` 的 `class Solution`）
 - Monaco Editor 代码编辑器
-- Piston 判题，返回编译错误、运行错误、失败用例
+- 后端在送入 Piston 前通过 `CodeWrapper` 注册表包装为 `Main.java`，数据库保存用户原始 Solution 代码
 
 ### 2. Agent Workflow 诊断
 
@@ -174,9 +177,9 @@ npm run dev
 
 推荐演示顺序：
 
-1. **101 两数之和**（ACM 模式）：HashMap 查询/写入顺序 bug
-2. **104 合并两个有序链表**（Solution 模式）：忘记连接剩余链表
-3. **103 反转链表**（Solution 模式）：返回原始 head
+1. **1 两数之和**：HashMap 查询/写入顺序 bug
+2. **206 反转链表**：返回原始 head
+3. **121 买卖股票的最佳时机**：用于展示低门槛 AC 点评
 
 演示步骤：
 

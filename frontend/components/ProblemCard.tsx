@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle, Circle, Clock3 } from "lucide-react";
+import { Circle } from "lucide-react";
 import DifficultyBadge from "./DifficultyBadge";
 import type { HomeProblem } from "@/lib/types";
 import { knowledgePoint, problemDescription, problemTitle } from "@/lib/i18n";
@@ -9,12 +9,6 @@ interface ProblemCardProps {
 }
 
 export default function ProblemCard({ problem }: ProblemCardProps) {
-  const status =
-    problem.id === 101 || problem.id === 103
-      ? "passed"
-      : problem.id === 104
-      ? "attempted"
-      : "todo";
   const tags =
     problem.knowledgePoints && problem.knowledgePoints.length > 0
       ? problem.knowledgePoints
@@ -37,13 +31,7 @@ export default function ProblemCard({ problem }: ProblemCardProps) {
           <DifficultyBadge difficulty={problem.difficulty} />
           <span className="text-xs text-outline">#{problem.id}</span>
         </div>
-        {status === "passed" ? (
-          <CheckCircle className="w-[18px] h-[18px] text-emerald-500" aria-label="已通过" />
-        ) : status === "attempted" ? (
-          <Clock3 className="w-[18px] h-[18px] text-amber-500" aria-label="尝试过" />
-        ) : (
-          <Circle className="w-[18px] h-[18px] text-outline/40" aria-label="未做" />
-        )}
+        <Circle className="w-[18px] h-[18px] text-outline/40" aria-label="未做" />
       </div>
       <h3 className="text-base font-semibold text-on-surface group-hover:text-primary transition-colors mb-2">
         {problemTitle(problem.title)}

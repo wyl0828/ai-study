@@ -14,7 +14,7 @@
 已完成的主要成果：
 
 - **题目与提交闭环**：支持题目列表、题目详情、Java 模板加载、代码提交、Piston 判题、失败用例返回和提交记录持久化。
-- **混合提交模式**：`101/105/106/107/108` 保持 ACM `public class Main` 模式；`102/103/104` 支持 LeetCode 风格 `class Solution`，后端通过 `CodeWrapper` 只包装送入 Piston 的代码，数据库仍保存用户原始代码。
+- **Hot100 Solution 模式统一**：当前题库升级为 Hot100 精选 12 题，全部使用 LeetCode 风格 `class Solution`；后端通过 `CodeWrapper` 注册表只包装送入 Piston 的代码，数据库仍保存用户原始代码。
 - **Agent Workflow 后端**：已实现 `InterviewCoachAgent`、`AgentContext`、`AgentStep` 和核心 Tool 链，支持同步分析接口和 SSE 流式诊断接口。`MEMORY_UPDATE` 和 `TRAINING_PLAN` 为非核心步骤，失败不阻塞后续流程。
 - **AI 诊断与学习数据**：失败提交后可生成结构化错误类型、知识点、具体错误、改进建议和训练计划，并持久化 `ai_diagnosis`、`user_weakness`、`mistake_card`、`training_plan` 等数据；`hint_record` 保留为历史兼容表，当前 Agent 流程不写入新 AI hint。
 - **AC 代码点评**：提交通过后 Agent 可进入 `CodeReviewTool` 分支，返回复杂度、代码风格、面试表达建议和可优化点，不生成完整答案；前端会在代码通过但点评仍在生成时实时展示 Agent 步骤。
@@ -24,7 +24,7 @@
 - **知识训练页 V1**：已新增 `/knowledge` 前端训练页，优先读取后端知识接口和 `knowledge_card` 真实数据；接口失败时回退 3 条本地示例数据，搜索、难度筛选、分类筛选、卡片展开、模拟自测评分、点评反馈、标杆回答解析、高频追问和标记已掌握均可用。
 - **后端知识训练一期能力**：后端已有 `KnowledgeController`、`KnowledgeCardService` 和 `knowledge_card` 表；`data/knowledge_cards.sql` 提供 15 张原创整理的 Java 后端面试知识卡。
 - **训练计划轻接入知识卡片**：`training_plan_item` 已支持 `PROBLEM` 和 `KNOWLEDGE_CARD` 两类条目；`TrainingPlannerTool` 保留原有 3 条算法训练项，只额外混入最多 1-2 条高优先级知识卡，不根据算法错因强行推荐八股。
-- **固定演示样例**：`101`、`103`、`104` 的 bug / fixed 代码已沉淀到 `docs/demo-cases/`，使用说明见 `docs/DEMO_CASES.md`。
+- **固定演示样例**：主线演示已切换为 `1 两数之和`、`206 反转链表` 和 `121 买卖股票的最佳时机`，使用说明见 `docs/DEMO_CASES.md`。
 
 ## 2. 当前进度判断
 
@@ -42,7 +42,7 @@
 
 当前还不适合继续扩大的方向：
 
-- 不急着扩到 30 道题，先保证 8 道 MVP 题都能稳定演示。
+- 不急着扩到 30 道题，先保证 Hot100 精选 12 题中的主 demo 题能稳定演示。
 - 不急着做多语言、Docker 沙箱、复杂登录权限、语音/视频面试。
 - 不急着把前端做成完整 IDE，当前 Monaco + 提交 + 诊断已经够支撑简历演示。
 
@@ -101,7 +101,7 @@
 
 ### 4.4 最终阶段再考虑
 
-- 跑通 `101/103/104` 三题完整 demo 并记录失败点。
+- 跑通 `1/206/121` 三题完整 demo 并记录失败点。
 - 对齐 `docs/API.md`、`docs/IMPLEMENTATION_PLAN.md`、`docs/AI-Interview-Coach.md` 中细节漂移的接口和流程描述。
 - 针对 `102` 的 AC 点评和失败诊断各录一次短流程：验证 AC 点评生成中有实时步骤，修改代码但不提交时旧点评仍保留并提示仅供参考。
 - 明确 `hint_record` 的最终策略。

@@ -22,7 +22,7 @@ test("right result panel only exposes test result and AI diagnosis tabs", () => 
   assert.doesNotMatch(workspace, /"test" \| "diagnosis" \| "hint"/);
 });
 
-test("problem description renders preset layered hints from problem data mapping", () => {
+test("problem description renders preset layered hints from backend data without legacy fallbacks", () => {
   const description = read("components/ProblemDescription.tsx");
   const panel = read("components/ProblemHintPanel.tsx");
   const hints = read("lib/problemHints.ts");
@@ -33,16 +33,17 @@ test("problem description renders preset layered hints from problem data mapping
   assert.match(description, /label:\s*"提示"/);
   assert.match(description, /label:\s*"题解"/);
   assert.match(description, /useState<ProblemTab>\("description"\)/);
-  assert.match(description, /getProblemPresetHints\(problem\.id\)/);
+  assert.match(description, /problem\.presetHints \?\? getProblemPresetHints\(problem\.id\)/);
   assert.doesNotMatch(description, /solutionModeHints/);
   assert.doesNotMatch(panel, /默认展开/);
   assert.equal((panel.match(/defaultOpen:\s*false/g) ?? []).length, 3);
   assert.equal((panel.match(/defaultOpen:\s*true/g) ?? []).length, 0);
   assert.match(hints, /export interface ProblemPresetHints/);
   assert.match(hints, /export function getProblemPresetHints/);
-  for (const problemId of [101, 102, 103, 104, 105, 106, 107, 108]) {
-    assert.match(hints, new RegExp(`${problemId}:\\s*{`));
+  for (const legacyId of [101, 102, 103, 104, 105, 106, 107, 108]) {
+    assert.doesNotMatch(hints, new RegExp(`${legacyId}:\\s*{`));
   }
+  assert.match(hints, /return null/);
 });
 
 test("AI diagnosis copy no longer says it generates hints", () => {

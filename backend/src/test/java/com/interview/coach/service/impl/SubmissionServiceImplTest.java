@@ -47,17 +47,17 @@ class SubmissionServiceImplTest {
     void submitStoresOriginalSolutionButJudgesWrappedCodeForSolutionProblem() {
         String userCode = """
                 class Solution {
-                    public boolean isAnagram(String s, String t) {
-                        return true;
+                    public int[] twoSum(int[] nums, int target) {
+                        return new int[] {0, 1};
                     }
                 }
                 """;
         SubmitCodeRequest request = new SubmitCodeRequest();
         request.setUserId(1L);
-        request.setProblemId(102L);
+        request.setProblemId(1L);
         request.setLanguage("java");
         request.setCode(userCode);
-        when(problemService.getEnabledProblem(102L)).thenReturn(problem(102L, "solution"));
+        when(problemService.getEnabledProblem(1L)).thenReturn(problem(1L, "solution"));
         when(testCaseMapper.selectList(any())).thenReturn(List.of(testCase()));
         when(judgeService.judgeJava(any(), any())).thenReturn(acceptedResult());
 
@@ -70,8 +70,9 @@ class SubmissionServiceImplTest {
         ArgumentCaptor<String> codeCaptor = ArgumentCaptor.forClass(String.class);
         verify(judgeService).judgeJava(codeCaptor.capture(), any());
         assertThat(codeCaptor.getValue()).contains("public class Main");
-        assertThat(codeCaptor.getValue()).contains("new Solution().isAnagram(s, t)");
-        assertThat(codeCaptor.getValue()).contains(userCode);
+        assertThat(codeCaptor.getValue()).contains("new Solution().twoSum(nums, target)");
+        assertThat(codeCaptor.getValue()).contains("class Solution");
+        assertThat(codeCaptor.getValue()).contains("public int[] twoSum(int[] nums, int target)");
     }
 
     @Test
@@ -85,11 +86,11 @@ class SubmissionServiceImplTest {
                 """;
         Submission submission = new Submission();
         submission.setId(7L);
-        submission.setProblemId(104L);
+        submission.setProblemId(21L);
         submission.setLanguage("java");
         submission.setCode(userCode);
         when(submissionMapper.selectById(7L)).thenReturn(submission);
-        when(problemService.getEnabledProblem(104L)).thenReturn(problem(104L, "solution"));
+        when(problemService.getEnabledProblem(21L)).thenReturn(problem(21L, "solution"));
         when(testCaseMapper.selectList(any())).thenReturn(List.of(testCase()));
         when(judgeService.judgeJava(any(), any())).thenReturn(acceptedResult());
 
@@ -100,7 +101,8 @@ class SubmissionServiceImplTest {
         assertThat(codeCaptor.getValue()).contains("public class Main");
         assertThat(codeCaptor.getValue()).contains("class ListNode");
         assertThat(codeCaptor.getValue()).contains("new Solution().mergeTwoLists(list1, list2)");
-        assertThat(codeCaptor.getValue()).contains(userCode);
+        assertThat(codeCaptor.getValue()).contains("class Solution");
+        assertThat(codeCaptor.getValue()).contains("public ListNode mergeTwoLists(ListNode list1, ListNode list2)");
     }
 
     @Test
@@ -124,17 +126,17 @@ class SubmissionServiceImplTest {
     void submitDoesNotWrapKnownSolutionIdWhenCodeModeIsAcm() {
         String solutionCode = """
                 class Solution {
-                    public boolean isAnagram(String s, String t) {
-                        return true;
+                    public int[] twoSum(int[] nums, int target) {
+                        return new int[] {0, 1};
                     }
                 }
                 """;
         SubmitCodeRequest request = new SubmitCodeRequest();
         request.setUserId(1L);
-        request.setProblemId(102L);
+        request.setProblemId(1L);
         request.setLanguage("java");
         request.setCode(solutionCode);
-        when(problemService.getEnabledProblem(102L)).thenReturn(problem(102L, "acm"));
+        when(problemService.getEnabledProblem(1L)).thenReturn(problem(1L, "acm"));
         when(testCaseMapper.selectList(any())).thenReturn(List.of(testCase()));
         when(judgeService.judgeJava(eq(solutionCode), any())).thenReturn(acceptedResult());
 

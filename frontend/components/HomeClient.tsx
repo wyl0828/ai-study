@@ -54,8 +54,8 @@ export default function HomeClient({ problems }: HomeClientProps) {
     });
   }, [problems, difficulty, category, search]);
 
-  const passedCount = problems.filter((p) => p.id === 101 || p.id === 103).length;
-  const attemptedCount = problems.filter((p) => p.id === 104).length;
+  const passedCount = 0;
+  const attemptedCount = 0;
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
