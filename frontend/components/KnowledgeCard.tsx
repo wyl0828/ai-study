@@ -120,7 +120,7 @@ export default function KnowledgeCard({
           </p>
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
             <BookOpenText className="h-3.5 w-3.5" />
-            查看解析，或在此之前使用 AI 自测
+            查看解析，或在此之前完成模拟自测
           </div>
         </div>
       </button>

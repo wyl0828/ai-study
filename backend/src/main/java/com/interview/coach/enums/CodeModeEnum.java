@@ -3,9 +3,7 @@ package com.interview.coach.enums;
 public enum CodeModeEnum {
 
     ACM("acm"),
-    SOLUTION("solution"),
-    SCRIPT("script"),
-    SQL("sql");
+    SOLUTION("solution");
 
     private final String value;
 

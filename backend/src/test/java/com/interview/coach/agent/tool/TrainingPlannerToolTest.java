@@ -2,6 +2,7 @@ package com.interview.coach.agent.tool;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -13,8 +14,10 @@ import com.interview.coach.service.KnowledgeCardService;
 import com.interview.coach.service.TrainingPlanService;
 import com.interview.coach.vo.KnowledgeCardVO;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -31,12 +34,18 @@ class TrainingPlannerToolTest {
     @InjectMocks
     private TrainingPlannerTool tool;
 
+    private ArgumentCaptor<TrainingPlanResult> planCaptor;
+
+    @BeforeEach
+    void setUp() {
+        planCaptor = ArgumentCaptor.forClass(TrainingPlanResult.class);
+    }
+
     @Test
     void fallbackPlanBalancesAlgorithmItemsWithBackendKnowledgeCards() {
-        when(knowledgeCardService.listReviewCards(3)).thenReturn(List.of(
+        when(knowledgeCardService.listReviewCards(2)).thenReturn(List.of(
                 knowledgeCard(1L, "HashMap 底层结构"),
-                knowledgeCard(2L, "MySQL 索引为什么能加速查询"),
-                knowledgeCard(3L, "Spring 事务失效场景")));
+                knowledgeCard(2L, "MySQL 索引为什么能加速查询")));
         AgentContext context = context();
 
         TrainingPlanResult result = tool.execute(context, context);
@@ -46,13 +55,30 @@ class TrainingPlannerToolTest {
                 .hasSize(3);
         assertThat(result.getItems())
                 .filteredOn(item -> "KNOWLEDGE_CARD".equals(item.getItemType()))
-                .hasSize(3);
+                .hasSize(2);
         assertThat(result.getItems())
                 .filteredOn(item -> "KNOWLEDGE_CARD".equals(item.getItemType()))
                 .extracting(TrainingPlanResult.TrainingPlanItemResult::getKnowledgeCardTitle)
-                .containsExactly("HashMap 底层结构", "MySQL 索引为什么能加速查询", "Spring 事务失效场景");
+                .containsExactly("HashMap 底层结构", "MySQL 索引为什么能加速查询");
         assertThat(result.getSummary()).contains("后端知识卡片");
         verify(trainingPlanService).savePlan(any(), any());
+    }
+
+    @Test
+    void fallbackPlanStillSavesAlgorithmItemsWhenKnowledgeCardLookupFails() {
+        when(knowledgeCardService.listReviewCards(2)).thenThrow(new RuntimeException("knowledge unavailable"));
+        AgentContext context = context();
+
+        TrainingPlanResult result = tool.execute(context, context);
+
+        assertThat(result.getItems())
+                .filteredOn(item -> "PROBLEM".equals(item.getItemType()))
+                .hasSize(3);
+        assertThat(result.getItems())
+                .filteredOn(item -> "KNOWLEDGE_CARD".equals(item.getItemType()))
+                .isEmpty();
+        verify(trainingPlanService).savePlan(eq(context), planCaptor.capture());
+        assertThat(planCaptor.getValue().getItems()).hasSize(3);
     }
 
     private AgentContext context() {

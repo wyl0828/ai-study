@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.interview.coach.agent.tool.CodeExecutionTool;
+import com.interview.coach.agent.tool.CodeReviewTool;
 import com.interview.coach.agent.tool.ErrorClassifierTool;
 import com.interview.coach.agent.tool.TrainingPlannerTool;
 import com.interview.coach.agent.tool.WeaknessTrackerTool;
@@ -28,6 +29,9 @@ class InterviewCoachAgentTest {
 
     @Mock
     private CodeExecutionTool codeExecutionTool;
+
+    @Mock
+    private CodeReviewTool codeReviewTool;
 
     @Mock
     private ErrorClassifierTool errorClassifierTool;
@@ -78,5 +82,31 @@ class InterviewCoachAgentTest {
                 AgentState.MEMORY_UPDATE,
                 AgentState.TRAINING_PLAN,
                 AgentState.COMPLETED);
+    }
+
+    @Test
+    void acceptedSubmissionContinuesWhenCodeReviewFails() {
+        AgentContext context = new AgentContext();
+        context.setAgentRunId(100L);
+        context.setSubmissionId(12L);
+        AgentExecutionObservation observation = new AgentExecutionObservation();
+        observation.setStatus("ACCEPTED");
+        context.setObservation(observation);
+        when(codeExecutionTool.execute(eq(12L), eq(context))).thenReturn(observation);
+        when(codeReviewTool.execute(eq(context), eq(context))).thenThrow(new RuntimeException("AI unavailable"));
+
+        List<AgentStep> emittedSteps = new ArrayList<>();
+        AgentContext result = agent.run(context, emittedSteps::add);
+
+        assertThat(result.getCodeReview()).isNull();
+        assertThat(emittedSteps)
+                .anySatisfy(step -> {
+                    assertThat(step.getState()).isEqualTo(AgentState.CODE_REVIEW);
+                    assertThat(step.getStatus()).isEqualTo(AgentStepStatusEnum.FAILED);
+                    assertThat(step.getErrorMessage()).isEqualTo("AI unavailable");
+                });
+        assertThat(result.getSteps())
+                .extracting(AgentStep::getState)
+                .contains(AgentState.CODE_REVIEW, AgentState.COMPLETED);
     }
 }

@@ -11,7 +11,7 @@
 
 ## 使用方式
 
-1. 启动 MySQL、Redis、Piston、Spring Boot 后端和 Next.js 前端。
+1. 启动 MySQL、Piston、Spring Boot 后端和 Next.js 前端；Redis 当前只有配置预留，核心 demo 不依赖缓存读写。
 2. 打开对应题目页，例如 `/problem/101`。
 3. 将 bug 文件内容复制到 Monaco Editor。
 4. 点击“提交代码”，观察测试失败和失败用例。

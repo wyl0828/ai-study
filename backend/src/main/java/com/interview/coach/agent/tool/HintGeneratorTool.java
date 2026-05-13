@@ -4,9 +4,8 @@ import com.interview.coach.agent.AgentContext;
 import com.interview.coach.dto.HintGenerationResult;
 import com.interview.coach.integration.ai.AnthropicCompatibleClient;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
-@Component
+@Deprecated
 @RequiredArgsConstructor
 public class HintGeneratorTool implements Tool<AgentContext, HintGenerationResult> {
 

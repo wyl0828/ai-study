@@ -19,7 +19,7 @@ export default function KnowledgeFeedback({ feedback }: KnowledgeFeedbackProps) 
       <div className="rounded-lg border border-outline-variant/25 bg-surface-container-lowest px-3 py-2">
         <div className="flex items-center gap-2">
           <Lightbulb className="h-3.5 w-3.5 text-outline" />
-          <h4 className="text-sm font-semibold text-on-surface">AI 点评</h4>
+          <h4 className="text-sm font-semibold text-on-surface">点评反馈</h4>
           <p className="text-xs text-on-surface-variant">
             提交自测后，这里会给出评分、点评和核心记忆点。
           </p>
@@ -33,7 +33,7 @@ export default function KnowledgeFeedback({ feedback }: KnowledgeFeedbackProps) 
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
           <Lightbulb className="h-4 w-4 text-amber-600" />
-          <h4 className="text-sm font-semibold text-on-surface">AI 点评</h4>
+          <h4 className="text-sm font-semibold text-on-surface">点评反馈</h4>
         </div>
         <span
           className={`rounded-full border px-2.5 py-1 text-xs font-bold ${

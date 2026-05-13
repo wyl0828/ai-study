@@ -53,7 +53,7 @@ public class InterviewCoachAgent {
             boolean accepted = "ACCEPTED".equals(context.getObservation().getStatus());
             if (accepted) {
                 // AC 走代码点评
-                runStep(context, AgentState.CODE_REVIEW, codeReviewTool.name(), "Review accepted code",
+                runOptionalStep(context, AgentState.CODE_REVIEW, codeReviewTool.name(), "Review accepted code",
                         "Code review ready", sink,
                         () -> codeReviewTool.execute(context, context));
             } else {

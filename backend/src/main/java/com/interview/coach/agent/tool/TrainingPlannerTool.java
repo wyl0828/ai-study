@@ -8,11 +8,15 @@ import com.interview.coach.service.TrainingPlanService;
 import com.interview.coach.vo.KnowledgeCardVO;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResult> {
+
+    private static final int KNOWLEDGE_CARD_LIMIT = 2;
 
     private final TrainingPlanService trainingPlanService;
 
@@ -65,18 +69,22 @@ public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResul
     }
 
     private void addKnowledgeCards(TrainingPlanResult result) {
-        List<KnowledgeCardVO> cards = knowledgeCardService.listReviewCards(3);
-        for (int i = 0; i < cards.size() && i < 3; i++) {
-            KnowledgeCardVO card = cards.get(i);
-            TrainingPlanItemResult item = new TrainingPlanItemResult();
-            item.setItemType("KNOWLEDGE_CARD");
-            item.setKnowledgeCardId(card.getId());
-            item.setKnowledgeCardTitle(card.getTitle());
-            item.setDayIndex(i + 1);
-            item.setKnowledgePoint(card.getLabel());
-            item.setReason("穿插一个 Java 后端高频知识点，保持面试表达训练。");
-            item.setReviewFocus(String.join("、", card.getTags()));
-            result.getItems().add(item);
+        try {
+            List<KnowledgeCardVO> cards = knowledgeCardService.listReviewCards(KNOWLEDGE_CARD_LIMIT);
+            for (int i = 0; i < cards.size() && i < KNOWLEDGE_CARD_LIMIT; i++) {
+                KnowledgeCardVO card = cards.get(i);
+                TrainingPlanItemResult item = new TrainingPlanItemResult();
+                item.setItemType("KNOWLEDGE_CARD");
+                item.setKnowledgeCardId(card.getId());
+                item.setKnowledgeCardTitle(card.getTitle());
+                item.setDayIndex(i + 1);
+                item.setKnowledgePoint(card.getLabel());
+                item.setReason("穿插一个 Java 后端高频知识点，保持面试表达训练。");
+                item.setReviewFocus(String.join("、", card.getTags() == null ? List.of() : card.getTags()));
+                result.getItems().add(item);
+            }
+        } catch (Exception ex) {
+            log.warn("Skip knowledge cards in training plan because lookup or item build failed: {}", ex.getMessage());
         }
     }
 }

@@ -22,7 +22,7 @@
 | 前端 | Next.js 14 + Tailwind CSS + Monaco Editor |
 | 后端 | Spring Boot 3 + Java 17 |
 | 持久层 | MySQL 8 + MyBatis-Plus |
-| 缓存 | Redis |
+| 缓存 | Redis（当前预留配置，热点题目/题目详情缓存待接入） |
 | 代码执行 | Piston API（可替换为 Docker 沙箱） |
 | AI | Anthropic-compatible Messages API |
 | 流式通信 | Server-Sent Events |
@@ -58,7 +58,7 @@ ai-study/
 - Maven 3.8+
 - Node.js 18+
 - MySQL 8
-- Redis
+- Redis（当前预留配置，核心 demo 不依赖缓存读写）
 - Piston（代码执行服务）
 
 ### 1. 数据库初始化
@@ -92,7 +92,7 @@ MYSQL_URL=jdbc:mysql://localhost:3306/ai_interview_coach?useUnicode=true&charact
 MYSQL_USERNAME=root
 MYSQL_PASSWORD=your_password
 
-# Redis
+# Redis（预留配置，热点缓存待接入）
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
@@ -159,7 +159,7 @@ npm run dev
 - 独立 `/knowledge` 页面，分类固定为 Java / MySQL / Redis / Spring / JVM
 - 页面优先读取后端知识接口和 `knowledge_card` 表；后端不可用时回退 3 条本地示例数据
 - `data/knowledge_cards.sql` 提供首批 15 张结构化知识卡，参考小林 coding 和 JavaGuide 的选题覆盖后重新整理表达
-- 每张卡包含问题、AI 自测、AI 点评、标杆回答解析、核心记忆要点、面试官高频追问和“标记已掌握”
+- 每张卡包含问题、模拟自测、点评反馈、标杆回答解析、核心记忆要点、面试官高频追问和“标记已掌握”
 - 展开后默认先自测，提交自测或点击“跳过自测，直接查看解析”后才显示答案区
 - Java 基础、集合、并发只作为 tags 展示，不拆成独立一级 tab
 

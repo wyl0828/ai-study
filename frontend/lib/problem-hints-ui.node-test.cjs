@@ -48,9 +48,26 @@ test("problem description renders preset layered hints from problem data mapping
 test("AI diagnosis copy no longer says it generates hints", () => {
   const diagnosis = read("components/AiDiagnosis.tsx");
 
-  assert.match(diagnosis, /AI 正在诊断你的代码/);
+  assert.match(diagnosis, /AI 正在诊断错误原因并生成训练建议/);
   assert.doesNotMatch(diagnosis, /正在诊断错误原因并生成提示/);
   assert.doesNotMatch(diagnosis, /hintLevel1|hintLevel2|hintLevel3/);
+});
+
+test("accepted code review stays visible when current editor code is stale", () => {
+  const diagnosis = read("components/AiDiagnosis.tsx");
+
+  assert.match(diagnosis, /const hasCodeReview = Boolean\(d\?\.codeReview\)/);
+  assert.match(diagnosis, /if \(hasCodeReview \|\| isAccepted\)/);
+  assert.match(diagnosis, /该点评基于上次提交，当前代码已修改，仅供参考。/);
+});
+
+test("accepted code analysis shows live agent steps while review is generating", () => {
+  const diagnosis = read("components/AiDiagnosis.tsx");
+
+  assert.match(
+    diagnosis,
+    /AI 正在生成面试点评\.\.\.[\s\S]{0,250}agentSteps\.length > 0 && <AgentTimeline steps=\{agentSteps\}/
+  );
 });
 
 test("reference solution panel exposes a copy code action", () => {

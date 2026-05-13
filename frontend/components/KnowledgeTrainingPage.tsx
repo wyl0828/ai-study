@@ -156,7 +156,7 @@ export default function KnowledgeTrainingPage() {
           </h1>
         </div>
         <p className="text-sm text-on-surface-variant">
-          Java 后端高频面试知识点训练，通过 AI 自测、AI 点评和标杆回答解析形成复习闭环
+          Java 后端高频面试知识点训练，通过模拟自测、点评反馈和标杆回答解析形成复习闭环
         </p>
       </div>
 

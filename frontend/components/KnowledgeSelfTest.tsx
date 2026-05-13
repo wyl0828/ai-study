@@ -36,7 +36,7 @@ export default function KnowledgeSelfTest({
     <section className="rounded-lg border border-primary/15 bg-primary/5 p-4">
       <div className="flex items-center gap-2 mb-3">
         <Bot className="h-4 w-4 text-primary" />
-        <h4 className="text-sm font-semibold text-on-surface">AI 自测</h4>
+        <h4 className="text-sm font-semibold text-on-surface">模拟自测</h4>
       </div>
       <textarea
         value={answer}

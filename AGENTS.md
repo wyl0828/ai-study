@@ -30,7 +30,7 @@ Primary resume focus:
 - Agent Workflow, Tool Calling, Observation, and Memory design
 - MySQL data modeling
 - MyBatis-Plus mapper and SQL-layer design
-- Redis caching and temporary state
+- Redis configuration reservation and future cache/temporary-state extension design
 - SSE streaming
 - Agent step / trace recording
 - Clear demo flow
@@ -111,7 +111,7 @@ Backend:
 - Java 17
 - MySQL 8
 - MyBatis-Plus
-- Redis
+- Redis (configuration reserved; hot-cache wiring is future work)
 - Server-Sent Events
 
 AI:
@@ -335,7 +335,8 @@ Current Java submission modes:
 - `problemId=102/103/104` use Solution mode: user submits non-public `class Solution`.
 - `SubmissionServiceImpl` must save the original user code to `submission.code`.
 - Only code sent to `JudgeService/Piston` should be wrapped by `CodeWrapper`.
-- Do not add a `code_mode` field or REST parameter unless the user explicitly asks for a broader schema migration.
+- `problem.code_mode` is an internal backend DB configuration field for ACM/SOLUTION mode selection, not a REST request parameter.
+- Do not add a REST `code_mode` parameter unless the user explicitly asks for a broader schema migration.
 
 Keep execution replaceable:
 
@@ -374,7 +375,7 @@ MySQL stores durable training data:
 - training plan items
 - mistake cards
 
-Redis may be used for:
+Redis currently only has reserved configuration. Future Redis wiring may be used for:
 
 - hot problem list cache
 - problem detail cache

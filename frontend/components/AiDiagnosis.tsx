@@ -2,13 +2,11 @@
 
 import {
   CheckCircle,
-  XCircle,
   Loader2,
   Stethoscope,
   Brain,
   Lightbulb,
   BookOpen,
-  Circle,
   AlertTriangle,
   Code,
   Zap,
@@ -17,7 +15,6 @@ import {
 } from "lucide-react";
 import type { AgentAnalyzeVO, AgentStepVO, CodeReviewResult } from "@/lib/types";
 import {
-  agentStepName,
   diagnosisDisplay,
   errorTypeName,
   knowledgePoint,
@@ -47,32 +44,36 @@ export default function AiDiagnosis({
     return (raw.data ?? d) as AgentAnalyzeVO;
   };
 
-  if (isAccepted) {
-    const du = unwrap(diagnosis);
-    if (du?.codeReview) {
+  const d = unwrap(diagnosis) ?? diagnosis;
+  const hasCodeReview = Boolean(d?.codeReview);
+
+  if (hasCodeReview || isAccepted) {
+    if (d?.codeReview) {
       return (
         <CodeReviewPanel
-          review={du.codeReview}
-          steps={du.steps ?? []}
+          review={d.codeReview}
+          steps={d.steps ?? []}
           isDiagnosisStale={isDiagnosisStale}
         />
       );
     }
     if (isAnalyzing) {
       return (
-        <div className="flex flex-col items-center justify-center h-full text-on-surface-variant p-6">
-          <CheckCircle className="w-12 h-12 text-emerald-500 mb-3" />
-          <p className="text-lg font-medium mb-1">本次提交已通过</p>
-          <p className="text-sm">AI 正在生成面试点评...</p>
+        <div className="p-5 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-primary">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            AI 正在生成面试点评...
+          </div>
+          {agentSteps.length > 0 && <AgentTimeline steps={agentSteps} />}
         </div>
       );
     }
     // diagnosis 已到达但没有 codeReview（兜底）
-    if (du) {
+    if (d) {
       return (
         <CodeReviewPanel
           review={{}}
-          steps={du.steps ?? []}
+          steps={d.steps ?? []}
           isDiagnosisStale={isDiagnosisStale}
         />
       );
@@ -100,7 +101,7 @@ export default function AiDiagnosis({
     );
   }
 
-  if (!diagnosis) {
+  if (!d) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-on-surface-variant p-6">
         <Stethoscope className="w-10 h-10 mb-3" />
@@ -109,7 +110,6 @@ export default function AiDiagnosis({
     );
   }
 
-  const d = unwrap(diagnosis) ?? diagnosis;
   const display = diagnosisDisplay(d.diagnosis, d.specificError);
 
   return (
