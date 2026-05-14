@@ -2,12 +2,14 @@ package com.interview.coach.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.interview.coach.agent.AgentContext;
 import com.interview.coach.dto.AiDiagnosisResult;
 import com.interview.coach.dto.HintGenerationResult;
+import com.interview.coach.entity.AiDiagnosis;
 import com.interview.coach.entity.MistakeCard;
 import com.interview.coach.entity.UserWeaknessEvent;
 import com.interview.coach.entity.UserWeakness;
@@ -16,6 +18,7 @@ import com.interview.coach.mapper.HintRecordMapper;
 import com.interview.coach.mapper.MistakeCardMapper;
 import com.interview.coach.mapper.UserWeaknessEventMapper;
 import com.interview.coach.mapper.UserWeaknessMapper;
+import com.interview.coach.service.RagService;
 import com.interview.coach.service.impl.LearningTrackerImpl;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
@@ -42,6 +45,9 @@ class LearningTrackerImplTest {
 
     @Mock
     private MistakeCardMapper mistakeCardMapper;
+
+    @Mock
+    private RagService ragService;
 
     @InjectMocks
     private LearningTrackerImpl learningTracker;
@@ -187,6 +193,29 @@ class LearningTrackerImplTest {
         assertThat(captor.getValue().getRepeatCount()).isEqualTo(3);
         assertThat(captor.getValue().getSubmissionId()).isEqualTo(11L);
         assertThat(captor.getValue().getAgentRunId()).isEqualTo(10L);
+    }
+
+    @Test
+    void recordDiagnosisIndexesLearningMemoryAfterPersistenceAndIgnoresRagFailure() {
+        UserWeakness existing = new UserWeakness();
+        existing.setId(9L);
+        existing.setUserId(1L);
+        existing.setKnowledgePoint("HashMap");
+        existing.setErrorType("LOGIC_ERROR");
+        existing.setWrongCount(1);
+        existing.setSubmitCount(1);
+        existing.setWeaknessScore(BigDecimal.ZERO);
+        when(userWeaknessMapper.selectOne(any())).thenReturn(existing);
+        doThrow(new RuntimeException("rag unavailable"))
+                .when(ragService).indexLearningMemory(any(), any(), any());
+
+        AgentContext context = context("LOGIC_ERROR", "HashMap", "self pairing");
+
+        learningTracker.recordDiagnosis(context);
+
+        verify(aiDiagnosisMapper).insert(any(AiDiagnosis.class));
+        verify(mistakeCardMapper).insert(any(MistakeCard.class));
+        verify(ragService).indexLearningMemory(any(), any(), any());
     }
 
     private AgentContext context(String errorType, String knowledgePoint, String specificError) {

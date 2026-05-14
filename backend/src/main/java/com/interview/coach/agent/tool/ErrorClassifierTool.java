@@ -47,6 +47,9 @@ public class ErrorClassifierTool implements Tool<AgentContext, AiDiagnosisResult
                 Use product-style wording based on the current problem, category, submitted code, and failed cases.
                 If the submitted code only prints a default value, put that fact in diagnosis.
                 Put problem-specific repair steps in specificError without changing the problem topic.
+                Use retrieved evidence only as supporting context.
+                Do not copy retrieved text verbatim when a short diagnosis is enough.
+                If retrieved evidence conflicts with execution result, trust execution result.
                 knowledgePoint must be a normalized learning label, for example:
                 HashMap 基础查找, HashMap 冲突处理, HashMap 在两数之和中的应用,
                 HashMap 遍历逻辑, 链表指针边界, 二叉树递归出口, 动态规划状态设计.
@@ -70,6 +73,9 @@ public class ErrorClassifierTool implements Tool<AgentContext, AiDiagnosisResult
                 Error message: %s
                 Failed cases: %s
 
+                Retrieved evidence:
+                %s
+
                 Diagnose the most likely interview weakness and return structured JSON.
                 """.formatted(
                 context.getProblem().getTitle(),
@@ -80,6 +86,14 @@ public class ErrorClassifierTool implements Tool<AgentContext, AiDiagnosisResult
                 context.getObservation().getPassedCount(),
                 context.getObservation().getTotalCount(),
                 context.getObservation().getErrorMessage(),
-                context.getObservation().getFailedCases());
+                context.getObservation().getFailedCases(),
+                ragEvidence(context));
+    }
+
+    private String ragEvidence(AgentContext context) {
+        if (context.getRagRetrieveResult() == null || !context.getRagRetrieveResult().hasHits()) {
+            return "没有检索到可用证据。";
+        }
+        return context.getRagRetrieveResult().toPromptBlock();
     }
 }

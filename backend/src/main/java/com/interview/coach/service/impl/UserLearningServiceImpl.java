@@ -307,6 +307,7 @@ public class UserLearningServiceImpl implements UserLearningService {
         TrainingPlanItemVO vo = new TrainingPlanItemVO();
         vo.setId(item.getId());
         vo.setItemType(item.getItemType() == null ? "PROBLEM" : item.getItemType());
+        vo.setProblemId(trainingProblemId(item));
         vo.setKnowledgeCardId(item.getKnowledgeCardId());
         vo.setDayIndex(item.getDayIndex());
         vo.setKnowledgePoint(item.getKnowledgePoint());
@@ -316,6 +317,34 @@ public class UserLearningServiceImpl implements UserLearningService {
         vo.setReviewFocus(item.getReviewFocus());
         vo.setStatus(item.getStatus());
         return vo;
+    }
+
+    private Long trainingProblemId(TrainingPlanItem item) {
+        String itemType = item.getItemType() == null ? "PROBLEM" : item.getItemType();
+        if (!"PROBLEM".equalsIgnoreCase(itemType)) {
+            return null;
+        }
+
+        String text = String.join(" ",
+                safeText(item.getProblemTitle()),
+                safeText(item.getKnowledgePoint()),
+                safeText(item.getReason()),
+                safeText(item.getReviewFocus()))
+                .toLowerCase();
+        if (containsAny(text, "two sum", "两数之和", "hashmap", "哈希", "hash map")) {
+            return 1L;
+        }
+        if (containsAny(text, "reverse", "linked", "链表", "反转链表")) {
+            return 206L;
+        }
+        if (containsAny(text, "stock", "股票", "买卖股票", "贪心")) {
+            return 121L;
+        }
+        return 1L;
+    }
+
+    private String safeText(String value) {
+        return value == null ? "" : value;
     }
 
     private SubmissionHistoryVO toSubmissionHistoryVO(Submission submission, Map<Long, Problem> problems) {

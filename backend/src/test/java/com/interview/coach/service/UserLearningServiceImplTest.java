@@ -120,6 +120,38 @@ class UserLearningServiceImplTest {
         assertThat(result.getItems()).hasSize(1);
         assertThat(result.getItems().get(0).getItemType()).isEqualTo("PROBLEM");
         assertThat(result.getItems().get(0).getProblemTitle()).isEqualTo("Two Sum");
+        assertThat(result.getItems().get(0).getProblemId()).isEqualTo(1L);
+    }
+
+    @Test
+    void getLatestTrainingPlanKeepsProblemNavigationForCompletedAndSkippedItems() {
+        TrainingPlan plan = trainingPlan();
+        TrainingPlanItem completed = new TrainingPlanItem();
+        completed.setItemType("PROBLEM");
+        completed.setDayIndex(1);
+        completed.setKnowledgePoint("HashMap 在两数之和中的应用");
+        completed.setProblemTitle("两数之和");
+        completed.setReason("Replay the failed case.");
+        completed.setReviewFocus("Check complement before insert.");
+        completed.setStatus("COMPLETED");
+
+        TrainingPlanItem skipped = new TrainingPlanItem();
+        skipped.setItemType("PROBLEM");
+        skipped.setDayIndex(2);
+        skipped.setKnowledgePoint("链表指针");
+        skipped.setProblemTitle("反转链表");
+        skipped.setReason("Replay pointer updates.");
+        skipped.setReviewFocus("Check next pointer order.");
+        skipped.setStatus("SKIPPED");
+
+        when(trainingPlanMapper.selectOne(any())).thenReturn(plan);
+        when(trainingPlanItemMapper.selectList(any())).thenReturn(List.of(completed, skipped));
+
+        TrainingPlanVO result = userLearningService.getLatestTrainingPlan(1L);
+
+        assertThat(result.getItems())
+                .extracting(item -> item.getProblemId())
+                .containsExactly(1L, 206L);
     }
 
     @Test

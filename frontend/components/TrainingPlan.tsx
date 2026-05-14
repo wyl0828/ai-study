@@ -1,8 +1,7 @@
 "use client";
 
-import { Check, RefreshCw, Sparkles, X } from "lucide-react";
+import { BookOpen, Check, Code2, RefreshCw, Sparkles, X } from "lucide-react";
 import Link from "next/link";
-import { BookOpen, Code2 } from "lucide-react";
 import type { TrainingPlan as TrainingPlanType } from "@/lib/types";
 import {
   knowledgePoint,
@@ -76,6 +75,44 @@ export default function TrainingPlan({
   const itemPrefix = (item: TrainingPlanType["items"][number]) =>
     item.itemType === "KNOWLEDGE_CARD" ? "知识卡片" : "算法题";
 
+  const inferredProblemId = (item: TrainingPlanType["items"][number]) => {
+    const text = [
+      item.problemTitle,
+      item.knowledgePoint,
+      item.reason,
+      item.reviewFocus,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    if (/two sum|两数之和|hashmap|哈希|hash map/.test(text)) return 1;
+    if (/reverse|linked|链表|反转链表/.test(text)) return 206;
+    if (/stock|股票|买卖股票|贪心/.test(text)) return 121;
+    return 1;
+  };
+
+  const problemHref = (item: TrainingPlanType["items"][number]) => {
+    const problemId = item.problemId || inferredProblemId(item);
+    return `/problem/${problemId}`;
+  };
+
+  const itemAction = (item: TrainingPlanType["items"][number]) => {
+    if (item.itemType === "PROBLEM") {
+      return {
+        href: problemHref(item),
+        label: "去做题",
+        Icon: Code2,
+      };
+    }
+
+    return {
+      href: item.knowledgeCardId ? `/knowledge?cardId=${item.knowledgeCardId}` : "/knowledge",
+      label: "去复习",
+      Icon: BookOpen,
+    };
+  };
+
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
@@ -103,7 +140,6 @@ export default function TrainingPlan({
         </p>
 
         {Object.entries(grouped).map(([day, items]) => {
-          const dayNum = Number(day);
           const title = items[0]?.knowledgePoint
             ? `${knowledgePoint(items[0].knowledgePoint)}专项`
             : `第 ${day} 天训练`;
@@ -120,65 +156,71 @@ export default function TrainingPlan({
                 </span>
               </div>
               <div className="ml-8 space-y-3">
-                {items.map((item, i) => (
-                  <div
-                    key={i}
-                    className="bg-surface-container rounded-lg border border-outline-variant/30 p-3"
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {item.itemType === "KNOWLEDGE_CARD" ? (
-                          <BookOpen className="w-4 h-4 text-primary shrink-0" />
-                        ) : (
-                          <Code2 className="w-4 h-4 text-primary shrink-0" />
-                        )}
-                        <span className="text-sm font-medium text-on-surface truncate">
-                          {itemPrefix(item)}：{itemTitle(item)}
+                {items.map((item, i) => {
+                  const action = itemAction(item);
+                  const ActionIcon = action.Icon;
+
+                  return (
+                    <div
+                      key={item.id || `${day}-${i}`}
+                      className="bg-surface-container rounded-lg border border-outline-variant/30 p-3"
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {item.itemType === "KNOWLEDGE_CARD" ? (
+                            <BookOpen className="w-4 h-4 text-primary shrink-0" />
+                          ) : (
+                            <Code2 className="w-4 h-4 text-primary shrink-0" />
+                          )}
+                          <span className="text-sm font-medium text-on-surface truncate">
+                            {itemPrefix(item)}：{itemTitle(item)}
+                          </span>
+                        </div>
+                        <span
+                          className={`text-xs font-medium ${
+                            getStatus(item.status).className
+                          }`}
+                        >
+                          {getStatus(item.status).label}
                         </span>
                       </div>
-                      <span
-                        className={`text-xs font-medium ${
-                          getStatus(item.status).className
-                        }`}
-                      >
-                        {getStatus(item.status).label}
-                      </span>
-                    </div>
-                    <p className="text-xs text-on-surface-variant">
-                      {trainingPlanText(item.reason)}
-                    </p>
-                    {item.itemType === "KNOWLEDGE_CARD" && item.knowledgeCardId && (
-                      <Link
-                        href="/knowledge"
-                        className="inline-flex mt-2 text-xs font-medium text-primary hover:underline"
-                      >
-                        去知识训练查看
-                      </Link>
-                    )}
-                    {onItemStatusChange && item.id && (
+                      <p className="text-xs text-on-surface-variant">
+                        {trainingPlanText(item.reason)}
+                      </p>
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          disabled={updatingItemId === item.id || item.status === "COMPLETED"}
-                          onClick={() => onItemStatusChange(item.id, "COMPLETED")}
-                          className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 disabled:opacity-60"
+                        <Link
+                          href={action.href}
+                          className="inline-flex items-center gap-1 rounded-md border border-primary/20 bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary transition hover:bg-primary/15"
                         >
-                          <Check className="h-3.5 w-3.5" />
-                          完成
-                        </button>
-                        <button
-                          type="button"
-                          disabled={updatingItemId === item.id || item.status === "SKIPPED"}
-                          onClick={() => onItemStatusChange(item.id, "SKIPPED")}
-                          className="inline-flex items-center gap-1 rounded-md border border-outline-variant/40 bg-surface-container-lowest px-2.5 py-1.5 text-xs font-medium text-on-surface-variant disabled:opacity-60"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                          跳过
-                        </button>
+                          <ActionIcon className="h-3.5 w-3.5" />
+                          {action.label}
+                        </Link>
+                        {onItemStatusChange && item.id && (
+                          <>
+                            <button
+                              type="button"
+                              disabled={updatingItemId === item.id || item.status === "COMPLETED"}
+                              onClick={() => onItemStatusChange(item.id, "COMPLETED")}
+                              className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 disabled:opacity-60"
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                              完成
+                            </button>
+                            <button
+                              type="button"
+                              disabled={updatingItemId === item.id || item.status === "SKIPPED"}
+                              onClick={() => onItemStatusChange(item.id, "SKIPPED")}
+                              className="inline-flex items-center gap-1 rounded-md border border-outline-variant/40 bg-surface-container-lowest px-2.5 py-1.5 text-xs font-medium text-on-surface-variant disabled:opacity-60"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                              跳过
+                            </button>
+                          </>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
               {reviewFocus && (
                 <div className="ml-8 mt-2 p-2 bg-primary/5 rounded-lg border border-primary/15">

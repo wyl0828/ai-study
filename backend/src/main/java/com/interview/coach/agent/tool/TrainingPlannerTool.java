@@ -1,6 +1,7 @@
 package com.interview.coach.agent.tool;
 
 import com.interview.coach.agent.AgentContext;
+import com.interview.coach.dto.RagChunkHit;
 import com.interview.coach.dto.TrainingPlanResult;
 import com.interview.coach.dto.TrainingPlanResult.TrainingPlanItemResult;
 import com.interview.coach.service.KnowledgeCardService;
@@ -52,7 +53,7 @@ public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResul
         result.getItems().add(item(3, knowledgePoint, problemTitle,
                 "回顾错题卡后重新挑战原题。",
                 "编码前先写出不变量或边界条件。"));
-        addKnowledgeCards(result);
+        addKnowledgeCards(context, result);
         return result;
     }
 
@@ -68,7 +69,23 @@ public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResul
         return item;
     }
 
-    private void addKnowledgeCards(TrainingPlanResult result) {
+    private void addKnowledgeCards(AgentContext context, TrainingPlanResult result) {
+        List<RagChunkHit> retrievedCards = retrievedKnowledgeCards(context);
+        if (!retrievedCards.isEmpty()) {
+            for (int i = 0; i < retrievedCards.size(); i++) {
+                RagChunkHit hit = retrievedCards.get(i);
+                TrainingPlanItemResult item = new TrainingPlanItemResult();
+                item.setItemType("KNOWLEDGE_CARD");
+                item.setKnowledgeCardId(hit.getSourceId());
+                item.setKnowledgeCardTitle(title(hit));
+                item.setDayIndex(i + 1);
+                item.setKnowledgePoint(hit.getKnowledgePoint());
+                item.setReason("结合本次错误知识点检索到的后端知识卡片，补充面试表达训练。");
+                item.setReviewFocus(compact(hit.getChunkText()));
+                result.getItems().add(item);
+            }
+            return;
+        }
         try {
             List<KnowledgeCardVO> cards = knowledgeCardService.listReviewCards(KNOWLEDGE_CARD_LIMIT);
             for (int i = 0; i < cards.size() && i < KNOWLEDGE_CARD_LIMIT; i++) {
@@ -86,5 +103,28 @@ public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResul
         } catch (Exception ex) {
             log.warn("Skip knowledge cards in training plan because lookup or item build failed: {}", ex.getMessage());
         }
+    }
+
+    private List<RagChunkHit> retrievedKnowledgeCards(AgentContext context) {
+        if (context.getRagRetrieveResult() == null || !context.getRagRetrieveResult().hasHits()) {
+            return List.of();
+        }
+        return context.getRagRetrieveResult().getHits().stream()
+                .filter(hit -> "KNOWLEDGE_CARD".equals(hit.getSourceType()))
+                .filter(hit -> hit.getSourceId() != null)
+                .limit(KNOWLEDGE_CARD_LIMIT)
+                .toList();
+    }
+
+    private String title(RagChunkHit hit) {
+        return hit.getTitle() == null ? "知识卡片#" + hit.getSourceId() : hit.getTitle();
+    }
+
+    private String compact(String value) {
+        if (value == null || value.isBlank()) {
+            return "围绕本次错误相关知识点复习定义、机制和面试表达。";
+        }
+        String normalized = value.replaceAll("\\s+", " ").trim();
+        return normalized.length() <= 80 ? normalized : normalized.substring(0, 80) + "...";
     }
 }

@@ -155,6 +155,7 @@ export interface TrainingPlan {
 export interface TrainingPlanItem {
   id: number;
   itemType: "PROBLEM" | "KNOWLEDGE_CARD";
+  problemId?: number | null;
   knowledgeCardId?: number | null;
   dayIndex: number;
   knowledgePoint: string;

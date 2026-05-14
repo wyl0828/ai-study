@@ -9,6 +9,8 @@ public class TrainingPlanItemVO {
 
     private String itemType;
 
+    private Long problemId;
+
     private Long knowledgeCardId;
 
     private Integer dayIndex;

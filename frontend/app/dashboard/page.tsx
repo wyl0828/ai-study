@@ -184,7 +184,7 @@ export default function DashboardPage() {
 
         {/* 右栏 */}
         <aside className="lg:col-span-5">
-          <div className="sticky top-20 space-y-6">
+          <div className="space-y-6">
             <ErrorStats stats={errorStats} loading={loading} />
             <KnowledgeTrainingEntry />
             <TrainingPlan

@@ -1,0 +1,40 @@
+CREATE TABLE IF NOT EXISTS rag_document (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    source_type VARCHAR(32) NOT NULL,
+    source_id BIGINT NOT NULL,
+    user_id BIGINT,
+    problem_id BIGINT,
+    title VARCHAR(255) NOT NULL,
+    knowledge_point VARCHAR(128),
+    error_type VARCHAR(64),
+    tags VARCHAR(512),
+    status VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    UNIQUE KEY uk_rag_document_source (source_type, source_id, user_id),
+    INDEX idx_rag_document_problem (problem_id, status),
+    INDEX idx_rag_document_user (user_id, status),
+    INDEX idx_rag_document_knowledge (knowledge_point, status),
+    INDEX idx_rag_document_error (error_type, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS rag_chunk (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    document_id BIGINT NOT NULL,
+    source_type VARCHAR(32) NOT NULL,
+    source_id BIGINT NOT NULL,
+    user_id BIGINT,
+    problem_id BIGINT,
+    chunk_index INT NOT NULL,
+    chunk_text TEXT NOT NULL,
+    knowledge_point VARCHAR(128),
+    error_type VARCHAR(64),
+    tags VARCHAR(512),
+    metadata_json TEXT,
+    created_at DATETIME NOT NULL,
+    INDEX idx_rag_chunk_document (document_id, chunk_index),
+    INDEX idx_rag_chunk_problem (problem_id, source_type),
+    INDEX idx_rag_chunk_user (user_id, source_type),
+    INDEX idx_rag_chunk_knowledge (knowledge_point, source_type),
+    INDEX idx_rag_chunk_error (error_type, source_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

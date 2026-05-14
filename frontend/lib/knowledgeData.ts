@@ -22,6 +22,20 @@ export interface KnowledgeTopic {
   mastered: boolean;
 }
 
+export type KnowledgeDomain = "Java 核心" | "数据库" | "Spring";
+
+export type KnowledgeSelection = {
+  domain: KnowledgeDomain;
+  section?: string;
+  topic?: string;
+};
+
+export interface KnowledgeTopicMeta {
+  title: string;
+  description: string;
+  iconLabel: string;
+}
+
 export interface SelfTestFeedback {
   score: number;
   level: "low" | "medium" | "high";
@@ -36,7 +50,7 @@ export const knowledgeTopics: KnowledgeTopic[] = [
     title: "HashMap 在 JDK 1.8 中的底层结构是什么？",
     category: "Java",
     difficulty: "简单",
-    tags: ["Java 集合", "数据结构"],
+    tags: ["Java 集合", "HashMap", "Map", "数据结构"],
     question:
       "请简述 HashMap 在 JDK 1.8 版本中底层的核心数据结构，以及为什么在 1.8 中要做这样的改变。",
     answerKeywords: [
@@ -55,6 +69,58 @@ export const knowledgeTopics: KnowledgeTopic[] = [
       "为什么链表转化为红黑树的阈值是 8？",
       "红黑树退化为链表的阈值是多少？为什么是这个值？",
       "JDK 1.8 中 HashMap 为什么要从头插法改成尾插法？",
+    ],
+    mastered: false,
+  },
+  {
+    id: 4,
+    title: "ArrayList 和 LinkedList 的区别",
+    category: "Java",
+    difficulty: "简单",
+    tags: ["Java 集合", "List", "ArrayList", "LinkedList"],
+    question:
+      "请从底层数据结构、查询性能、插入删除成本和典型使用场景对比 ArrayList 与 LinkedList。",
+    answerKeywords: [
+      ["数组", "连续内存", "随机访问"],
+      ["链表", "节点", "指针"],
+      ["查询快", "插入删除"],
+    ],
+    referenceAnswer:
+      "ArrayList 底层基于数组，支持按下标 O(1) 随机访问，扩容和中间插入删除需要移动元素；LinkedList 底层是双向链表，按下标查询需要遍历，但在已定位节点后插入删除成本较低。面试中要结合访问模式说明选择：读多用 ArrayList，更频繁的头尾插入可考虑 LinkedList 或队列结构。",
+    keyPoints: [
+      "ArrayList 底层是动态数组",
+      "LinkedList 底层是双向链表",
+      "ArrayList 查询快，中间插入删除可能移动元素",
+    ],
+    followUpQuestions: [
+      "ArrayList 扩容时为什么会有拷贝成本？",
+      "为什么实际开发中 LinkedList 并不总比 ArrayList 适合插入删除？",
+    ],
+    mastered: false,
+  },
+  {
+    id: 5,
+    title: "HashSet 如何保证元素唯一",
+    category: "Java",
+    difficulty: "中等",
+    tags: ["Java 集合", "Set", "HashSet", "唯一性"],
+    question:
+      "请解释 HashSet 的底层实现，以及它如何结合 hashCode 和 equals 保证元素唯一。",
+    answerKeywords: [
+      ["HashMap"],
+      ["hashCode", "equals"],
+      ["唯一", "key"],
+    ],
+    referenceAnswer:
+      "HashSet 底层主要借助 HashMap 实现，元素会作为 HashMap 的 key 保存，value 使用固定占位对象。添加元素时先根据 hashCode 定位桶，再通过 equals 判断是否已经存在相等元素，因此要正确重写 hashCode 和 equals，否则会破坏去重语义。",
+    keyPoints: [
+      "HashSet 底层依赖 HashMap",
+      "元素作为 HashMap 的 key 保存",
+      "通过 hashCode 和 equals 共同判断唯一性",
+    ],
+    followUpQuestions: [
+      "为什么只重写 equals 不重写 hashCode 会出问题？",
+      "HashSet 和 TreeSet 的排序与唯一性判断有什么不同？",
     ],
     mastered: false,
   },
@@ -116,6 +182,78 @@ export const knowledgeTopics: KnowledgeTopic[] = [
   },
 ];
 
+export const defaultKnowledgeSelection: KnowledgeSelection = {
+  domain: "Java 核心",
+  section: "集合框架",
+  topic: "Map",
+};
+
+export const knowledgeTopicMeta: Record<string, KnowledgeTopicMeta> = {
+  "Java 核心": {
+    title: "Java 核心",
+    description: "围绕 Java 语言基础、集合、并发和 JVM 形成后端面试知识闭环。",
+    iconLabel: "Java",
+  },
+  "Java 核心/Java 基础": {
+    title: "Java 基础",
+    description: "梳理面向对象、数据类型、异常处理、反射与泛型等高频基础题。",
+    iconLabel: "基础",
+  },
+  "Java 核心/集合框架": {
+    title: "集合框架",
+    description: "掌握 List、Map、Set 等集合的底层结构、复杂度和线程安全边界。",
+    iconLabel: "集合",
+  },
+  "Java 核心/集合框架/Map": {
+    title: "Map（映射）",
+    description:
+      "掌握 HashMap、ConcurrentHashMap 等核心键值对数据结构的底层原理，应对大厂高频面试。",
+    iconLabel: "Map",
+  },
+  "Java 核心/集合框架/List": {
+    title: "List（线性表）",
+    description:
+      "理解 ArrayList、LinkedList 的结构差异、扩容机制和典型性能取舍。",
+    iconLabel: "List",
+  },
+  "Java 核心/集合框架/Set": {
+    title: "Set（去重集合）",
+    description:
+      "理解 HashSet、TreeSet 的唯一性判断、底层结构和排序语义。",
+    iconLabel: "Set",
+  },
+  "Java 核心/并发编程（JUC）": {
+    title: "并发编程（JUC）",
+    description: "复习线程安全、锁、并发容器和 JUC 工具类的面试表达。",
+    iconLabel: "JUC",
+  },
+  "Java 核心/JVM 虚拟机": {
+    title: "JVM 虚拟机",
+    description: "掌握类加载、内存区域、GC 和性能调优的核心面试题。",
+    iconLabel: "JVM",
+  },
+  "数据库": {
+    title: "数据库",
+    description: "聚焦 MySQL 与 Redis 的数据结构、事务、缓存和高并发治理。",
+    iconLabel: "DB",
+  },
+  "数据库/MySQL": {
+    title: "MySQL",
+    description: "复习索引、事务、锁、MVCC 和慢查询优化等后端面试高频知识。",
+    iconLabel: "SQL",
+  },
+  "数据库/Redis": {
+    title: "Redis",
+    description: "复习 Redis 数据结构、缓存问题、持久化和分布式锁。",
+    iconLabel: "Redis",
+  },
+  Spring: {
+    title: "Spring",
+    description: "掌握 IOC、AOP、事务和 Spring MVC 的核心原理与面试表达。",
+    iconLabel: "Spring",
+  },
+};
+
 export const knowledgeCategories: Array<"全部分类" | KnowledgeCategory> = [
   "全部分类",
   "Java",
@@ -131,6 +269,104 @@ export const knowledgeDifficulties: Array<"全部" | KnowledgeDifficulty> = [
   "中等",
   "困难",
 ];
+
+const topicKeywords: Record<string, string[]> = {
+  Map: ["Map", "HashMap", "ConcurrentHashMap", "Hashtable", "LinkedHashMap", "TreeMap"],
+  List: ["List", "ArrayList", "LinkedList", "Vector"],
+  Set: ["Set", "HashSet", "TreeSet", "LinkedHashSet"],
+  索引: ["索引", "B+树", "B+ 树", "最左前缀", "EXPLAIN"],
+  事务: ["事务", "ACID", "隔离级别"],
+  锁: ["锁", "间隙锁", "行锁", "表锁"],
+  MVCC: ["MVCC", "版本链", "ReadView"],
+  数据结构: ["数据结构", "String", "Hash", "List", "Set", "ZSet"],
+  缓存问题: ["缓存", "穿透", "击穿", "雪崩"],
+  持久化: ["RDB", "AOF", "持久化"],
+  分布式锁: ["分布式锁", "Redisson", "SETNX"],
+  IOC: ["IOC", "IoC", "依赖注入", "Bean"],
+  AOP: ["AOP", "切面", "代理"],
+  "Spring MVC": ["Spring MVC", "DispatcherServlet", "MVC"],
+};
+
+const sectionCategoryMap: Record<string, KnowledgeCategory[]> = {
+  "Java 核心": ["Java", "JVM"],
+  "Java 核心/Java 基础": ["Java"],
+  "Java 核心/集合框架": ["Java"],
+  "Java 核心/并发编程（JUC）": ["Java"],
+  "Java 核心/JVM 虚拟机": ["JVM"],
+  数据库: ["MySQL", "Redis"],
+  "数据库/MySQL": ["MySQL"],
+  "数据库/Redis": ["Redis"],
+  Spring: ["Spring"],
+};
+
+export function selectionKey(selection: KnowledgeSelection): string {
+  return [selection.domain, selection.section, selection.topic]
+    .filter(Boolean)
+    .join("/");
+}
+
+export function getKnowledgeTopicMeta(selection: KnowledgeSelection): KnowledgeTopicMeta {
+  const key = selectionKey(selection);
+  return (
+    knowledgeTopicMeta[key] ||
+    knowledgeTopicMeta[selection.domain] || {
+      title: selection.topic || selection.section || selection.domain,
+      description: "围绕当前专题进行高频面试知识训练。",
+      iconLabel: selection.topic || selection.section || selection.domain,
+    }
+  );
+}
+
+export function getSelectionBreadcrumb(selection: KnowledgeSelection): string[] {
+  return ["知识训练", selection.domain, selection.section, selection.topic].filter(
+    Boolean
+  ) as string[];
+}
+
+export function matchKnowledgeTopic(
+  topic: KnowledgeTopic,
+  selection: KnowledgeSelection
+): boolean {
+  const key = selectionKey(selection);
+  const categories = sectionCategoryMap[key] || sectionCategoryMap[selection.domain];
+  if (categories && categories.length > 0 && !categories.includes(topic.category)) {
+    return false;
+  }
+
+  if (!selection.topic) {
+    return !categories || categories.length === 0 ? false : categories.includes(topic.category);
+  }
+
+  const keywords = topicKeywords[selection.topic];
+  if (!keywords) {
+    return true;
+  }
+
+  const haystack = [
+    topic.category,
+    topic.title,
+    topic.question,
+    ...topic.tags,
+  ].join(" ");
+
+  return keywords.some((keyword) =>
+    haystack.toLowerCase().includes(keyword.toLowerCase())
+  );
+}
+
+export function inferKnowledgeSelection(topic: KnowledgeTopic): KnowledgeSelection | null {
+  const candidates: KnowledgeSelection[] = [
+    { domain: "Java 核心", section: "集合框架", topic: "Map" },
+    { domain: "Java 核心", section: "集合框架", topic: "List" },
+    { domain: "Java 核心", section: "集合框架", topic: "Set" },
+    { domain: "Java 核心", section: "JVM 虚拟机" },
+    { domain: "数据库", section: "MySQL" },
+    { domain: "数据库", section: "Redis" },
+    { domain: "Spring" },
+  ];
+
+  return candidates.find((candidate) => matchKnowledgeTopic(topic, candidate)) || null;
+}
 
 const categoryMap: Record<string, KnowledgeCategory> = {
   JAVA: "Java",

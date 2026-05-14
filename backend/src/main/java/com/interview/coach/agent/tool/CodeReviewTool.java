@@ -36,6 +36,9 @@ public class CodeReviewTool implements Tool<AgentContext, CodeReviewResult> {
                 All user-facing text fields must be natural Simplified Chinese.
                 You may keep technical terms such as Java, HashMap, containsKey, null, O(n).
                 Focus on actionable feedback that helps in a real interview setting.
+                Use retrieved evidence only as supporting context.
+                Do not copy retrieved text verbatim when a short review is enough.
+                If retrieved evidence conflicts with execution result, trust execution result.
                 Do not provide a full alternative solution.
                 """;
     }
@@ -53,6 +56,9 @@ public class CodeReviewTool implements Tool<AgentContext, CodeReviewResult> {
                 Runtime: %s ms
                 Memory: %s KB
 
+                Retrieved evidence:
+                %s
+
                 Review this accepted solution for interview readiness.
                 """.formatted(
                 context.getProblem().getTitle(),
@@ -63,6 +69,14 @@ public class CodeReviewTool implements Tool<AgentContext, CodeReviewResult> {
                 context.getObservation().getPassedCount(),
                 context.getObservation().getTotalCount(),
                 context.getObservation().getRuntime(),
-                context.getObservation().getMemory());
+                context.getObservation().getMemory(),
+                ragEvidence(context));
+    }
+
+    private String ragEvidence(AgentContext context) {
+        if (context.getRagRetrieveResult() == null || !context.getRagRetrieveResult().hasHits()) {
+            return "没有检索到可用证据。";
+        }
+        return context.getRagRetrieveResult().toPromptBlock();
     }
 }

@@ -4,6 +4,7 @@ import com.interview.coach.dto.AgentExecutionObservation;
 import com.interview.coach.dto.AiDiagnosisResult;
 import com.interview.coach.dto.CodeReviewResult;
 import com.interview.coach.dto.HintGenerationResult;
+import com.interview.coach.dto.RagRetrieveResult;
 import com.interview.coach.dto.TrainingPlanResult;
 import com.interview.coach.entity.Problem;
 import com.interview.coach.entity.Submission;
@@ -35,6 +36,8 @@ public class AgentContext {
     private CodeReviewResult codeReview;
 
     private HintGenerationResult hints;
+
+    private RagRetrieveResult ragRetrieveResult;
 
     private TrainingPlanResult trainingPlan;
 

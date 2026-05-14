@@ -3,6 +3,7 @@ package com.interview.coach.agent;
 import com.interview.coach.agent.tool.CodeExecutionTool;
 import com.interview.coach.agent.tool.CodeReviewTool;
 import com.interview.coach.agent.tool.ErrorClassifierTool;
+import com.interview.coach.agent.tool.RagRetrieveTool;
 import com.interview.coach.agent.tool.TrainingPlannerTool;
 import com.interview.coach.agent.tool.WeaknessTrackerTool;
 import com.interview.coach.entity.AgentRun;
@@ -32,6 +33,8 @@ public class InterviewCoachAgent {
 
     private final ErrorClassifierTool errorClassifierTool;
 
+    private final RagRetrieveTool ragRetrieveTool;
+
     private final WeaknessTrackerTool weaknessTrackerTool;
 
     private final TrainingPlannerTool trainingPlannerTool;
@@ -49,6 +52,11 @@ public class InterviewCoachAgent {
                     "Execution observation ready", sink,
                     () -> codeExecutionTool.execute(context.getSubmissionId(), context));
             runStep(context, AgentState.OBSERVATION, null, "Read execution result", "Observation captured", sink, () -> context.getObservation());
+
+            runOptionalStep(context, AgentState.RAG_RETRIEVAL, ragRetrieveTool.name(),
+                    "Retrieve problem knowledge and user learning memory",
+                    "RAG evidence ready", sink,
+                    () -> ragRetrieveTool.execute(context, context));
 
             boolean accepted = "ACCEPTED".equals(context.getObservation().getStatus());
             if (accepted) {

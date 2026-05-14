@@ -8,6 +8,8 @@ import static org.mockito.Mockito.when;
 
 import com.interview.coach.agent.AgentContext;
 import com.interview.coach.dto.AiDiagnosisResult;
+import com.interview.coach.dto.RagChunkHit;
+import com.interview.coach.dto.RagRetrieveResult;
 import com.interview.coach.dto.TrainingPlanResult;
 import com.interview.coach.entity.Problem;
 import com.interview.coach.service.KnowledgeCardService;
@@ -79,6 +81,31 @@ class TrainingPlannerToolTest {
                 .isEmpty();
         verify(trainingPlanService).savePlan(eq(context), planCaptor.capture());
         assertThat(planCaptor.getValue().getItems()).hasSize(3);
+    }
+
+    @Test
+    void fallbackPlanUsesRetrievedKnowledgeCardsBeforeGenericReviewCards() {
+        AgentContext context = context();
+        RagChunkHit hit = new RagChunkHit();
+        hit.setSourceType("KNOWLEDGE_CARD");
+        hit.setSourceId(9L);
+        hit.setTitle("HashMap 查找顺序");
+        hit.setKnowledgePoint("HashMap 基础查找");
+        RagRetrieveResult ragResult = new RagRetrieveResult();
+        ragResult.setHits(List.of(hit));
+        context.setRagRetrieveResult(ragResult);
+
+        TrainingPlanResult result = tool.execute(context, context);
+
+        assertThat(result.getItems())
+                .filteredOn(item -> "KNOWLEDGE_CARD".equals(item.getItemType()))
+                .extracting(TrainingPlanResult.TrainingPlanItemResult::getKnowledgeCardId)
+                .containsExactly(9L);
+        assertThat(result.getItems())
+                .filteredOn(item -> "KNOWLEDGE_CARD".equals(item.getItemType()))
+                .extracting(TrainingPlanResult.TrainingPlanItemResult::getReason)
+                .containsExactly("结合本次错误知识点检索到的后端知识卡片，补充面试表达训练。");
+        verify(trainingPlanService).savePlan(eq(context), any());
     }
 
     private AgentContext context() {

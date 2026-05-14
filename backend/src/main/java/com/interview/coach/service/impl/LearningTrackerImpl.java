@@ -17,6 +17,7 @@ import com.interview.coach.mapper.MistakeCardMapper;
 import com.interview.coach.mapper.UserWeaknessEventMapper;
 import com.interview.coach.mapper.UserWeaknessMapper;
 import com.interview.coach.service.LearningTracker;
+import com.interview.coach.service.RagService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -44,17 +45,20 @@ public class LearningTrackerImpl implements LearningTracker {
 
     private final MistakeCardMapper mistakeCardMapper;
 
+    private final RagService ragService;
+
     @Override
     @Transactional
     public void recordDiagnosis(AgentContext context) {
         LocalDateTime now = LocalDateTime.now();
-        insertDiagnosis(context, now);
+        AiDiagnosis diagnosis = insertDiagnosis(context, now);
         insertHints(context, now);
         upsertWeakness(context, now);
-        insertMistakeCard(context, now);
+        MistakeCard mistakeCard = insertMistakeCard(context, now);
+        indexLearningMemory(context, diagnosis, mistakeCard);
     }
 
-    private void insertDiagnosis(AgentContext context, LocalDateTime now) {
+    private AiDiagnosis insertDiagnosis(AgentContext context, LocalDateTime now) {
         AiDiagnosisResult result = context.getDiagnosis();
         AiDiagnosis diagnosis = new AiDiagnosis();
         diagnosis.setAgentRunId(context.getAgentRunId());
@@ -69,6 +73,7 @@ public class LearningTrackerImpl implements LearningTracker {
         diagnosis.setConfidence(result.getConfidence() == null ? BigDecimal.ZERO : result.getConfidence());
         diagnosis.setCreatedAt(now);
         aiDiagnosisMapper.insert(diagnosis);
+        return diagnosis;
     }
 
     private void insertHints(AgentContext context, LocalDateTime now) {
@@ -162,10 +167,10 @@ public class LearningTrackerImpl implements LearningTracker {
         return score.compareTo(MAX_SCORE) > 0 ? MAX_SCORE : score;
     }
 
-    private void insertMistakeCard(AgentContext context, LocalDateTime now) {
+    private MistakeCard insertMistakeCard(AgentContext context, LocalDateTime now) {
         AiDiagnosisResult diagnosis = context.getDiagnosis();
         if (isAcceptedReview(diagnosis)) {
-            return;
+            return null;
         }
         String fingerprint = fingerprint(context.getUserId(), diagnosis);
         MistakeCard existing = mistakeCardMapper.selectOne(new LambdaQueryWrapper<MistakeCard>()
@@ -182,7 +187,7 @@ public class LearningTrackerImpl implements LearningTracker {
             existing.setRepeatCount((existing.getRepeatCount() == null ? 1 : existing.getRepeatCount()) + 1);
             existing.setLastSeenAt(now);
             mistakeCardMapper.updateById(existing);
-            return;
+            return existing;
         }
         MistakeCard card = new MistakeCard();
         card.setUserId(context.getUserId());
@@ -199,6 +204,15 @@ public class LearningTrackerImpl implements LearningTracker {
         card.setStatus("OPEN");
         card.setCreatedAt(now);
         mistakeCardMapper.insert(card);
+        return card;
+    }
+
+    private void indexLearningMemory(AgentContext context, AiDiagnosis diagnosis, MistakeCard mistakeCard) {
+        try {
+            ragService.indexLearningMemory(context, diagnosis, mistakeCard);
+        } catch (Exception ex) {
+            log.warn("Skip RAG learning memory index because indexing failed: {}", ex.getMessage());
+        }
     }
 
     private String fingerprint(Long userId, AiDiagnosisResult diagnosis) {

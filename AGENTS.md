@@ -13,6 +13,7 @@ agent task -> planner -> tool call -> observation -> error diagnosis / code revi
 Current product distinction:
 
 - Problem-level layered hints are preset problem content shown on the left problem panel.
+- RAG V1 is an internal Agent Tool after code execution observation; it retrieves problem knowledge, backend knowledge cards, and this user's historical learning memory from MySQL before AI diagnosis or AC code review.
 - AI diagnosis is generated only after a failed submission and explains this user's current error on the right result panel.
 - Accepted submissions may receive lightweight code review through the Agent flow; this is not a full accepted answer generator.
 - `hint_record` and legacy hint fields are retained for schema compatibility and future expansion, but the current Agent flow no longer writes new AI hint records and the frontend no longer shows a separate right-side "layered hints" tab.
@@ -27,7 +28,7 @@ Primary resume focus:
 
 - Spring Boot backend design
 - Code execution service integration
-- Agent Workflow, Tool Calling, Observation, and Memory design
+- Agent Workflow, Tool Calling, Observation, RAG Retrieval, and Memory design
 - MySQL data modeling
 - MyBatis-Plus mapper and SQL-layer design
 - Redis configuration reservation and future cache/temporary-state extension design
@@ -48,7 +49,7 @@ If this file conflicts with those documents, prefer this file for engineering co
 
 ## Current Implementation Status
 
-As of Phase 5 product polish and learning-memory continuity, the project has a demoable end-to-end Agent workflow, real Dashboard data, a unified Hot100 Solution-mode Java submission model, SSE frontend diagnosis, AC code review branch, clearer frontend separation between preset hints and AI diagnosis, and persistent knowledge self-test / mastery records:
+As of Phase 5 product polish, RAG V1, and learning-memory continuity, the project has a demoable end-to-end Agent workflow, real Dashboard data, a unified Hot100 Solution-mode Java submission model, SSE frontend diagnosis, AC code review branch, clearer frontend separation between preset hints and AI diagnosis, MySQL-backed RAG retrieval, and persistent knowledge self-test / mastery records:
 
 ```text
 POST /api/submissions
@@ -66,10 +67,12 @@ GET /api/submissions/{submissionId}/diagnosis/stream
   -> create AgentRun
   -> emit AgentStep events through SSE
   -> rejudge submission through CodeExecutionTool
-  -> for failed submissions: classify error through AI
+  -> run RagRetrieveTool after Observation to retrieve problem / knowledge-card / user-memory evidence
+  -> for failed submissions: classify error through AI with RAG evidence as supporting context
   -> persist diagnosis, weakness memory, and mistake card
-  -> create deterministic 3-day training plan with optional knowledge-card items (optional, failure does not block)
-  -> for accepted submissions: run CodeReviewTool and skip weakness/mistake/training-plan writes
+  -> index diagnosis and mistake card into RAG memory after learning records are persisted
+  -> create deterministic 3-day training plan with optional RAG-preferred knowledge-card items (optional, failure does not block)
+  -> for accepted submissions: run CodeReviewTool with RAG evidence and skip weakness/mistake/training-plan writes
   -> emit final AgentAnalyzeVO
 
 Dashboard and knowledge learning:
@@ -81,7 +84,7 @@ Dashboard and knowledge learning:
 
 Frontend SSE integration:
   -> fetch + ReadableStream (not EventSource, for future Authorization header)
-  -> real-time step display during analysis
+  -> real-time step display during analysis, including optional RAG_RETRIEVAL
   -> done event shows final diagnosis result
   -> onEnd fallback ensures loading state is cleared
   -> streamId protection prevents old requests from overwriting new results
@@ -99,6 +102,7 @@ Not yet exposed as REST controllers:
 
 - single-hint lookup
 - standalone accepted-code review endpoint (current accepted review is returned by `/api/agent/analyze` and SSE through `codeReview`)
+- standalone RAG chat or public RAG retrieval endpoint (current RAG is internal to Agent workflow)
 
 ## Fixed Technical Stack
 
@@ -126,6 +130,14 @@ AI:
 - Structured JSON outputs whenever AI results are persisted or consumed by business logic
 - AI is used for error classification and code review; current training plans use deterministic fallback; AI hint generation is disabled
 - Current frontend treats problem-level layered hints as preset content, not as an on-click AI generation flow
+
+RAG:
+
+- V1 uses MySQL structured retrieval, not embeddings or a vector database.
+- RAG sources are `problem`, `knowledge_card`, `ai_diagnosis`, and `mistake_card`.
+- `RagRetrieveTool` is an internal Agent Tool, not a standalone chat product.
+- RAG retrieval failure is non-blocking and should only record a failed Agent step / warning.
+- User memory chunks must be isolated by `user_id`; never leak one user's mistake cards or AI diagnoses to another user.
 
 Code execution:
 
@@ -187,6 +199,7 @@ Use clear service boundaries:
 - `SubmissionService` for submission lifecycle
 - `JudgeService` for code execution orchestration
 - `AgentService` for AI workflow orchestration
+- `RagService` for MySQL structured retrieval, indexing, and system index rebuild
 - `LearningTracker` for weakness and mistake tracking
 - `TrainingPlanService` for training plan generation
 
@@ -196,7 +209,7 @@ Use Java-backend-style package responsibilities:
 - `service`: business interfaces
 - `service/impl`: business implementations and orchestration
 - `agent`: Agent orchestration classes such as `InterviewCoachAgent`, `AgentState`, `AgentContext`, and `AgentStep`
-- `agent/tool`: Tool implementations such as `CodeExecutionTool`, `ErrorClassifierTool`, `CodeReviewTool`, `WeaknessTrackerTool`, and `TrainingPlannerTool`
+- `agent/tool`: Tool implementations such as `CodeExecutionTool`, `RagRetrieveTool`, `ErrorClassifierTool`, `CodeReviewTool`, `WeaknessTrackerTool`, and `TrainingPlannerTool`
 - `integration/piston`: Piston API client and request/response adapters
 - `integration/ai`: Anthropic-compatible API client and model adapters
 - `entity`: MySQL table mapping objects
@@ -222,6 +235,7 @@ Services should own business decisions:
 - test result parsing
 - Agent state transitions
 - Tool execution order
+- RAG retrieval scoring and user-memory isolation
 - weakness updates
 - training plan generation
 - AI result persistence
@@ -234,6 +248,7 @@ Persistence rules:
 - Prefer `BaseMapper<T>` for simple CRUD.
 - Use custom SQL only when query conditions or joins become clearer than wrapper code.
 - Keep SQL and persistence logic out of controllers.
+- Keep RAG retrieval and index rebuild behind `RagService`; do not add public RAG REST endpoints unless product direction explicitly changes.
 
 Use DTOs for API requests and VOs for API responses. Do not expose entity objects directly from controllers.
 
@@ -281,10 +296,10 @@ The Agent must behave like an interview coach, not an answer generator.
 The Agent must be implemented as an explainable workflow, not as a single prompt call. Prefer a simple state machine plus Tool chain for MVP:
 
 ```text
-Planner -> CodeExecutionTool -> Observation -> ErrorClassifierTool -> WeaknessTrackerTool -> TrainingPlannerTool
+Planner -> CodeExecutionTool -> Observation -> RagRetrieveTool -> ErrorClassifierTool / CodeReviewTool -> WeaknessTrackerTool -> TrainingPlannerTool
 ```
 
-`WeaknessTrackerTool` and `TrainingPlannerTool` are optional steps — their failure does not block the final diagnosis result.
+`RagRetrieveTool`, `WeaknessTrackerTool`, and `TrainingPlannerTool` are optional steps — their failure does not block the final diagnosis result. `CodeReviewTool` is also optional for accepted submissions and may fail without turning an accepted submission into a failed Agent run.
 
 Agent concepts:
 
@@ -292,10 +307,20 @@ Agent concepts:
 - `AgentStep` records each step name, tool name, status, input summary, output summary, duration, and error message.
 - `Tool` implementations must have clear inputs and outputs and should call service-layer abstractions instead of controllers.
 - `CodeExecutionTool` must call a service-layer execution abstraction such as `SubmissionService.rejudge(...)`, which in turn uses `JudgeService`; it must not call Piston directly.
+- `RagRetrieveTool` must call `RagService.retrieveForDiagnosis(...)`; it must not query mappers from controllers and must not call AI directly.
+- `AgentContext` carries `ragRetrieveResult`; AI tools may use it as evidence, but execution results and failed cases remain the source of truth.
 - LLM calls belong only in tools that need semantic judgment, such as error classification or code review; hint generation and AI training-plan generation are not active in the current MVP.
 - Tool outputs that affect business state must be converted into structured data before persistence.
 
 AI must not directly provide full accepted Java solutions by default.
+
+RAG evidence rules:
+
+- Use retrieved evidence only as supporting context for `ErrorClassifierTool` and `CodeReviewTool`.
+- If RAG evidence conflicts with Piston execution results, trust the execution result.
+- Do not copy retrieved text verbatim when a short diagnosis or review is enough.
+- Do not use RAG to generate full Java accepted solutions.
+- Prefer RAG-hit `KNOWLEDGE_CARD` items in `TrainingPlannerTool`; if no knowledge-card hit exists, keep the current generic knowledge-card fallback.
 
 Use layered hints:
 
@@ -320,13 +345,13 @@ Persist AI outputs only after converting them to structured data. Prefer JSON fi
 AI output should support the learning loop:
 
 ```text
-failed submission -> tool observation -> diagnosis -> weakness update -> mistake card -> training plan
+failed submission -> tool observation -> RAG retrieval -> diagnosis -> weakness update -> mistake card -> RAG memory index -> training plan
 ```
 
 Frontend display should present this as:
 
 ```text
-problem preset hints -> failed submission -> test result -> AI diagnosis -> weakness memory -> training plan
+problem preset hints -> failed submission -> test result -> RAG retrieval step -> AI diagnosis -> weakness memory -> training plan
 ```
 
 ## Code Execution Rules
@@ -379,9 +404,24 @@ MySQL stores durable training data:
 - AI diagnoses
 - hint records
 - user weaknesses
+- user weakness events
 - training plans
 - training plan items
 - mistake cards
+- knowledge cards
+- self-test records
+- user knowledge-card mastery
+- RAG documents
+- RAG chunks
+
+RAG persistence rules:
+
+- `rag_document` and `rag_chunk` are MySQL-backed V1 retrieval indexes.
+- System chunks have `user_id = NULL` and may come from `problem` and `knowledge_card`.
+- User-memory chunks have `user_id` and may come from `ai_diagnosis` and `mistake_card`.
+- Retrieval must enforce `(user_id IS NULL OR user_id = current userId)` in query logic and in service-level filtering.
+- `RagService.rebuildSystemIndex()` may rebuild system problem / knowledge-card chunks, but must not delete user-memory chunks.
+- Old databases need `data/rag_mysql_migration.sql`; new databases get RAG tables through `data/schema.sql`.
 
 Redis currently only has reserved configuration. Future Redis wiring may be used for:
 
@@ -401,6 +441,7 @@ SSE is for server-to-browser updates such as:
 - "planning agent steps"
 - "running code execution tool"
 - "observing failed test cases"
+- "retrieving related knowledge and historical mistakes"
 - "analyzing test result"
 - "classifying error type"
 - "updating weakness memory"
@@ -414,6 +455,19 @@ Current SSE event names:
 - `error`: `ApiResponse<Void>`
 
 Do not use WebSocket for v1 unless the user explicitly asks. SSE is simpler and easier to explain.
+
+Current notable Agent step names include:
+
+- `PLANNING`
+- `CODE_EXECUTION`
+- `OBSERVATION`
+- `RAG_RETRIEVAL`
+- `ERROR_CLASSIFICATION`
+- `CODE_REVIEW`
+- `MEMORY_UPDATE`
+- `TRAINING_PLAN`
+- `COMPLETED`
+- `FAILED`
 
 ## Testing And Verification
 
@@ -434,6 +488,16 @@ AI verification:
 - a known recursion bug is classified as a tree or recursion issue
 - AI returns valid JSON for persisted outputs
 - hints do not reveal the full Java answer
+- RAG evidence can enter diagnosis / code-review prompts without overriding execution results
+
+RAG verification:
+
+- same problem and same knowledge point rank above unrelated chunks
+- user A's mistake-card / AI-diagnosis chunks are not returned for user B
+- empty RAG index returns an empty result without throwing
+- `RAG_RETRIEVAL` appears after `OBSERVATION` and before `ERROR_CLASSIFICATION` / `CODE_REVIEW`
+- RAG retrieval failure does not block failed-submission diagnosis or accepted-submission code review
+- training plans prefer retrieved `KNOWLEDGE_CARD` hits and fallback to generic review cards when none are retrieved
 
 Frontend verification:
 
@@ -443,6 +507,7 @@ Frontend verification:
 - test result is displayed
 - preset layered hints are visible on the left problem panel and all levels are collapsed by default
 - SSE is the primary frontend diagnosis path; synchronous analyze remains as fallback
+- RAG retrieval appears only as an Agent timeline step
 - AI diagnosis is displayed after a failed submission; AC submissions can display lightweight code review
 - the right result panel has no separate layered hints tab
 - preset layered hints can be expanded manually without calling AI
@@ -452,7 +517,7 @@ Frontend verification:
 Demo verification:
 
 ```text
-select problem -> inspect preset hints -> write buggy code -> submit -> run CodeExecutionTool -> observe failed test -> diagnose error -> update weakness memory -> generate plan
+select problem -> inspect preset hints -> write buggy code -> submit -> run CodeExecutionTool -> observe failed test -> run RagRetrieveTool -> diagnose error -> update weakness memory -> generate plan
 ```
 
 ## Do Not Do These In MVP
@@ -468,6 +533,8 @@ Do not add:
 - complex charting as a blocker
 - decorative UI animation as a blocker
 - full accepted answer generation as the default AI behavior
+- standalone RAG chat / public RAG retrieval REST endpoint
+- embedding, vector database, Elasticsearch, pgvector, Qdrant, Milvus, or similar retrieval stack in V1
 
 ## Development Style
 
@@ -477,6 +544,7 @@ Add abstractions only when they protect a planned extension:
 
 - Piston now, Docker later
 - Anthropic-compatible API now, model provider swap later
+- MySQL structured RAG now, vector retrieval later
 - list dashboard now, charts later
 
 Keep names aligned with the project docs. If a service or concept appears in `docs/IMPLEMENTATION_PLAN.md`, reuse that naming unless there is a strong reason not to.
@@ -505,9 +573,16 @@ Near-term work should follow `docs/PROJECT_STATUS.md`:
    - Training plan items can be completed or skipped, and manual regeneration is available through UserController.
    - Knowledge-card self-tests persist records, update mastery, and low-score self-tests can add weakness events.
    - Algorithm diagnosis and backend knowledge-card training stay source-separated, even when shown in one training plan.
-9. Third priority: keep but do not implement yet.
+9. RAG V1 internal retrieval. ✓
+   - `RagRetrieveTool` runs after `OBSERVATION` and before AI diagnosis / AC code review.
+   - `RagService` indexes problem, knowledge-card, AI-diagnosis, and mistake-card chunks in MySQL.
+   - RAG retrieval is optional and user-memory chunks are isolated by `user_id`.
+   - Training plans prefer RAG-hit knowledge cards before generic fallback cards.
+10. Third priority: keep but do not implement yet.
    - Single-hint lookup endpoint.
    - Standalone accepted-code review REST endpoint.
+   - Standalone RAG chat / public RAG retrieval REST endpoint.
+   - Vector / embedding retrieval upgrade.
    - Real Redis hot-cache wiring.
 
 Final-stage-only work: full `1` / `206` / `121` demo replay, screenshots or recording, broad document polish, `hint_record` final strategy, and interview Q&A.

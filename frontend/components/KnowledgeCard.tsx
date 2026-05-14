@@ -23,6 +23,7 @@ interface KnowledgeCardProps {
   userId: number;
   onToggle: () => void;
   onMarkMastered: () => void;
+  onRecentScoreChange: (id: number, score: number | null) => void;
 }
 
 const difficultyStyle: Record<KnowledgeTopic["difficulty"], string> = {
@@ -46,10 +47,12 @@ export default function KnowledgeCard({
   userId,
   onToggle,
   onMarkMastered,
+  onRecentScoreChange,
 }: KnowledgeCardProps) {
   const [feedback, setFeedback] = useState<SelfTestFeedback | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [recentRecords, setRecentRecords] = useState<SelfTestRecord[]>([]);
+  const [latestScore, setLatestScore] = useState<number | null>(null);
   const [saveNotice, setSaveNotice] = useState("");
 
   useEffect(() => {
@@ -64,20 +67,31 @@ export default function KnowledgeCard({
     userApi
       .recentSelfTests(userId, topic.id)
       .then((response) => {
-        if (!cancelled) setRecentRecords(response.data);
+        if (!cancelled) {
+          setRecentRecords(response.data);
+          const score = response.data[0]?.score ?? null;
+          setLatestScore(score);
+          onRecentScoreChange(topic.id, score);
+        }
       })
       .catch(() => {
-        if (!cancelled) setRecentRecords([]);
+        if (!cancelled) {
+          setRecentRecords([]);
+          setLatestScore(null);
+          onRecentScoreChange(topic.id, null);
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [expanded, topic.id, userId]);
+  }, [expanded, onRecentScoreChange, topic.id, userId]);
 
   const handleFeedback = async (nextFeedback: SelfTestFeedback, answer: string) => {
     setFeedback(nextFeedback);
     setShowAnalysis(true);
+    setLatestScore(nextFeedback.score);
+    onRecentScoreChange(topic.id, nextFeedback.score);
     setSaveNotice("正在保存自测记录...");
     try {
       const response = await userApi.submitSelfTest(userId, topic.id, {
@@ -87,6 +101,8 @@ export default function KnowledgeCard({
         missingKeyPoints: nextFeedback.missingKeyPoints,
       });
       setRecentRecords((current) => [response.data, ...current].slice(0, 5));
+      setLatestScore(response.data.score);
+      onRecentScoreChange(topic.id, response.data.score);
       setSaveNotice("自测记录已保存");
     } catch (err) {
       setSaveNotice(formatApiError(err, "knowledge"));
@@ -98,6 +114,22 @@ export default function KnowledgeCard({
     setShowAnalysis(true);
   };
 
+  const recentScore = latestScore;
+  const trainingStatus = mastered
+    ? "已掌握"
+    : typeof recentScore === "number" && recentScore < 80
+    ? "需复习"
+    : "未练";
+  const actionLabel = expanded
+    ? "收起"
+    : mastered
+    ? "重新练习"
+    : showAnalysis
+    ? "查看解析"
+    : recentScore === null
+    ? "开始自测"
+    : "继续作答";
+
   return (
     <article
       className={`overflow-hidden rounded-xl border bg-surface-container-lowest shadow-sm transition-all ${
@@ -106,13 +138,7 @@ export default function KnowledgeCard({
           : "border-outline-variant/30 hover:border-primary/25 hover:shadow-md"
       }`}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
-        aria-expanded={expanded}
-      >
-        <div className="p-5">
+      <div className="p-5">
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <span
@@ -129,21 +155,40 @@ export default function KnowledgeCard({
               >
                 {topic.category}
               </span>
-              {mastered && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  已掌握
-                </span>
-              )}
+              <span className="inline-flex items-center gap-1 rounded-full border border-outline-variant/30 bg-surface-container px-2.5 py-1 text-xs font-semibold text-on-surface-variant">
+                状态：{trainingStatus}
+              </span>
             </div>
-            {expanded ? (
-              <ChevronUp className="h-5 w-5 shrink-0 text-outline" />
-            ) : (
-              <ChevronDown className="h-5 w-5 shrink-0 text-outline" />
-            )}
+            <button
+              type="button"
+              onClick={onToggle}
+              className="rounded-full p-1 text-outline transition hover:bg-surface-container hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+              aria-label={expanded ? "收起知识卡" : "展开知识卡"}
+              aria-expanded={expanded}
+            >
+              {expanded ? (
+                <ChevronUp className="h-5 w-5 shrink-0" />
+              ) : (
+                <ChevronDown className="h-5 w-5 shrink-0" />
+              )}
+            </button>
           </div>
 
-          <div className="mb-3 flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="block w-full text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+            aria-expanded={expanded}
+          >
+            <h2 className="mb-2 text-base font-bold leading-snug text-on-surface">
+              {topic.title}
+            </h2>
+            <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
+              {topic.question}
+            </p>
+          </button>
+
+          <div className="mb-4 flex flex-wrap gap-1.5">
             {topic.tags.map((tag) => (
               <span
                 key={tag}
@@ -154,18 +199,24 @@ export default function KnowledgeCard({
             ))}
           </div>
 
-          <h2 className="mb-2 text-base font-bold leading-snug text-on-surface">
-            {topic.title}
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
-            {topic.question}
-          </p>
-          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
-            <BookOpenText className="h-3.5 w-3.5" />
-            查看解析，或在此之前完成模拟自测
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-outline-variant/20 pt-3">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-on-surface-variant">
+              <span>最近得分：{recentScore === null ? "未自测" : recentScore}</span>
+              <span className="inline-flex items-center gap-1.5 font-semibold text-primary">
+                <BookOpenText className="h-3.5 w-3.5" />
+                训练任务
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={onToggle}
+              className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary shadow-sm transition hover:bg-primary-container"
+              aria-expanded={expanded}
+            >
+              {actionLabel}
+            </button>
           </div>
         </div>
-      </button>
 
       {expanded && (
         <div className="border-t border-primary/10 px-5 pb-5 pt-4">

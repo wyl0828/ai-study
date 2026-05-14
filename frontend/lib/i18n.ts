@@ -109,6 +109,7 @@ const agentStepMap: Record<string, string> = {
   PLANNING: "准备诊断上下文",
   CODE_EXECUTION: "重新执行代码",
   OBSERVATION: "分析测试结果",
+  RAG_RETRIEVAL: "检索相关知识和历史错题",
   ERROR_CLASSIFICATION: "定位错误原因",
   CODE_REVIEW: "代码点评",
   MEMORY_UPDATE: "更新薄弱点记录",
