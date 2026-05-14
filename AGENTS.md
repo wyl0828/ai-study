@@ -48,12 +48,12 @@ If this file conflicts with those documents, prefer this file for engineering co
 
 ## Current Implementation Status
 
-As of Phase 5 product polish, the project has a demoable end-to-end Agent workflow, real Dashboard data, a mixed ACM/Solution Java submission model, SSE frontend diagnosis, AC code review branch, and clearer frontend separation between preset hints and AI diagnosis:
+As of Phase 5 product polish and learning-memory continuity, the project has a demoable end-to-end Agent workflow, real Dashboard data, a unified Hot100 Solution-mode Java submission model, SSE frontend diagnosis, AC code review branch, clearer frontend separation between preset hints and AI diagnosis, and persistent knowledge self-test / mastery records:
 
 ```text
 POST /api/submissions
   -> persist original Java submission
-  -> wrap Solution-mode problems 102/103/104 into Main.java for Piston
+  -> wrap current Hot100 Solution-mode problems into Main.java for Piston through CodeWrapper adapters
   -> judge Java submission through Piston
 
 POST /api/agent/analyze
@@ -71,6 +71,13 @@ GET /api/submissions/{submissionId}/diagnosis/stream
   -> create deterministic 3-day training plan with optional knowledge-card items (optional, failure does not block)
   -> for accepted submissions: run CodeReviewTool and skip weakness/mistake/training-plan writes
   -> emit final AgentAnalyzeVO
+
+Dashboard and knowledge learning:
+  -> Dashboard reads MySQL-backed stats, weaknesses, weakness events, mistake cards, recent submissions, error distribution, and latest training plan
+  -> training plan items can be marked PENDING / COMPLETED / SKIPPED
+  -> manual training-plan regeneration is exposed through UserController and uses deterministic rules, not LLM generation
+  -> knowledge-card self-tests persist self_test_record and update user_knowledge_card_mastery
+  -> low-score self-tests may write user_weakness_event with sourceType=SELF_TEST
 
 Frontend SSE integration:
   -> fetch + ReadableStream (not EventSource, for future Authorization header)
@@ -92,7 +99,6 @@ Not yet exposed as REST controllers:
 
 - single-hint lookup
 - standalone accepted-code review endpoint (current accepted review is returned by `/api/agent/analyze` and SSE through `codeReview`)
-- manual training plan regeneration
 
 ## Fixed Technical Stack
 
@@ -329,13 +335,15 @@ Use Piston API for the MVP.
 
 The first version supports Java only. Do not add Python, JavaScript, C++, or multi-language execution unless the user explicitly changes scope.
 
-Current Java submission modes:
+Current Java submission mode:
 
-- `problemId=101/105/106/107/108` use ACM mode: user submits complete `public class Main`.
-- `problemId=102/103/104` use Solution mode: user submits non-public `class Solution`.
+- Current seed problems are Hot100 selected Java problems in Solution mode.
+- Users submit non-public `class Solution` code and do not handle stdin/stdout.
+- The current demo problem IDs are `1` Two Sum, `206` Reverse Linked List, and `121` Best Time to Buy and Sell Stock.
+- `CodeWrapper` owns the supported-problem adapter registry for the current Hot100 selected problems.
 - `SubmissionServiceImpl` must save the original user code to `submission.code`.
 - Only code sent to `JudgeService/Piston` should be wrapped by `CodeWrapper`.
-- `problem.code_mode` is an internal backend DB configuration field for ACM/SOLUTION mode selection, not a REST request parameter.
+- `problem.code_mode` is an internal backend DB configuration field for judge wrapping selection, not a REST request parameter.
 - Do not add a REST `code_mode` parameter unless the user explicitly asks for a broader schema migration.
 
 Keep execution replaceable:
@@ -485,7 +493,7 @@ Near-term work should follow `docs/PROJECT_STATUS.md`:
 4. Move preset problem hints from frontend static mapping to backend data. ✓
 5. Knowledge training page V1. ✓
 6. First priority: small-scope product polish. ✓
-   - Improve knowledge training feedback with missing key points and more interviewer-like low-score comments; do not persist mastery or self-test records yet.
+   - Improve knowledge training feedback with missing key points and more interviewer-like low-score comments.
    - Improve AC code review display by reusing the existing `CodeReviewTool` / `codeReview` branch; do not add a standalone accepted-code review REST endpoint.
    - Improve error states so backend, Piston, AI, and SSE failures point to concrete local troubleshooting steps instead of only "request failed".
 7. Second priority: stabilize the core loop. ✓
@@ -493,11 +501,13 @@ Near-term work should follow `docs/PROJECT_STATUS.md`:
    - Keep SSE as the primary frontend path, with `POST /api/agent/analyze` only as fallback; protect repeated submissions, stale streams, user interruption, and unmount through stream id checks and abort.
    - Keep Dashboard data sourced from MySQL for stats, weaknesses, mistake cards, error distribution, and training plans; do not return to mock data.
    - Keep `frontend/lib/core-loop-stability.node-test.cjs` as the regression guard for page boundaries, SSE fallback conditions, stale stream blocking, abort behavior, Dashboard no mock, and empty states.
-8. Third priority: keep but do not implement yet.
+8. Learning-memory continuity. ✓
+   - Training plan items can be completed or skipped, and manual regeneration is available through UserController.
+   - Knowledge-card self-tests persist records, update mastery, and low-score self-tests can add weakness events.
+   - Algorithm diagnosis and backend knowledge-card training stay source-separated, even when shown in one training plan.
+9. Third priority: keep but do not implement yet.
    - Single-hint lookup endpoint.
    - Standalone accepted-code review REST endpoint.
-   - Manual training-plan regeneration.
-   - Knowledge-card mastery state and self-test record persistence.
    - Real Redis hot-cache wiring.
 
-Final-stage-only work: full 101/103/104 demo replay, screenshots or recording, broad document polish, `hint_record` final strategy, and interview Q&A.
+Final-stage-only work: full `1` / `206` / `121` demo replay, screenshots or recording, broad document polish, `hint_record` final strategy, and interview Q&A.

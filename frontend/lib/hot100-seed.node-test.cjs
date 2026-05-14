@@ -31,10 +31,25 @@ test("each selected problem has template, hints, solution outline, and three cas
   for (const id of hot100Ids) {
     assert.match(sql, new RegExp(`\\(${id},[\\s\\S]*?class Solution`), `missing template for ${id}`);
     assert.match(sql, new RegExp(`\\(${id},[\\s\\S]*?解题思路`), `missing solution outline for ${id}`);
+    assert.match(
+      sql,
+      new RegExp(`\\(${id},[\\s\\S]*?Java 参考实现：[\\s\\S]*?\`\`\`java[\\s\\S]*?class Solution`),
+      `missing Java reference code for ${id}`
+    );
     assert.match(sql, new RegExp(`\\(${id},[\\s\\S]*?NOW\\(\\), NOW\\(\\)\\)`), `missing hints or timestamps for ${id}`);
 
     const caseMatches = testCasesSql.match(new RegExp(`\\(${id},\\s*'`, "g")) ?? [];
     assert.equal(caseMatches.length, 3, `problem ${id} should have 3 test cases`);
+  }
+});
+
+test("each selected problem has a full interview-style statement", () => {
+  const sql = read("data/problems.sql");
+
+  for (const id of hot100Ids) {
+    assert.match(sql, new RegExp(`\\(${id},[\\s\\S]*?任务说明：`), `missing task statement for ${id}`);
+    assert.match(sql, new RegExp(`\\(${id},[\\s\\S]*?约束与边界：`), `missing constraints for ${id}`);
+    assert.match(sql, new RegExp(`\\(${id},[\\s\\S]*?返回要求：`), `missing return contract for ${id}`);
   }
 });
 

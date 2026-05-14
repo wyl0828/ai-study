@@ -52,11 +52,14 @@ export const mockMistakes: MistakeCard[] = [
 ];
 
 export const mockTrainingPlan: TrainingPlan = {
+  id: 1,
   title: "3 天哈希表与链表专项训练",
   summary:
     "根据你最近的错误记录，系统检测到 HashMap 查找和链表指针操作是主要薄弱点。",
+  status: "ACTIVE",
   items: [
     {
+      id: 1,
       itemType: "PROBLEM",
       dayIndex: 1,
       knowledgePoint: "HashMap",
@@ -66,6 +69,7 @@ export const mockTrainingPlan: TrainingPlan = {
       status: "待完成",
     },
     {
+      id: 2,
       itemType: "PROBLEM",
       dayIndex: 1,
       knowledgePoint: "HashMap",
@@ -75,6 +79,7 @@ export const mockTrainingPlan: TrainingPlan = {
       status: "待完成",
     },
     {
+      id: 3,
       itemType: "PROBLEM",
       dayIndex: 2,
       knowledgePoint: "LinkedList",
@@ -84,6 +89,7 @@ export const mockTrainingPlan: TrainingPlan = {
       status: "待完成",
     },
     {
+      id: 4,
       itemType: "PROBLEM",
       dayIndex: 2,
       knowledgePoint: "LinkedList",
@@ -93,6 +99,7 @@ export const mockTrainingPlan: TrainingPlan = {
       status: "需要重做",
     },
     {
+      id: 5,
       itemType: "PROBLEM",
       dayIndex: 3,
       knowledgePoint: "Tree",

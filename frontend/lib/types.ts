@@ -126,6 +126,9 @@ export interface UserWeakness {
   errorType: string;
   wrongCount: number;
   weaknessScore: number;
+  trendLabel?: string | null;
+  lastDeltaScore?: number | null;
+  lastEventAt?: string | null;
 }
 
 export interface MistakeCard {
@@ -136,15 +139,21 @@ export interface MistakeCard {
   knowledgePoint: string;
   mistakeSummary: string;
   correctIdea: string;
+  repeatCount?: number | null;
+  lastSeenAt?: string | null;
+  status?: string | null;
 }
 
 export interface TrainingPlan {
+  id: number;
   title: string;
   summary: string;
+  status: string;
   items: TrainingPlanItem[];
 }
 
 export interface TrainingPlanItem {
+  id: number;
   itemType: "PROBLEM" | "KNOWLEDGE_CARD";
   knowledgeCardId?: number | null;
   dayIndex: number;
@@ -154,6 +163,22 @@ export interface TrainingPlanItem {
   reason: string;
   reviewFocus: string;
   status: string;
+}
+
+export interface SelfTestRecord {
+  id: number;
+  knowledgeCardId: number;
+  score: number;
+  feedback: string | null;
+  missingKeyPoints: string[];
+  createdAt: string | null;
+}
+
+export interface SelfTestSubmitRequest {
+  userAnswer: string;
+  score: number;
+  feedback: string;
+  missingKeyPoints: string[];
 }
 
 export interface SubmissionHistoryVO {

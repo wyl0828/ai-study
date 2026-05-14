@@ -5,6 +5,7 @@ import com.interview.coach.vo.ErrorStatsVO;
 import com.interview.coach.vo.MistakeCardVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
 import com.interview.coach.vo.TrainingPlanVO;
+import com.interview.coach.vo.UserWeaknessEventVO;
 import com.interview.coach.vo.UserWeaknessVO;
 import java.util.List;
 
@@ -13,6 +14,8 @@ public interface UserLearningService {
     DashboardStatsVO getDashboardStats(Long userId);
 
     List<UserWeaknessVO> getWeaknesses(Long userId);
+
+    List<UserWeaknessEventVO> getRecentWeaknessEvents(Long userId, int limit);
 
     List<MistakeCardVO> getMistakes(Long userId);
 

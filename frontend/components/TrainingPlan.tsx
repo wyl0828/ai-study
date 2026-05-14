@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles, RefreshCw } from "lucide-react";
+import { Check, RefreshCw, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import { BookOpen, Code2 } from "lucide-react";
 import type { TrainingPlan as TrainingPlanType } from "@/lib/types";
@@ -13,9 +13,22 @@ import {
 
 interface TrainingPlanProps {
   plan: TrainingPlanType | null;
+  updatingItemId?: number | null;
+  regenerating?: boolean;
+  onItemStatusChange?: (
+    itemId: number,
+    status: "PENDING" | "COMPLETED" | "SKIPPED"
+  ) => void;
+  onRegenerate?: () => void;
 }
 
-export default function TrainingPlan({ plan }: TrainingPlanProps) {
+export default function TrainingPlan({
+  plan,
+  updatingItemId,
+  regenerating,
+  onItemStatusChange,
+  onRegenerate,
+}: TrainingPlanProps) {
   if (!plan) {
     return (
       <section>
@@ -42,7 +55,10 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
   const getStatus = (status: string) => {
     const normalized = status.toUpperCase();
     if (normalized === "COMPLETED") {
-      return { label: "已通过", className: "text-emerald-600" };
+      return { label: "已完成", className: "text-emerald-600" };
+    }
+    if (normalized === "SKIPPED") {
+      return { label: "已跳过", className: "text-on-surface-variant" };
     }
     if (normalized === "RETRY" || normalized === "NEEDS_REVIEW") {
       return { label: "需要重做", className: "text-amber-600" };
@@ -67,10 +83,15 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
           <Sparkles className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-semibold text-on-surface">训练计划</h2>
         </div>
-        <span className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-medium flex items-center gap-1">
+        <button
+          type="button"
+          onClick={onRegenerate}
+          disabled={!onRegenerate || regenerating}
+          className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-medium flex items-center gap-1 disabled:opacity-60"
+        >
           <RefreshCw className="w-3.5 h-3.5" />
-          智能体生成
-        </span>
+          {regenerating ? "生成中" : "重新生成"}
+        </button>
       </div>
 
       <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5">
@@ -104,7 +125,7 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
                     key={i}
                     className="bg-surface-container rounded-lg border border-outline-variant/30 p-3"
                   >
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-between gap-2 mb-1">
                       <div className="flex items-center gap-2 min-w-0">
                         {item.itemType === "KNOWLEDGE_CARD" ? (
                           <BookOpen className="w-4 h-4 text-primary shrink-0" />
@@ -133,6 +154,28 @@ export default function TrainingPlan({ plan }: TrainingPlanProps) {
                       >
                         去知识训练查看
                       </Link>
+                    )}
+                    {onItemStatusChange && item.id && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          disabled={updatingItemId === item.id || item.status === "COMPLETED"}
+                          onClick={() => onItemStatusChange(item.id, "COMPLETED")}
+                          className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 disabled:opacity-60"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                          完成
+                        </button>
+                        <button
+                          type="button"
+                          disabled={updatingItemId === item.id || item.status === "SKIPPED"}
+                          onClick={() => onItemStatusChange(item.id, "SKIPPED")}
+                          className="inline-flex items-center gap-1 rounded-md border border-outline-variant/40 bg-surface-container-lowest px-2.5 py-1.5 text-xs font-medium text-on-surface-variant disabled:opacity-60"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          跳过
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}

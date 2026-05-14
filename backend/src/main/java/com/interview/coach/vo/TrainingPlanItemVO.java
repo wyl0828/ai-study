@@ -5,6 +5,8 @@ import lombok.Data;
 @Data
 public class TrainingPlanItemVO {
 
+    private Long id;
+
     private String itemType;
 
     private Long knowledgeCardId;

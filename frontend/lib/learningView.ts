@@ -13,6 +13,9 @@ export interface MistakeCardView {
   reviewPoint: string;
   nextTrainingAdvice: string;
   count: number;
+  repeatCount: number;
+  lastSeenAt?: string | null;
+  status?: string | null;
 }
 
 export function knowledgePointGroup(text: string): string {
@@ -82,6 +85,7 @@ export function buildMistakeCardViews(mistakes: MistakeCard[]): MistakeCardView[
     }
 
     existing.count += 1;
+    existing.repeatCount += current.repeatCount;
   });
 
   return Array.from(groups.values());
@@ -113,6 +117,9 @@ function toMistakeCardView(mistake: MistakeCard, reviewPoint: string): MistakeCa
     reviewPoint,
     nextTrainingAdvice: nextTrainingAdvice(reviewPoint, isSelfMatch, isPlaceholder),
     count: 1,
+    repeatCount: mistake.repeatCount || 1,
+    lastSeenAt: mistake.lastSeenAt,
+    status: mistake.status || "OPEN",
   };
 }
 

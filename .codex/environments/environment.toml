@@ -24,3 +24,8 @@ command = ".\\start-backend.ps1"
 name = "停止所有 Java 进程"
 icon = "tool"
 command = "taskkill /F /IM java.exe"
+
+[[actions]]
+name = "关闭Dockerwsl"
+icon = "tool"
+command = "docker compose down + wsl --shutdown"

@@ -7,12 +7,14 @@ import com.interview.coach.entity.Submission;
 import com.interview.coach.entity.TrainingPlan;
 import com.interview.coach.entity.TrainingPlanItem;
 import com.interview.coach.entity.UserWeakness;
+import com.interview.coach.entity.UserWeaknessEvent;
 import com.interview.coach.enums.SubmissionStatusEnum;
 import com.interview.coach.mapper.MistakeCardMapper;
 import com.interview.coach.mapper.ProblemMapper;
 import com.interview.coach.mapper.SubmissionMapper;
 import com.interview.coach.mapper.TrainingPlanItemMapper;
 import com.interview.coach.mapper.TrainingPlanMapper;
+import com.interview.coach.mapper.UserWeaknessEventMapper;
 import com.interview.coach.mapper.UserWeaknessMapper;
 import com.interview.coach.service.UserLearningService;
 import com.interview.coach.vo.DashboardStatsVO;
@@ -21,6 +23,7 @@ import com.interview.coach.vo.MistakeCardVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
 import com.interview.coach.vo.TrainingPlanItemVO;
 import com.interview.coach.vo.TrainingPlanVO;
+import com.interview.coach.vo.UserWeaknessEventVO;
 import com.interview.coach.vo.UserWeaknessVO;
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -40,6 +43,8 @@ public class UserLearningServiceImpl implements UserLearningService {
     private final SubmissionMapper submissionMapper;
 
     private final UserWeaknessMapper userWeaknessMapper;
+
+    private final UserWeaknessEventMapper userWeaknessEventMapper;
 
     private final MistakeCardMapper mistakeCardMapper;
 
@@ -69,8 +74,24 @@ public class UserLearningServiceImpl implements UserLearningService {
 
     @Override
     public List<UserWeaknessVO> getWeaknesses(Long userId) {
+        Map<String, UserWeaknessEvent> latestEvents = latestEventsByKnowledgePoint(userId);
         return aggregateWeaknesses(loadWeaknesses(userId)).stream()
-                .map(this::toUserWeaknessVO)
+                .map(weakness -> toUserWeaknessVO(weakness, latestEvents))
+                .toList();
+    }
+
+    @Override
+    public List<UserWeaknessEventVO> getRecentWeaknessEvents(Long userId, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 50));
+        if (userWeaknessEventMapper == null) {
+            return List.of();
+        }
+        return userWeaknessEventMapper.selectList(new LambdaQueryWrapper<UserWeaknessEvent>()
+                .eq(UserWeaknessEvent::getUserId, userId)
+                .orderByDesc(UserWeaknessEvent::getCreatedAt)
+                .last("LIMIT " + safeLimit))
+                .stream()
+                .map(this::toUserWeaknessEventVO)
                 .toList();
     }
 
@@ -101,8 +122,10 @@ public class UserLearningServiceImpl implements UserLearningService {
                 .orderByAsc(TrainingPlanItem::getDayIndex)
                 .orderByAsc(TrainingPlanItem::getId));
         TrainingPlanVO vo = new TrainingPlanVO();
+        vo.setId(plan.getId());
         vo.setTitle(plan.getTitle());
         vo.setSummary(plan.getSummary());
+        vo.setStatus(plan.getStatus() == null ? "ACTIVE" : plan.getStatus());
         vo.setItems(items.stream().map(this::toTrainingPlanItemVO).toList());
         return vo;
     }
@@ -208,13 +231,60 @@ public class UserLearningServiceImpl implements UserLearningService {
         return false;
     }
 
-    private UserWeaknessVO toUserWeaknessVO(UserWeakness weakness) {
+    private Map<String, UserWeaknessEvent> latestEventsByKnowledgePoint(Long userId) {
+        if (userWeaknessEventMapper == null) {
+            return Collections.emptyMap();
+        }
+        return userWeaknessEventMapper.selectList(new LambdaQueryWrapper<UserWeaknessEvent>()
+                .eq(UserWeaknessEvent::getUserId, userId)
+                .orderByDesc(UserWeaknessEvent::getCreatedAt)
+                .last("LIMIT 50"))
+                .stream()
+                .collect(Collectors.toMap(
+                        event -> normalizeKnowledgePoint(event.getKnowledgePoint()),
+                        Function.identity(),
+                        (first, ignored) -> first,
+                        LinkedHashMap::new));
+    }
+
+    private UserWeaknessVO toUserWeaknessVO(UserWeakness weakness, Map<String, UserWeaknessEvent> latestEvents) {
         UserWeaknessVO vo = new UserWeaknessVO();
         vo.setId(weakness.getId());
         vo.setKnowledgePoint(weakness.getKnowledgePoint());
         vo.setErrorType(weakness.getErrorType());
         vo.setWrongCount(weakness.getWrongCount());
         vo.setWeaknessScore(weakness.getWeaknessScore());
+        UserWeaknessEvent event = latestEvents.get(normalizeKnowledgePoint(weakness.getKnowledgePoint()));
+        if (event != null) {
+            vo.setLastDeltaScore(event.getDeltaScore());
+            vo.setLastEventAt(event.getCreatedAt());
+        }
+        vo.setTrendLabel(trendLabel(weakness, event));
+        return vo;
+    }
+
+    private String trendLabel(UserWeakness weakness, UserWeaknessEvent event) {
+        if (weakness.getWrongCount() != null && weakness.getWrongCount() <= 1) {
+            return "新暴露问题";
+        }
+        if (event != null && event.getDeltaScore() != null && event.getDeltaScore().compareTo(BigDecimal.ZERO) > 0) {
+            return weakness.getWeaknessScore().compareTo(new BigDecimal("40")) >= 0 ? "持续薄弱" : "最近加重";
+        }
+        return "最近改善";
+    }
+
+    private UserWeaknessEventVO toUserWeaknessEventVO(UserWeaknessEvent event) {
+        UserWeaknessEventVO vo = new UserWeaknessEventVO();
+        vo.setId(event.getId());
+        vo.setKnowledgePoint(event.getKnowledgePoint());
+        vo.setErrorType(event.getErrorType());
+        vo.setSourceType(event.getSourceType());
+        vo.setSourceId(event.getSourceId());
+        vo.setDeltaScore(event.getDeltaScore());
+        vo.setBeforeScore(event.getBeforeScore());
+        vo.setAfterScore(event.getAfterScore());
+        vo.setReason(event.getReason());
+        vo.setCreatedAt(event.getCreatedAt());
         return vo;
     }
 
@@ -227,11 +297,15 @@ public class UserLearningServiceImpl implements UserLearningService {
         vo.setKnowledgePoint(mistake.getKnowledgePoint());
         vo.setMistakeSummary(mistake.getMistakeSummary());
         vo.setCorrectIdea(mistake.getCorrectIdea());
+        vo.setRepeatCount(mistake.getRepeatCount() == null ? 1 : mistake.getRepeatCount());
+        vo.setLastSeenAt(mistake.getLastSeenAt() == null ? mistake.getCreatedAt() : mistake.getLastSeenAt());
+        vo.setStatus(mistake.getStatus() == null ? "OPEN" : mistake.getStatus());
         return vo;
     }
 
     private TrainingPlanItemVO toTrainingPlanItemVO(TrainingPlanItem item) {
         TrainingPlanItemVO vo = new TrainingPlanItemVO();
+        vo.setId(item.getId());
         vo.setItemType(item.getItemType() == null ? "PROBLEM" : item.getItemType());
         vo.setKnowledgeCardId(item.getKnowledgeCardId());
         vo.setDayIndex(item.getDayIndex());

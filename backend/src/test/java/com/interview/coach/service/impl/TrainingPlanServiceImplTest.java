@@ -1,7 +1,9 @@
 package com.interview.coach.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
 import com.interview.coach.agent.AgentContext;
@@ -9,6 +11,7 @@ import com.interview.coach.dto.TrainingPlanResult;
 import com.interview.coach.dto.TrainingPlanResult.TrainingPlanItemResult;
 import com.interview.coach.entity.TrainingPlan;
 import com.interview.coach.entity.TrainingPlanItem;
+import com.interview.coach.handler.BusinessException;
 import com.interview.coach.mapper.TrainingPlanItemMapper;
 import com.interview.coach.mapper.TrainingPlanMapper;
 import java.util.List;
@@ -54,6 +57,67 @@ class TrainingPlanServiceImplTest {
         assertThat(itemCaptor.getAllValues().get(0).getProblemTitle()).isEqualTo("两数之和");
         assertThat(itemCaptor.getAllValues().get(1).getKnowledgeCardId()).isEqualTo(1L);
         assertThat(itemCaptor.getAllValues().get(1).getKnowledgeCardTitle()).isEqualTo("HashMap 底层结构");
+    }
+
+    @Test
+    void savePlanMarksExistingActivePlanAsRegeneratedBeforeCreatingNewPlan() {
+        TrainingPlan existing = new TrainingPlan();
+        existing.setId(100L);
+        existing.setUserId(1L);
+        existing.setStatus("ACTIVE");
+        when(trainingPlanMapper.selectList(any())).thenReturn(List.of(existing));
+        AgentContext context = new AgentContext();
+        context.setUserId(1L);
+        context.setAgentRunId(9L);
+        TrainingPlanResult result = new TrainingPlanResult();
+        result.setTitle("3 天专项训练");
+        result.setSummary("算法训练。");
+        result.setItems(List.of(problemItem()));
+
+        trainingPlanService.savePlan(context, result);
+
+        ArgumentCaptor<TrainingPlan> planCaptor = ArgumentCaptor.forClass(TrainingPlan.class);
+        verify(trainingPlanMapper).updateById(planCaptor.capture());
+        assertThat(planCaptor.getValue().getId()).isEqualTo(100L);
+        assertThat(planCaptor.getValue().getStatus()).isEqualTo("REGENERATED");
+    }
+
+    @Test
+    void updateItemStatusCompletesPlanWhenAllItemsAreTerminal() {
+        TrainingPlanItem item = new TrainingPlanItem();
+        item.setId(5L);
+        item.setPlanId(100L);
+        item.setStatus("PENDING");
+        TrainingPlan plan = new TrainingPlan();
+        plan.setId(100L);
+        plan.setUserId(1L);
+        plan.setStatus("ACTIVE");
+        TrainingPlanItem completed = new TrainingPlanItem();
+        completed.setId(5L);
+        completed.setPlanId(100L);
+        completed.setStatus("COMPLETED");
+        TrainingPlanItem skipped = new TrainingPlanItem();
+        skipped.setId(6L);
+        skipped.setPlanId(100L);
+        skipped.setStatus("SKIPPED");
+        when(trainingPlanItemMapper.selectById(5L)).thenReturn(item);
+        when(trainingPlanMapper.selectById(100L)).thenReturn(plan);
+        when(trainingPlanItemMapper.selectList(any())).thenReturn(List.of(completed, skipped));
+
+        trainingPlanService.updateItemStatus(1L, 5L, "COMPLETED");
+
+        ArgumentCaptor<TrainingPlanItem> itemCaptor = ArgumentCaptor.forClass(TrainingPlanItem.class);
+        verify(trainingPlanItemMapper).updateById(itemCaptor.capture());
+        assertThat(itemCaptor.getValue().getStatus()).isEqualTo("COMPLETED");
+        ArgumentCaptor<TrainingPlan> planCaptor = ArgumentCaptor.forClass(TrainingPlan.class);
+        verify(trainingPlanMapper).updateById(planCaptor.capture());
+        assertThat(planCaptor.getValue().getStatus()).isEqualTo("COMPLETED");
+    }
+
+    @Test
+    void updateItemStatusRejectsUnknownStatus() {
+        assertThatThrownBy(() -> trainingPlanService.updateItemStatus(1L, 5L, "DONE"))
+                .isInstanceOf(BusinessException.class);
     }
 
     private TrainingPlanItemResult problemItem() {

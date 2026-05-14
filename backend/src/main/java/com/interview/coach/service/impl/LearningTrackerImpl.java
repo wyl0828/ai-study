@@ -8,11 +8,13 @@ import com.interview.coach.entity.AiDiagnosis;
 import com.interview.coach.entity.HintRecord;
 import com.interview.coach.entity.MistakeCard;
 import com.interview.coach.entity.UserWeakness;
+import com.interview.coach.entity.UserWeaknessEvent;
 import com.interview.coach.enums.ErrorTypeEnum;
 import com.interview.coach.enums.HintLevelEnum;
 import com.interview.coach.mapper.AiDiagnosisMapper;
 import com.interview.coach.mapper.HintRecordMapper;
 import com.interview.coach.mapper.MistakeCardMapper;
+import com.interview.coach.mapper.UserWeaknessEventMapper;
 import com.interview.coach.mapper.UserWeaknessMapper;
 import com.interview.coach.service.LearningTracker;
 import java.math.BigDecimal;
@@ -37,6 +39,8 @@ public class LearningTrackerImpl implements LearningTracker {
     private final HintRecordMapper hintRecordMapper;
 
     private final UserWeaknessMapper userWeaknessMapper;
+
+    private final UserWeaknessEventMapper userWeaknessEventMapper;
 
     private final MistakeCardMapper mistakeCardMapper;
 
@@ -92,6 +96,9 @@ public class LearningTrackerImpl implements LearningTracker {
 
     private void upsertWeakness(AgentContext context, LocalDateTime now) {
         AiDiagnosisResult diagnosis = context.getDiagnosis();
+        if (isAcceptedReview(diagnosis)) {
+            return;
+        }
         UserWeakness weakness = userWeaknessMapper.selectOne(new LambdaQueryWrapper<UserWeakness>()
                 .eq(UserWeakness::getUserId, context.getUserId())
                 .eq(UserWeakness::getKnowledgePoint, diagnosis.getKnowledgePoint())
@@ -107,13 +114,12 @@ public class LearningTrackerImpl implements LearningTracker {
             weakness.setCreatedAt(now);
         }
 
-        boolean acceptedReview = ErrorTypeEnum.ACCEPTED_REVIEW.name().equals(diagnosis.getErrorType());
-        if (!acceptedReview) {
-            weakness.setWrongCount(weakness.getWrongCount() + 1);
-            weakness.setLastWrongAt(now);
-        }
+        BigDecimal beforeScore = weakness.getWeaknessScore();
+        BigDecimal deltaScore = scoreDelta(diagnosis);
+        weakness.setWrongCount(weakness.getWrongCount() + 1);
+        weakness.setLastWrongAt(now);
         weakness.setSubmitCount(weakness.getSubmitCount() + 1);
-        weakness.setWeaknessScore(capScore(weakness.getWeaknessScore().add(scoreDelta(diagnosis))));
+        weakness.setWeaknessScore(capScore(weakness.getWeaknessScore().add(deltaScore)));
         weakness.setUpdatedAt(now);
 
         if (weakness.getId() == null) {
@@ -121,6 +127,27 @@ public class LearningTrackerImpl implements LearningTracker {
         } else {
             userWeaknessMapper.updateById(weakness);
         }
+        insertWeaknessEvent(context, diagnosis, beforeScore, weakness.getWeaknessScore(), deltaScore, now);
+    }
+
+    private boolean isAcceptedReview(AiDiagnosisResult diagnosis) {
+        return ErrorTypeEnum.ACCEPTED_REVIEW.name().equals(diagnosis.getErrorType());
+    }
+
+    private void insertWeaknessEvent(AgentContext context, AiDiagnosisResult diagnosis,
+            BigDecimal beforeScore, BigDecimal afterScore, BigDecimal deltaScore, LocalDateTime now) {
+        UserWeaknessEvent event = new UserWeaknessEvent();
+        event.setUserId(context.getUserId());
+        event.setKnowledgePoint(diagnosis.getKnowledgePoint());
+        event.setErrorType(diagnosis.getErrorType());
+        event.setSourceType("SUBMISSION_FAILED");
+        event.setSourceId(context.getSubmissionId());
+        event.setDeltaScore(deltaScore);
+        event.setBeforeScore(beforeScore);
+        event.setAfterScore(afterScore);
+        event.setReason(diagnosis.getSpecificError());
+        event.setCreatedAt(now);
+        userWeaknessEventMapper.insert(event);
     }
 
     private BigDecimal scoreDelta(AiDiagnosisResult diagnosis) {
@@ -137,6 +164,26 @@ public class LearningTrackerImpl implements LearningTracker {
 
     private void insertMistakeCard(AgentContext context, LocalDateTime now) {
         AiDiagnosisResult diagnosis = context.getDiagnosis();
+        if (isAcceptedReview(diagnosis)) {
+            return;
+        }
+        String fingerprint = fingerprint(context.getUserId(), diagnosis);
+        MistakeCard existing = mistakeCardMapper.selectOne(new LambdaQueryWrapper<MistakeCard>()
+                .eq(MistakeCard::getUserId, context.getUserId())
+                .eq(MistakeCard::getFingerprint, fingerprint)
+                .eq(MistakeCard::getStatus, "OPEN")
+                .last("LIMIT 1"));
+        if (existing != null) {
+            existing.setProblemId(context.getProblemId());
+            existing.setSubmissionId(context.getSubmissionId());
+            existing.setAgentRunId(context.getAgentRunId());
+            existing.setMistakeSummary(diagnosis.getSpecificError());
+            existing.setCorrectIdea(diagnosis.getSuggestion());
+            existing.setRepeatCount((existing.getRepeatCount() == null ? 1 : existing.getRepeatCount()) + 1);
+            existing.setLastSeenAt(now);
+            mistakeCardMapper.updateById(existing);
+            return;
+        }
         MistakeCard card = new MistakeCard();
         card.setUserId(context.getUserId());
         card.setProblemId(context.getProblemId());
@@ -146,7 +193,26 @@ public class LearningTrackerImpl implements LearningTracker {
         card.setKnowledgePoint(diagnosis.getKnowledgePoint());
         card.setMistakeSummary(diagnosis.getSpecificError());
         card.setCorrectIdea(diagnosis.getSuggestion());
+        card.setFingerprint(fingerprint);
+        card.setRepeatCount(1);
+        card.setLastSeenAt(now);
+        card.setStatus("OPEN");
         card.setCreatedAt(now);
         mistakeCardMapper.insert(card);
+    }
+
+    private String fingerprint(Long userId, AiDiagnosisResult diagnosis) {
+        return "%s|%s|%s|%s".formatted(
+                userId,
+                normalize(diagnosis.getKnowledgePoint()),
+                normalize(diagnosis.getErrorType()),
+                normalize(diagnosis.getSpecificError()));
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.trim().toLowerCase().replaceAll("\\s+", " ");
     }
 }

@@ -10,7 +10,7 @@ import {
 
 interface KnowledgeSelfTestProps {
   topic: KnowledgeTopic;
-  onFeedback: (feedback: SelfTestFeedback) => void;
+  onFeedback: (feedback: SelfTestFeedback, answer: string) => void;
   onSkip: () => void;
 }
 
@@ -29,7 +29,7 @@ export default function KnowledgeSelfTest({
     }
 
     setError("");
-    onFeedback(evaluateSelfTest(answer, topic));
+    onFeedback(evaluateSelfTest(answer, topic), answer);
   };
 
   return (

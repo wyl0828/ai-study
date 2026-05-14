@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BookOpenText,
   CheckCircle2,
@@ -11,6 +11,8 @@ import {
   MessagesSquare,
 } from "lucide-react";
 import type { KnowledgeTopic, SelfTestFeedback } from "@/lib/knowledgeData";
+import { formatApiError, userApi } from "@/lib/api";
+import type { SelfTestRecord } from "@/lib/types";
 import KnowledgeFeedback from "./KnowledgeFeedback";
 import KnowledgeSelfTest from "./KnowledgeSelfTest";
 
@@ -18,6 +20,7 @@ interface KnowledgeCardProps {
   topic: KnowledgeTopic;
   expanded: boolean;
   mastered: boolean;
+  userId: number;
   onToggle: () => void;
   onMarkMastered: () => void;
 }
@@ -40,15 +43,54 @@ export default function KnowledgeCard({
   topic,
   expanded,
   mastered,
+  userId,
   onToggle,
   onMarkMastered,
 }: KnowledgeCardProps) {
   const [feedback, setFeedback] = useState<SelfTestFeedback | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [recentRecords, setRecentRecords] = useState<SelfTestRecord[]>([]);
+  const [saveNotice, setSaveNotice] = useState("");
 
-  const handleFeedback = (nextFeedback: SelfTestFeedback) => {
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!expanded) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    userApi
+      .recentSelfTests(userId, topic.id)
+      .then((response) => {
+        if (!cancelled) setRecentRecords(response.data);
+      })
+      .catch(() => {
+        if (!cancelled) setRecentRecords([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [expanded, topic.id, userId]);
+
+  const handleFeedback = async (nextFeedback: SelfTestFeedback, answer: string) => {
     setFeedback(nextFeedback);
     setShowAnalysis(true);
+    setSaveNotice("正在保存自测记录...");
+    try {
+      const response = await userApi.submitSelfTest(userId, topic.id, {
+        userAnswer: answer,
+        score: nextFeedback.score,
+        feedback: nextFeedback.comment,
+        missingKeyPoints: nextFeedback.missingKeyPoints,
+      });
+      setRecentRecords((current) => [response.data, ...current].slice(0, 5));
+      setSaveNotice("自测记录已保存");
+    } catch (err) {
+      setSaveNotice(formatApiError(err, "knowledge"));
+    }
   };
 
   const skipSelfTest = () => {
@@ -137,6 +179,29 @@ export default function KnowledgeCard({
             {showAnalysis && (
               <div className="space-y-4">
                 {feedback && <KnowledgeFeedback feedback={feedback} />}
+                {saveNotice && (
+                  <div className="rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 py-2 text-xs text-on-surface-variant">
+                    {saveNotice}
+                  </div>
+                )}
+                {recentRecords.length > 0 && (
+                  <section className="rounded-lg border border-outline-variant/30 bg-surface-container-lowest p-4">
+                    <div className="mb-2 text-xs font-semibold text-on-surface">
+                      最近自测记录
+                    </div>
+                    <div className="space-y-2">
+                      {recentRecords.slice(0, 3).map((record) => (
+                        <div
+                          key={record.id}
+                          className="flex items-center justify-between gap-3 text-xs text-on-surface-variant"
+                        >
+                          <span>得分 {record.score}</span>
+                          <span className="truncate">{record.feedback}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
                 <section className="rounded-lg border border-outline-variant/30 bg-surface-container-lowest p-4">
                   <div className="mb-3 flex items-center gap-2">

@@ -158,7 +158,7 @@ GET /api/problems/{id}
   "data": {
     "id": 1,
     "title": "两数之和",
-    "description": "给定整数数组 nums 和目标值 target，返回两个不同下标。",
+    "description": "任务说明：\n给定一个整数数组 nums 和一个目标值 target，请在数组中找到两个不同位置的元素，使它们的和等于 target。\n\n返回要求：\n返回一个长度为 2 的 int[]，表示两个下标。\n\n约束与边界：\n同一个数组元素不能被使用两次；数组中可能出现重复数字。",
     "difficulty": "EASY",
     "category": "HashMap",
     "inputFormat": "Line 1: n. Line 2: n integers. Line 3: target.",
@@ -186,7 +186,7 @@ GET /api/problems/{id}
 |------|------|------|
 | `id` | Long | 题目 ID |
 | `title` | String | 题目标题 |
-| `description` | String | 题目描述 |
+| `description` | String | 题目描述；当前 Hot100 题库统一使用“任务说明 / 返回要求 / 约束与边界”的多段面试式题面 |
 | `difficulty` | String | 难度 |
 | `category` | String | 分类 |
 | `inputFormat` | String | 输入格式说明 |
@@ -356,6 +356,7 @@ PLANNING -> CODE_EXECUTION -> OBSERVATION -> CODE_REVIEW -> COMPLETED
 - `agent_step`
 - `ai_diagnosis`
 - `user_weakness`
+- `user_weakness_event`
 - `mistake_card`
 - `training_plan`
 - `training_plan_item`
@@ -569,10 +570,34 @@ GET /api/users/{userId}/weaknesses
 | `errorType` | String | 错误类型 |
 | `wrongCount` | Integer | 累计错误次数 |
 | `weaknessScore` | BigDecimal | 薄弱分数，越高越薄弱 |
+| `trendLabel` | String | 趋势标签：如 `新暴露问题`、`最近加重`、`持续薄弱`、`最近改善` |
+| `lastDeltaScore` | BigDecimal / null | 最近一次弱点分变化 |
+| `lastEventAt` | DateTime / null | 最近一次弱点事件时间 |
 
 排序：按 `weaknessScore DESC`。
 
-### 6.3 错题卡片列表
+### 6.3 最近弱点事件
+
+```http
+GET /api/users/{userId}/weakness-events/recent?limit=20
+```
+
+**响应 `data`：** `UserWeaknessEventVO[]`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | Long | 弱点事件 ID |
+| `knowledgePoint` | String | 知识点 |
+| `errorType` | String | 错误类型 |
+| `sourceType` | String | 来源：`SUBMISSION_FAILED` / `SELF_TEST` |
+| `sourceId` | Long / null | 来源记录 ID，提交失败时为 submissionId，自测低分时为 selfTestRecordId |
+| `deltaScore` | BigDecimal | 本次变化分 |
+| `beforeScore` | BigDecimal | 变化前分数 |
+| `afterScore` | BigDecimal | 变化后分数 |
+| `reason` | String / null | 触发原因摘要 |
+| `createdAt` | DateTime | 事件时间 |
+
+### 6.4 错题卡片列表
 
 ```http
 GET /api/users/{userId}/mistakes
@@ -589,10 +614,13 @@ GET /api/users/{userId}/mistakes
 | `knowledgePoint` | String | 知识点 |
 | `mistakeSummary` | String | 错误摘要 |
 | `correctIdea` | String | 正确思路 |
+| `repeatCount` | Integer | 相同 fingerprint 的重复出现次数 |
+| `lastSeenAt` | DateTime / null | 最近一次出现时间 |
+| `status` | String | 错题状态，当前默认 `OPEN` |
 
-排序：按 `created_at DESC`。
+排序：按 `created_at DESC`。失败诊断会按 `userId + knowledgePoint + errorType + normalizedSpecificError` 生成 fingerprint；同一用户的同类未关闭错题会更新 `repeatCount`，不再无限插入重复卡片。
 
-### 6.4 最新训练计划
+### 6.5 最新训练计划
 
 ```http
 GET /api/users/{userId}/training-plans/latest
@@ -604,14 +632,17 @@ GET /api/users/{userId}/training-plans/latest
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
+| `id` | Long | 训练计划 ID |
 | `title` | String | 计划标题 |
 | `summary` | String | 计划摘要 |
+| `status` | String | 计划状态：`ACTIVE` / `COMPLETED` / `REGENERATED` |
 | `items` | TrainingPlanItemVO[] | 计划条目 |
 
 **TrainingPlanItemVO：**
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
+| `id` | Long | 训练计划条目 ID |
 | `itemType` | String | 条目类型：`PROBLEM` / `KNOWLEDGE_CARD`，为空时前端按 `PROBLEM` 兼容 |
 | `dayIndex` | Integer | 第几天 |
 | `knowledgePoint` | String | 知识点 |
@@ -621,9 +652,36 @@ GET /api/users/{userId}/training-plans/latest
 | `knowledgeCardTitle` | String / null | 知识卡片标题，仅知识卡任务使用 |
 | `reason` | String | 推荐原因 |
 | `reviewFocus` | String | 复习重点 |
-| `status` | String | 训练状态 |
+| `status` | String | 条目状态：`PENDING` / `COMPLETED` / `SKIPPED` |
 
-### 6.5 错误统计
+### 6.6 更新训练计划条目状态
+
+```http
+PATCH /api/users/{userId}/training-plans/items/{itemId}/status
+Content-Type: application/json
+
+{
+  "status": "COMPLETED"
+}
+```
+
+支持状态：`PENDING`、`COMPLETED`、`SKIPPED`。当一个计划下所有条目均为 `COMPLETED` 或 `SKIPPED` 时，后端会将计划状态更新为 `COMPLETED`。
+
+### 6.7 手动重新生成训练计划
+
+```http
+POST /api/users/{userId}/training-plans/regenerate
+Content-Type: application/json
+
+{
+  "replaceCurrentPlan": true,
+  "reason": "USER_REQUEST"
+}
+```
+
+当前仍使用确定性计划生成逻辑，不调用 LLM。`replaceCurrentPlan=true` 时，用户已有 `ACTIVE` 计划会标记为 `REGENERATED`，再创建新计划。
+
+### 6.8 错误统计
 
 ```http
 GET /api/users/{userId}/dashboard/error-stats
@@ -675,7 +733,7 @@ GET /api/users/{userId}/dashboard/error-stats
 | `wrongCount` | Integer | 累计错误次数 |
 | `weaknessScore` | Double | 薄弱分数 |
 
-### 6.6 最近提交记录
+### 6.9 最近提交记录
 
 ```http
 GET /api/users/{userId}/submissions/recent
@@ -760,6 +818,41 @@ GET /api/knowledge/cards/{id}
 | `keyPoints` | String | 记忆点 |
 | `sourceUrl` | String | 来源链接，当前为 `https://xiaolincoding.com/interview/` |
 
+### 7.4 提交知识卡自测
+
+```http
+POST /api/users/{userId}/knowledge/cards/{cardId}/self-tests
+Content-Type: application/json
+
+{
+  "userAnswer": "HashMap 底层是数组、链表和红黑树...",
+  "score": 70,
+  "feedback": "覆盖了部分要点，但缺少树化条件。",
+  "missingKeyPoints": ["链表长度达到 8 且数组长度达到 64 时树化"]
+}
+```
+
+自测评分仍由前端根据 `keyPoints` / `answerKeywords` 轻量计算，后端负责持久化 `self_test_record` 并更新 `user_knowledge_card_mastery`。低分自测会额外写入 `user_weakness_event`，来源为 `SELF_TEST`。
+
+**响应 `data`：** `SelfTestRecordVO`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | Long | 自测记录 ID |
+| `knowledgeCardId` | Long | 知识卡 ID |
+| `score` | Integer | 自测得分 |
+| `feedback` | String / null | 反馈文案 |
+| `missingKeyPoints` | String[] | 缺失要点 |
+| `createdAt` | DateTime | 提交时间 |
+
+### 7.5 获取最近自测记录
+
+```http
+GET /api/users/{userId}/knowledge/cards/{cardId}/self-tests/recent?limit=5
+```
+
+按 `created_at DESC` 返回最近自测记录，默认限制 5 条。
+
 ---
 
 ## 8. 当前接口总览
@@ -772,13 +865,18 @@ GET /api/knowledge/cards/{id}
 | `GET` | `/api/knowledge/categories` | 获取后端知识卡片分类 |
 | `GET` | `/api/knowledge/cards` | 获取后端知识卡片列表 |
 | `GET` | `/api/knowledge/cards/{id}` | 获取后端知识卡片详情 |
+| `POST` | `/api/users/{userId}/knowledge/cards/{cardId}/self-tests` | 提交知识卡自测 |
+| `GET` | `/api/users/{userId}/knowledge/cards/{cardId}/self-tests/recent` | 获取最近知识卡自测记录 |
 | `POST` | `/api/submissions` | 提交 Java 代码并判题 |
 | `POST` | `/api/agent/analyze` | 同步执行 Agent 诊断 |
 | `GET` | `/api/submissions/{submissionId}/diagnosis/stream` | SSE 流式 Agent 诊断 |
 | `GET` | `/api/users/{userId}/dashboard/stats` | 获取 Dashboard 学习统计 |
 | `GET` | `/api/users/{userId}/weaknesses` | 获取薄弱点排行 |
+| `GET` | `/api/users/{userId}/weakness-events/recent` | 获取最近弱点事件 |
 | `GET` | `/api/users/{userId}/mistakes` | 获取错题卡片列表 |
 | `GET` | `/api/users/{userId}/training-plans/latest` | 获取最新训练计划 |
+| `PATCH` | `/api/users/{userId}/training-plans/items/{itemId}/status` | 更新训练计划条目状态 |
+| `POST` | `/api/users/{userId}/training-plans/regenerate` | 手动重新生成训练计划 |
 | `GET` | `/api/users/{userId}/dashboard/error-stats` | 获取错误类型分布和 Top 薄弱点 |
 | `GET` | `/api/users/{userId}/submissions/recent` | 获取最近提交记录 |
 
@@ -820,12 +918,12 @@ GET /api/knowledge/cards/{id}
 - 薄弱知识点排行
 - 最近提交记录
 - 错题卡片
-- 训练计划
+- 训练计划，包括完成、跳过和重新生成入口
 - 后端知识训练入口
 - 错误类型分布和 Top 薄弱点
 - AI 教练建议
 
-前端加载时会并发请求统计、薄弱点、错题、最新训练计划、最近提交记录和错误统计。无数据时显示空状态引导文案，不回退 mock 数据。
+前端加载时会并发请求统计、薄弱点、错题、最新训练计划、最近提交记录和错误统计。无数据时显示空状态引导文案，不回退 mock 数据。训练计划操作通过 `PATCH /training-plans/items/{itemId}/status` 和 `POST /training-plans/regenerate` 写回后端，再刷新最新计划。
 
 ### 9.3 知识训练页面当前状态
 
@@ -837,9 +935,10 @@ GET /api/knowledge/cards/{id}
 - 知识点卡片列表
 - 展开卡片后的模拟自测输入框和提交按钮
 - 提交自测后的点评反馈、评分、命中记忆点、标杆回答解析、核心记忆要点、面试官高频追问和“标记已掌握”
+- 最近自测记录展示；提交自测后写入 `self_test_record`，并更新知识卡掌握度
 - “跳过自测，直接查看解析”路径；该路径只显示解析区，不显示虚假模拟评分
 
-本地自测评分在前端根据 `keyPoints` / `answerKeywords` 简单计算，掌握状态只保存在 React state 中，不写入 localStorage 或后端。
+本地自测评分仍在前端根据 `keyPoints` / `answerKeywords` 简单计算；后端负责保存自测记录、更新 `user_knowledge_card_mastery`，低分自测会写入 `user_weakness_event` 作为学习趋势来源。顶部“标记已掌握”仍是页面内轻量状态，不作为 durable mastery 的唯一来源。
 
 首批真实数据由 `data/knowledge_cards.sql` 提供 15 张结构化知识卡，分类配比为 Java 4、JVM 2、Spring 3、MySQL 3、Redis 3。内容参考小林 coding 和 JavaGuide 的公开面试知识目录做选题覆盖，不复制原文，不做 RAG。
 
@@ -859,5 +958,4 @@ GET /api/knowledge/cards/{id}
 
 - 单独获取某一级 hint
 - 单独暴露 accepted-code review REST 接口（当前通过 `/api/agent/analyze` 和 SSE 的 AC 分支返回 `codeReview`）
-- 手动重新生成训练计划
-- 知识卡片收藏、掌握度、自测记录和 RAG 检索
+- 知识卡片收藏和 RAG 检索

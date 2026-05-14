@@ -7,6 +7,9 @@ USE ai_interview_coach;
 DROP TABLE IF EXISTS training_plan_item;
 DROP TABLE IF EXISTS training_plan;
 DROP TABLE IF EXISTS mistake_card;
+DROP TABLE IF EXISTS self_test_record;
+DROP TABLE IF EXISTS user_knowledge_card_mastery;
+DROP TABLE IF EXISTS user_weakness_event;
 DROP TABLE IF EXISTS user_weakness;
 DROP TABLE IF EXISTS hint_record;
 DROP TABLE IF EXISTS ai_diagnosis;
@@ -196,6 +199,22 @@ CREATE TABLE user_weakness (
     INDEX idx_user_weakness_score (user_id, weakness_score)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE user_weakness_event (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    knowledge_point VARCHAR(64) NOT NULL,
+    error_type VARCHAR(64) NOT NULL,
+    source_type VARCHAR(32) NOT NULL,
+    source_id BIGINT,
+    delta_score DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    before_score DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    after_score DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    reason TEXT,
+    created_at DATETIME NOT NULL,
+    INDEX idx_weakness_event_user_time (user_id, created_at),
+    INDEX idx_weakness_event_point (user_id, knowledge_point, error_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE mistake_card (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
@@ -206,9 +225,41 @@ CREATE TABLE mistake_card (
     knowledge_point VARCHAR(64) NOT NULL,
     mistake_summary TEXT NOT NULL,
     correct_idea TEXT,
+    fingerprint VARCHAR(255),
+    repeat_count INT NOT NULL DEFAULT 1,
+    last_seen_at DATETIME,
+    status VARCHAR(32) NOT NULL DEFAULT 'OPEN',
     created_at DATETIME NOT NULL,
     INDEX idx_mistake_user_id (user_id, created_at),
-    INDEX idx_mistake_problem_id (problem_id)
+    INDEX idx_mistake_problem_id (problem_id),
+    INDEX idx_mistake_fingerprint (user_id, fingerprint, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE user_knowledge_card_mastery (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    knowledge_card_id BIGINT NOT NULL,
+    mastery_score DECIMAL(5, 2) NOT NULL DEFAULT 0,
+    self_test_count INT NOT NULL DEFAULT 0,
+    last_score INT,
+    last_practiced_at DATETIME,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    UNIQUE KEY uk_user_card_mastery (user_id, knowledge_card_id),
+    INDEX idx_user_card_mastery_score (user_id, mastery_score)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE self_test_record (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    knowledge_card_id BIGINT NOT NULL,
+    question_snapshot TEXT NOT NULL,
+    user_answer TEXT NOT NULL,
+    score INT NOT NULL,
+    feedback TEXT,
+    missing_key_points TEXT,
+    created_at DATETIME NOT NULL,
+    INDEX idx_self_test_user_card_time (user_id, knowledge_card_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE training_plan (
@@ -219,8 +270,10 @@ CREATE TABLE training_plan (
     summary TEXT,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
     created_at DATETIME NOT NULL,
-    INDEX idx_training_plan_user_id (user_id, created_at)
+    INDEX idx_training_plan_user_id (user_id, created_at),
+    INDEX idx_training_plan_status (user_id, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE training_plan_item (

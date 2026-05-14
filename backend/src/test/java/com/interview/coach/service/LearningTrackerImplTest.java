@@ -8,10 +8,13 @@ import static org.mockito.Mockito.when;
 import com.interview.coach.agent.AgentContext;
 import com.interview.coach.dto.AiDiagnosisResult;
 import com.interview.coach.dto.HintGenerationResult;
+import com.interview.coach.entity.MistakeCard;
+import com.interview.coach.entity.UserWeaknessEvent;
 import com.interview.coach.entity.UserWeakness;
 import com.interview.coach.mapper.AiDiagnosisMapper;
 import com.interview.coach.mapper.HintRecordMapper;
 import com.interview.coach.mapper.MistakeCardMapper;
+import com.interview.coach.mapper.UserWeaknessEventMapper;
 import com.interview.coach.mapper.UserWeaknessMapper;
 import com.interview.coach.service.impl.LearningTrackerImpl;
 import java.math.BigDecimal;
@@ -33,6 +36,9 @@ class LearningTrackerImplTest {
 
     @Mock
     private UserWeaknessMapper userWeaknessMapper;
+
+    @Mock
+    private UserWeaknessEventMapper userWeaknessEventMapper;
 
     @Mock
     private MistakeCardMapper mistakeCardMapper;
@@ -118,5 +124,85 @@ class LearningTrackerImplTest {
         ArgumentCaptor<UserWeakness> captor = ArgumentCaptor.forClass(UserWeakness.class);
         verify(userWeaknessMapper).updateById(captor.capture());
         assertThat(captor.getValue().getWeaknessScore()).isEqualByComparingTo("5");
+    }
+
+    @Test
+    void recordDiagnosisWritesWeaknessEventWithScoreChange() {
+        UserWeakness existing = new UserWeakness();
+        existing.setId(7L);
+        existing.setUserId(1L);
+        existing.setKnowledgePoint("HashMap");
+        existing.setErrorType("LOGIC_ERROR");
+        existing.setWrongCount(1);
+        existing.setSubmitCount(1);
+        existing.setWeaknessScore(new BigDecimal("10"));
+        when(userWeaknessMapper.selectOne(any())).thenReturn(existing);
+
+        AgentContext context = context("LOGIC_ERROR", "HashMap", "self-pairing");
+
+        learningTracker.recordDiagnosis(context);
+
+        ArgumentCaptor<UserWeaknessEvent> captor = ArgumentCaptor.forClass(UserWeaknessEvent.class);
+        verify(userWeaknessEventMapper).insert(captor.capture());
+        assertThat(captor.getValue().getSourceType()).isEqualTo("SUBMISSION_FAILED");
+        assertThat(captor.getValue().getSourceId()).isEqualTo(11L);
+        assertThat(captor.getValue().getBeforeScore()).isEqualByComparingTo("10");
+        assertThat(captor.getValue().getAfterScore()).isEqualByComparingTo("15");
+        assertThat(captor.getValue().getDeltaScore()).isEqualByComparingTo("5");
+    }
+
+    @Test
+    void recordDiagnosisUpdatesExistingOpenMistakeCardWhenFingerprintRepeats() {
+        UserWeakness existing = new UserWeakness();
+        existing.setId(8L);
+        existing.setUserId(1L);
+        existing.setKnowledgePoint("HashMap");
+        existing.setErrorType("LOGIC_ERROR");
+        existing.setWrongCount(1);
+        existing.setSubmitCount(1);
+        existing.setWeaknessScore(BigDecimal.ZERO);
+        MistakeCard existingCard = new MistakeCard();
+        existingCard.setId(99L);
+        existingCard.setUserId(1L);
+        existingCard.setProblemId(2L);
+        existingCard.setSubmissionId(10L);
+        existingCard.setAgentRunId(9L);
+        existingCard.setErrorType("LOGIC_ERROR");
+        existingCard.setKnowledgePoint("HashMap");
+        existingCard.setMistakeSummary("self pairing");
+        existingCard.setCorrectIdea("Check complement before insert.");
+        existingCard.setFingerprint("1|hashmap|logic_error|self pairing");
+        existingCard.setRepeatCount(2);
+        existingCard.setStatus("OPEN");
+        when(userWeaknessMapper.selectOne(any())).thenReturn(existing);
+        when(mistakeCardMapper.selectOne(any())).thenReturn(existingCard);
+
+        AgentContext context = context("LOGIC_ERROR", "HashMap", "self pairing");
+
+        learningTracker.recordDiagnosis(context);
+
+        ArgumentCaptor<MistakeCard> captor = ArgumentCaptor.forClass(MistakeCard.class);
+        verify(mistakeCardMapper).updateById(captor.capture());
+        assertThat(captor.getValue().getId()).isEqualTo(99L);
+        assertThat(captor.getValue().getRepeatCount()).isEqualTo(3);
+        assertThat(captor.getValue().getSubmissionId()).isEqualTo(11L);
+        assertThat(captor.getValue().getAgentRunId()).isEqualTo(10L);
+    }
+
+    private AgentContext context(String errorType, String knowledgePoint, String specificError) {
+        AgentContext context = new AgentContext();
+        context.setAgentRunId(10L);
+        context.setSubmissionId(11L);
+        context.setUserId(1L);
+        context.setProblemId(2L);
+        AiDiagnosisResult diagnosis = new AiDiagnosisResult();
+        diagnosis.setErrorType(errorType);
+        diagnosis.setKnowledgePoint(knowledgePoint);
+        diagnosis.setSpecificError(specificError);
+        diagnosis.setDiagnosis("Current index is reused.");
+        diagnosis.setSuggestion("Check complement before inserting.");
+        diagnosis.setConfidence(new BigDecimal("0.90"));
+        context.setDiagnosis(diagnosis);
+        return context;
     }
 }

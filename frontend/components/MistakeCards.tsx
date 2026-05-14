@@ -41,7 +41,9 @@ export default function MistakeCards({ mistakes }: MistakeCardsProps) {
                 >
                   {m.errorType}
                 </span>
-                <span className="text-xs text-outline">#{m.problemId}</span>
+                <span className="text-xs text-outline">
+                  {m.repeatCount > 1 ? `重复 ${m.repeatCount} 次` : `#${m.problemId}`}
+                </span>
               </div>
               <h3 className="text-sm font-semibold text-on-surface mb-2">
                 {m.problemTitle}
@@ -70,7 +72,13 @@ export default function MistakeCards({ mistakes }: MistakeCardsProps) {
               </div>
               <div className="mt-3 pt-3 border-t border-outline-variant/20 flex items-center justify-between">
                 <span className="text-xs text-on-surface-variant">
-                  {m.count > 1 ? `已合并 ${m.count} 条相似记录` : m.knowledgePoint}
+                  {m.status === "RESOLVED"
+                    ? "已解决"
+                    : m.repeatCount > 1
+                    ? "反复出现，建议优先复盘"
+                    : m.count > 1
+                    ? `已合并 ${m.count} 条相似记录`
+                    : m.knowledgePoint}
                 </span>
                 <Link
                   href={`/problem/${m.problemId}`}

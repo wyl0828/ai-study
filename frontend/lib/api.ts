@@ -16,6 +16,8 @@ import type {
   KnowledgeCategory,
   KnowledgeCardDetail,
   KnowledgeCardListItem,
+  SelfTestRecord,
+  SelfTestSubmitRequest,
 } from "./types";
 
 const API_BASE = "http://localhost:8080";
@@ -217,6 +219,32 @@ export const userApi = {
     request<ApiResponse<MistakeCard[]>>(`/api/users/${userId}/mistakes`),
   latestPlan: (userId: number) =>
     request<ApiResponse<TrainingPlan | null>>(`/api/users/${userId}/training-plans/latest`),
+  updateTrainingPlanItemStatus: (
+    userId: number,
+    itemId: number,
+    status: "PENDING" | "COMPLETED" | "SKIPPED"
+  ) =>
+    request<ApiResponse<null>>(`/api/users/${userId}/training-plans/items/${itemId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    }),
+  regenerateTrainingPlan: (userId: number) =>
+    request<ApiResponse<null>>(`/api/users/${userId}/training-plans/regenerate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ replaceCurrentPlan: true, reason: "USER_REQUEST" }),
+    }),
+  submitSelfTest: (userId: number, cardId: number, body: SelfTestSubmitRequest) =>
+    request<ApiResponse<SelfTestRecord>>(`/api/users/${userId}/knowledge/cards/${cardId}/self-tests`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  recentSelfTests: (userId: number, cardId: number) =>
+    request<ApiResponse<SelfTestRecord[]>>(
+      `/api/users/${userId}/knowledge/cards/${cardId}/self-tests/recent`
+    ),
   recentSubmissions: (userId: number) =>
     request<ApiResponse<SubmissionHistoryVO[]>>(`/api/users/${userId}/submissions/recent`),
   errorStats: (userId: number) =>

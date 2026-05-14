@@ -52,6 +52,11 @@ export default function WeaknessList({ weaknesses }: WeaknessListProps) {
                   <div className="text-xs text-on-surface-variant">
                     {errorTypeName(w.errorType)}
                   </div>
+                  {w.trendLabel && (
+                    <div className="mt-1 inline-flex rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                      {w.trendLabel}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="text-right">
@@ -61,6 +66,11 @@ export default function WeaknessList({ weaknesses }: WeaknessListProps) {
                 <div className="text-xs text-on-surface-variant">
                   薄弱分数 {w.weaknessScore}
                 </div>
+                {typeof w.lastDeltaScore === "number" && (
+                  <div className="text-[11px] text-on-surface-variant">
+                    最近变化 +{w.lastDeltaScore}
+                  </div>
+                )}
               </div>
             </div>
           );

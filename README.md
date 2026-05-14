@@ -108,6 +108,8 @@ AI_API_KEY=your_api_key
 AI_MODEL=claude-3-5-sonnet-latest
 ```
 
+如果 Windows 本机 `2000` 端口被系统排除或已占用，可以把 Piston 映射到其他端口，例如 `2238`，并同步设置 `PISTON_BASE_URL=http://localhost:2238/api/v2`。
+
 ### 3. 启动后端
 
 ```bash
@@ -133,6 +135,7 @@ npm run dev
 
 - 内置 Hot100 精选 12 道 Java 算法题（数组、哈希表、链表、二叉树、动态规划、贪心）
 - 当前题库统一使用 LeetCode 风格 Solution 模式（用户提交非 `public` 的 `class Solution`）
+- 题面使用“任务说明 / 返回要求 / 约束与边界”的面试式描述；左侧题解包含解题思路、易错点、复杂度和完整 Java 参考实现
 - Monaco Editor 代码编辑器
 - 后端在送入 Piston 前通过 `CodeWrapper` 注册表包装为 `Main.java`，数据库保存用户原始 Solution 代码
 
@@ -152,9 +155,9 @@ npm run dev
 
 ### 3. 学习数据持久化
 
-- **弱点记忆**：按知识点统计错误次数和薄弱分数
-- **错题卡片**：记录每次错误的原因和正确思路
-- **训练计划**：根据弱点生成 3 天针对性训练，可轻量混入 1-2 条后端知识卡复习任务
+- **弱点记忆**：按知识点统计错误次数、薄弱分数和最近变化事件
+- **错题卡片**：记录错误原因和正确思路，并按 fingerprint 合并重复错误
+- **训练计划**：根据弱点生成 3 天针对性训练，可轻量混入 1-2 条后端知识卡复习任务，支持完成、跳过和重新生成
 - **Dashboard**：展示统计、薄弱点、错误类型分布、错题卡、最近提交和训练计划
 
 ### 4. 后端知识训练
@@ -164,6 +167,7 @@ npm run dev
 - `data/knowledge_cards.sql` 提供首批 15 张结构化知识卡，参考小林 coding 和 JavaGuide 的选题覆盖后重新整理表达
 - 每张卡包含问题、模拟自测、点评反馈、标杆回答解析、核心记忆要点、面试官高频追问和“标记已掌握”
 - 展开后默认先自测，提交自测或点击“跳过自测，直接查看解析”后才显示答案区
+- 提交自测后写入后端自测记录，更新知识卡掌握度；低分自测会进入弱点事件
 - Java 基础、集合、并发只作为 tags 展示，不拆成独立一级 tab
 
 ### 5. 分层提示机制
@@ -224,13 +228,18 @@ com.interview.coach
 | GET | `/api/submissions/{id}/diagnosis/stream` | SSE 流式诊断 |
 | GET | `/api/users/{id}/dashboard/stats` | Dashboard 统计 |
 | GET | `/api/users/{id}/weaknesses` | 薄弱点排行 |
+| GET | `/api/users/{id}/weakness-events/recent` | 最近弱点事件 |
 | GET | `/api/users/{id}/mistakes` | 错题卡片 |
 | GET | `/api/users/{id}/training-plans/latest` | 最新训练计划 |
+| PATCH | `/api/users/{id}/training-plans/items/{itemId}/status` | 更新训练计划条目状态 |
+| POST | `/api/users/{id}/training-plans/regenerate` | 手动重新生成训练计划 |
 | GET | `/api/users/{id}/dashboard/error-stats` | 错误统计 |
 | GET | `/api/users/{id}/submissions/recent` | 最近提交记录 |
 | GET | `/api/knowledge/categories` | 后端知识分类 |
 | GET | `/api/knowledge/cards` | 后端知识卡片列表 |
 | GET | `/api/knowledge/cards/{id}` | 后端知识卡片详情 |
+| POST | `/api/users/{id}/knowledge/cards/{cardId}/self-tests` | 提交知识卡自测 |
+| GET | `/api/users/{id}/knowledge/cards/{cardId}/self-tests/recent` | 获取最近知识卡自测 |
 
 完整接口文档见 `docs/API.md`。
 

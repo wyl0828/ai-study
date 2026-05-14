@@ -37,6 +37,8 @@ export default function DashboardPage() {
   const [submissions, setSubmissions] = useState<SubmissionHistoryVO[]>([]);
   const [errorStats, setErrorStats] = useState<ErrorStatsVO | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
+  const [regeneratingPlan, setRegeneratingPlan] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -92,6 +94,40 @@ export default function DashboardPage() {
 
   const statValue = (value: number) => (loading ? "--" : value);
   const weakPointCount = aggregateWeaknesses(weaknesses).length;
+
+  const refreshPlan = async () => {
+    const response = await userApi.latestPlan(DEMO_USER_ID);
+    setTrainingPlan(response.data);
+  };
+
+  const updatePlanItemStatus = async (
+    itemId: number,
+    status: "PENDING" | "COMPLETED" | "SKIPPED"
+  ) => {
+    setUpdatingItemId(itemId);
+    setError(null);
+    try {
+      await userApi.updateTrainingPlanItemStatus(DEMO_USER_ID, itemId, status);
+      await refreshPlan();
+    } catch (err) {
+      setError(formatApiError(err, "dashboard"));
+    } finally {
+      setUpdatingItemId(null);
+    }
+  };
+
+  const regeneratePlan = async () => {
+    setRegeneratingPlan(true);
+    setError(null);
+    try {
+      await userApi.regenerateTrainingPlan(DEMO_USER_ID);
+      await refreshPlan();
+    } catch (err) {
+      setError(formatApiError(err, "dashboard"));
+    } finally {
+      setRegeneratingPlan(false);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
@@ -151,7 +187,13 @@ export default function DashboardPage() {
           <div className="sticky top-20 space-y-6">
             <ErrorStats stats={errorStats} loading={loading} />
             <KnowledgeTrainingEntry />
-            <TrainingPlan plan={trainingPlan} />
+            <TrainingPlan
+              plan={trainingPlan}
+              updatingItemId={updatingItemId}
+              regenerating={regeneratingPlan}
+              onItemStatusChange={updatePlanItemStatus}
+              onRegenerate={regeneratePlan}
+            />
 
             {/* AI 教练建议 */}
             <div className="bg-primary/5 border border-primary/20 rounded-xl p-5">

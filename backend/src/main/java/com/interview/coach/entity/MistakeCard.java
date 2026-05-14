@@ -29,5 +29,13 @@ public class MistakeCard {
 
     private String correctIdea;
 
+    private String fingerprint;
+
+    private Integer repeatCount;
+
+    private LocalDateTime lastSeenAt;
+
+    private String status;
+
     private LocalDateTime createdAt;
 }

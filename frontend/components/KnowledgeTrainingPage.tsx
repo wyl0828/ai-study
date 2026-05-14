@@ -18,6 +18,7 @@ type CategoryFilter = "全部分类" | KnowledgeCategory;
 type DifficultyFilter = "全部" | KnowledgeDifficulty;
 
 const categoryLabels: KnowledgeCategory[] = ["Java", "MySQL", "Redis", "Spring", "JVM"];
+const DEMO_USER_ID = 1;
 
 function isKnowledgeCategory(value: string): value is KnowledgeCategory {
   return categoryLabels.includes(value as KnowledgeCategory);
@@ -241,6 +242,7 @@ export default function KnowledgeTrainingPage() {
               topic={topic}
               expanded={expandedId === topic.id}
               mastered={masteredIds.has(topic.id)}
+              userId={DEMO_USER_ID}
               onToggle={() => toggleTopic(topic)}
               onMarkMastered={() => markMastered(topic.id)}
             />
