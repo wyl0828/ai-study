@@ -144,7 +144,11 @@ test("Knowledge page keeps selection, breadcrumb, topic filtering, and training 
   assert.match(filterBar, /需复习/);
   assert.match(card, /最近得分/);
   assert.match(card, /未自测/);
-  assert.match(knowledgePage, /cardId:\s*targetTopic\.id/);
-  assert.match(knowledgePage, /cardTitle:\s*targetTopic\.title/);
+  assert.match(knowledgePage, /activeCardId/);
+  assert.match(knowledgePage, /pendingScrollCardId/);
+  assert.match(knowledgePage, /scrollIntoView/);
+  assert.match(knowledgePage, /setSelection\(inferred\)/);
   assert.match(knowledgePage, /nextSelection\.cardId/);
+  assert.doesNotMatch(knowledgePage, /setSelection\(\{\s*\.\.\.inferred,\s*cardId:\s*targetTopic\.id/);
+  assert.match(sidebar, /activeCardId/);
 });

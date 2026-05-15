@@ -14,6 +14,7 @@ import {
 
 interface KnowledgeSidebarProps {
   selection: KnowledgeSelection;
+  activeCardId: number | null;
   topics: KnowledgeTopic[];
   onSelect: (selection: KnowledgeSelection) => void;
 }
@@ -26,6 +27,7 @@ function NodeButton({
   node,
   level,
   selection,
+  activeCardId,
   topics,
   onSelect,
   expandedKeys,
@@ -34,14 +36,17 @@ function NodeButton({
   node: KnowledgeOutlineNode;
   level: number;
   selection: KnowledgeSelection;
+  activeCardId: number | null;
   topics: KnowledgeTopic[];
   onSelect: (selection: KnowledgeSelection) => void;
   expandedKeys: Set<string>;
   onToggleExpand: (key: string) => void;
 }) {
-  const active = selectionKey(selection) === selectionKey(node);
   const meta = getKnowledgeTopicMeta(node);
   const isCardNode = Boolean(node.cardId);
+  const active =
+    (isCardNode && activeCardId === node.cardId) ||
+    (!activeCardId && !isCardNode && selectionKey(selection) === selectionKey(node));
   const label = node.cardTitle || node.topic || node.section || node.domain;
   const count = countMatches(topics, node);
   const key = selectionKey(node);
@@ -106,6 +111,7 @@ function NodeButton({
             node={child}
             level={level + 1}
             selection={selection}
+            activeCardId={activeCardId}
             topics={topics}
             onSelect={onSelect}
             expandedKeys={expandedKeys}
@@ -118,6 +124,7 @@ function NodeButton({
 
 export default function KnowledgeSidebar({
   selection,
+  activeCardId,
   topics,
   onSelect,
 }: KnowledgeSidebarProps) {
@@ -143,9 +150,9 @@ export default function KnowledgeSidebar({
   };
 
   return (
-    <aside className="rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-4 shadow-sm lg:sticky lg:top-20">
+    <aside className="flex max-h-[calc(100vh-6.5rem)] flex-col rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-4 shadow-sm lg:sticky lg:top-20">
       <h2 className="mb-3 text-sm font-bold text-on-surface-variant">知识体系大纲</h2>
-      <nav className="max-h-[360px] overflow-y-auto pr-1 lg:max-h-none" aria-label="知识体系大纲">
+      <nav className="min-h-0 overflow-y-auto pr-1" aria-label="知识体系大纲">
         <div className="min-w-[260px] space-y-1 lg:min-w-0">
           {outline.map((node) => (
             <NodeButton
@@ -153,6 +160,7 @@ export default function KnowledgeSidebar({
               node={node}
               level={0}
               selection={selection}
+              activeCardId={activeCardId}
               topics={topics}
               onSelect={onSelect}
               expandedKeys={expandedKeys}

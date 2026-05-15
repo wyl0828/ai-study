@@ -516,12 +516,23 @@ export function getKnowledgeTopicMeta(selection: KnowledgeSelection): KnowledgeT
   }
 
   const key = selectionKey(selection);
-  return (
-    knowledgeTopicMeta[key] ||
-    knowledgeTopicMeta[selection.domain] || {
-      title: selection.topic || selection.section || selection.domain,
+  const exactMeta = knowledgeTopicMeta[key];
+  if (exactMeta) return exactMeta;
+
+  if (selection.topic || selection.section) {
+    const title = selection.topic || selection.section || selection.domain;
+    return {
+      title,
       description: "围绕当前专题进行高频面试知识训练。",
-      iconLabel: selection.topic || selection.section || selection.domain,
+      iconLabel: title,
+    };
+  }
+
+  return (
+    knowledgeTopicMeta[selection.domain] || {
+      title: selection.domain,
+      description: "围绕当前专题进行高频面试知识训练。",
+      iconLabel: selection.domain,
     }
   );
 }

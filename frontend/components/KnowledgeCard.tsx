@@ -262,7 +262,7 @@ export default function KnowledgeCard({
                       标杆回答解析
                     </h3>
                   </div>
-                  <p className="mb-4 text-sm leading-relaxed text-on-surface-variant">
+                  <p className="mb-4 whitespace-pre-line text-sm leading-relaxed text-on-surface-variant">
                     {topic.referenceAnswer}
                   </p>
                   <div className="mb-2 text-xs font-semibold text-on-surface">

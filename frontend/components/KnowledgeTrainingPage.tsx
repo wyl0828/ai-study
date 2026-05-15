@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, SearchX } from "lucide-react";
 import KnowledgeCard from "./KnowledgeCard";
@@ -74,6 +74,8 @@ export default function KnowledgeTrainingPage() {
   const [difficulty, setDifficulty] = useState<KnowledgeDifficultyFilter>("全部");
   const [status, setStatus] = useState<KnowledgeStatusFilter>("全部");
   const [expandedId, setExpandedId] = useState<number | null>(targetCardId);
+  const [activeCardId, setActiveCardId] = useState<number | null>(targetCardId);
+  const [pendingScrollCardId, setPendingScrollCardId] = useState<number | null>(targetCardId);
   const [topics, setTopics] = useState<KnowledgeTopic[]>(knowledgeTopics);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
@@ -82,6 +84,7 @@ export default function KnowledgeTrainingPage() {
   const [masteredIds, setMasteredIds] = useState<Set<number>>(
     () => new Set(knowledgeTopics.filter((topic) => topic.mastered).map((topic) => topic.id))
   );
+  const topicRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -90,12 +93,10 @@ export default function KnowledgeTrainingPage() {
       if (!targetTopic) return;
       const inferred = inferKnowledgeSelection(targetTopic);
       if (inferred) {
-        setSelection({
-          ...inferred,
-          cardId: targetTopic.id,
-          cardTitle: targetTopic.title,
-        });
+        setSelection(inferred);
       }
+      setActiveCardId(targetTopic.id);
+      setPendingScrollCardId(targetTopic.id);
     };
 
     async function loadKnowledgeCards() {
@@ -200,6 +201,20 @@ export default function KnowledgeTrainingPage() {
     });
   }, [filterBaseTopics, masteredIds, recentScores, status]);
 
+  useEffect(() => {
+    if (!pendingScrollCardId) return;
+
+    const timer = window.setTimeout(() => {
+      const target = topicRefs.current[pendingScrollCardId];
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        setPendingScrollCardId(null);
+      }
+    }, 50);
+
+    return () => window.clearTimeout(timer);
+  }, [filteredTopics.length, pendingScrollCardId]);
+
   const markMastered = (id: number) => {
     setMasteredIds((current) => {
       const next = new Set(current);
@@ -232,11 +247,27 @@ export default function KnowledgeTrainingPage() {
   }, []);
 
   const selectOutlineItem = (nextSelection: KnowledgeSelection) => {
-    setSelection(nextSelection);
-    setExpandedId(nextSelection.cardId ?? null);
-    if (nextSelection.cardId && !detailIds.has(nextSelection.cardId)) {
-      loadTopicDetail(nextSelection.cardId);
+    if (nextSelection.cardId) {
+      setSelection({
+        domain: nextSelection.domain,
+        section: nextSelection.section,
+        topic: nextSelection.topic,
+      });
+      setActiveCardId(nextSelection.cardId);
+      setExpandedId(nextSelection.cardId);
+      setSearch("");
+      setDifficulty("全部");
+      setStatus("全部");
+      setPendingScrollCardId(nextSelection.cardId);
+      if (!detailIds.has(nextSelection.cardId)) {
+        loadTopicDetail(nextSelection.cardId);
+      }
+      return;
     }
+
+    setSelection(nextSelection);
+    setActiveCardId(null);
+    setExpandedId(null);
   };
 
   const showAllKnowledge = () => {
@@ -248,6 +279,9 @@ export default function KnowledgeTrainingPage() {
 
   const toggleTopic = (topic: KnowledgeTopic) => {
     const opening = expandedId !== topic.id;
+    if (opening) {
+      setActiveCardId(topic.id);
+    }
     setExpandedId((current) => (current === topic.id ? null : topic.id));
 
     if (!opening || detailIds.has(topic.id)) {
@@ -259,9 +293,10 @@ export default function KnowledgeTrainingPage() {
 
   return (
     <main className="min-h-screen bg-surface px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
+      <div className="mx-auto grid w-full max-w-[1680px] grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
         <KnowledgeSidebar
           selection={selection}
+          activeCardId={activeCardId}
           topics={topics}
           onSelect={selectOutlineItem}
         />
@@ -306,16 +341,24 @@ export default function KnowledgeTrainingPage() {
           ) : (
             <div className="space-y-4">
               {filteredTopics.map((topic) => (
-                <KnowledgeCard
+                <div
                   key={topic.id}
-                  topic={topic}
-                  expanded={expandedId === topic.id}
-                  mastered={masteredIds.has(topic.id)}
-                  userId={DEMO_USER_ID}
-                  onToggle={() => toggleTopic(topic)}
-                  onMarkMastered={() => markMastered(topic.id)}
-                  onRecentScoreChange={updateRecentScore}
-                />
+                  ref={(node) => {
+                    topicRefs.current[topic.id] = node;
+                  }}
+                  id={`knowledge-card-${topic.id}`}
+                  className="scroll-mt-20"
+                >
+                  <KnowledgeCard
+                    topic={topic}
+                    expanded={expandedId === topic.id}
+                    mastered={masteredIds.has(topic.id)}
+                    userId={DEMO_USER_ID}
+                    onToggle={() => toggleTopic(topic)}
+                    onMarkMastered={() => markMastered(topic.id)}
+                    onRecentScoreChange={updateRecentScore}
+                  />
+                </div>
               ))}
             </div>
           )}
