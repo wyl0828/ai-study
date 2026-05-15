@@ -69,7 +69,7 @@ Agent 收到任务
 - 当前真实暴露的 Agent 接口：`POST /api/agent/analyze`、`GET /api/submissions/{submissionId}/diagnosis/stream`。
 - Phase 3 前端核心页面已完成：`/`、`/problem/[id]`、`/dashboard` 均已按 `stitch_front_end_interface_design/mvp/` HTML 原型做紧凑 MVP 风格还原，并完成中文化。
 - 知识训练页 V1 已完成：`/knowledge` 优先调用后端知识接口读取 `knowledge_card` 真实数据，接口失败时回退本地示例数据；支持搜索、难度筛选、分类筛选、模拟自测评分、点评反馈、标杆回答解析、高频追问和标记已掌握。
-- 后端知识训练一期能力已具备：已有 `knowledge_card` 表和 15 张结构化知识卡片，内容参考小林 coding 和 JavaGuide 选题覆盖后原创整理。
+- 后端知识训练一期能力已具备：已有 `knowledge_card` 表和 120 张结构化知识卡片，侧边栏 24 个最终专题每个至少 5 张；内容参考小林 coding 和 JavaGuide 选题覆盖后原创整理，AI 工程内容按本项目设计原创组织。
 - RAG V1 已完成：新增 `rag_document` / `rag_chunk`、`RagService`、`RagRetrieveTool` 和 `RAG_RETRIEVAL` Agent 步骤，检索结果作为错误诊断、AC 点评和训练计划知识卡选择的内部证据。
 - 当前做题页已完成提示/诊断去重：左侧展示题目预设 Level 1/2/3 分层提示（优先从后端 `presetHints` 读取），右侧只保留测试结果和 AI 诊断；提交失败后通过 SSE 实时展示 Agent 步骤，完成后展示诊断结果；AC 代码点评生成中同样展示实时 Agent 步骤。
 - Dashboard 已通过 `UserController` 接入真实 MySQL 学习数据，展示统计、薄弱点、弱点趋势、错题卡、错误统计、最近提交、最新训练计划和后端知识训练入口；训练计划条目支持完成/跳过，手动重新生成训练计划已暴露接口。单独 hint 查询和独立 accepted-code review REST 端点留到后续阶段。
@@ -313,11 +313,11 @@ handler：全局异常处理和统一响应处理
 
 1. 新增 `knowledge_card` 表和 `KnowledgeCard`、`KnowledgeCardMapper`、`KnowledgeCardService`、`KnowledgeController`。
 2. 新增 `GET /api/knowledge/categories`、`GET /api/knowledge/cards`、`GET /api/knowledge/cards/{id}`。
-3. 新增 `/knowledge` 页面，前端 V1 分类固定为 Java / MySQL / Redis / Spring / JVM。
-4. 新增 15 张结构化知识卡片种子数据，来源字段标记为“小林 coding / JavaGuide”或“小林 coding, JavaGuide”，来源链接使用对应栏目或首页 URL。
+3. 新增 `/knowledge` 页面，前端 V1 知识树组织为 Java 核心 / 数据库 / Spring / AI 工程，后端分类为 Java / MySQL / Redis / Spring / JVM / AI。
+4. 新增 120 张结构化知识卡片种子数据，侧边栏 24 个最终专题每个至少 5 张；来源字段标记为“小林 coding / JavaGuide”“JavaGuide”“项目原创整理”等。
 5. 扩展 `training_plan_item`：`item_type`、`knowledge_card_id`、`knowledge_card_title`。
 6. 训练计划展示区支持区分“算法题：xxx”和“知识卡片：xxx”。
-7. 前端 V1 优先使用 `GET /api/knowledge/categories`、`GET /api/knowledge/cards` 和 `GET /api/knowledge/cards/{id}`，接口失败时回退 3 条本地示例知识点。
+7. 前端 V1 优先使用 `GET /api/knowledge/categories`、`GET /api/knowledge/cards` 和 `GET /api/knowledge/cards/{id}`，接口失败时回退本地示例知识点。
 
 边界约束：
 
@@ -644,6 +644,22 @@ $env:AI_MODEL="<model>"
 $env:AI_API_KEY="<your-api-key>"
 $env:AI_MAX_TOKENS="3000"
 mvn spring-boot:run
+```
+
+7. 启动前端：
+
+```powershell
+cd D:\code\ai-study\frontend
+npm run dev
+```
+
+前端默认使用 `http://127.0.0.1:4000`。Windows 更新、Docker/WSL 或 Hyper-V 可能保留 `3000` / `3001` 附近端口，导致 Next.js 在这些端口启动时报 `EACCES: permission denied`，所以 `npm run dev` 默认绑定 `4000`。
+
+如果需要确认 Windows 保留端口范围，可以执行：
+
+```powershell
+netsh interface ipv4 show excludedportrange protocol=tcp
+netsh interface ipv6 show excludedportrange protocol=tcp
 ```
 
 ### 后端验证

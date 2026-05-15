@@ -26,7 +26,8 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
             new CategoryMeta("JVM", "JVM"),
             new CategoryMeta("SPRING", "Spring"),
             new CategoryMeta("MYSQL", "MySQL"),
-            new CategoryMeta("REDIS", "Redis"));
+            new CategoryMeta("REDIS", "Redis"),
+            new CategoryMeta("AI", "AI"));
 
     private final KnowledgeCardMapper knowledgeCardMapper;
 

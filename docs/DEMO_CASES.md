@@ -23,6 +23,24 @@
 8. 回到题目页，将 fixed 代码复制到 Monaco Editor。
 9. 再次提交，确认修正后代码通过测试，并查看 AC 代码点评。
 
+### Windows 前端端口注意
+
+Windows 更新、Docker/WSL 或 Hyper-V 可能会保留 `3000` / `3001` 附近端口，导致 Next.js 启动时报 `EACCES: permission denied`。本项目的 `npm run dev` 已默认绑定 `127.0.0.1:4000`，演示时直接使用：
+
+```powershell
+cd D:\code\ai-study\frontend
+npm run dev
+```
+
+如果需要确认 Windows 保留端口范围，可以执行：
+
+```powershell
+netsh interface ipv4 show excludedportrange protocol=tcp
+netsh interface ipv6 show excludedportrange protocol=tcp
+```
+
+并访问 `http://127.0.0.1:4000/problem/1`。
+
 ## Case 1: 1 两数之和
 
 - 题目 ID：`1`

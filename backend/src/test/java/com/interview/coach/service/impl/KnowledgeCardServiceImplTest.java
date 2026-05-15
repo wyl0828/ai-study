@@ -66,16 +66,18 @@ class KnowledgeCardServiceImplTest {
     void listCategoriesUsesFixedOrderAndCountsEnabledCards() {
         KnowledgeCard javaCard = card(1L, "JAVA", true);
         KnowledgeCard springCard = card(2L, "SPRING", true);
-        when(knowledgeCardMapper.selectList(any())).thenReturn(List.of(springCard, javaCard));
+        KnowledgeCard aiCard = card(3L, "AI", true);
+        when(knowledgeCardMapper.selectList(any())).thenReturn(List.of(springCard, javaCard, aiCard));
 
         List<KnowledgeCategoryVO> categories = knowledgeCardService.listCategories();
 
         assertThat(categories)
                 .extracting(KnowledgeCategoryVO::getCategory)
-                .containsExactly("JAVA", "JVM", "SPRING", "MYSQL", "REDIS");
+                .containsExactly("JAVA", "JVM", "SPRING", "MYSQL", "REDIS", "AI");
         assertThat(categories.get(0).getCount()).isEqualTo(1);
         assertThat(categories.get(2).getCount()).isEqualTo(1);
         assertThat(categories.get(4).getCount()).isZero();
+        assertThat(categories.get(5).getCount()).isEqualTo(1);
     }
 
     @Test

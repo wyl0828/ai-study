@@ -13,7 +13,7 @@
 → 失败诊断 / AC 代码点评 → 弱点记忆 → 错题卡 → 训练计划
 ```
 
-同时提供独立的知识训练入口，将 Java、JVM、Spring、MySQL、Redis 高频面试知识整理为结构化训练卡片。知识训练和算法诊断保持边界：算法错误只触发算法相关诊断，知识卡片用于独立自测和统一训练计划展示。
+同时提供独立的知识训练入口，将 Java、JVM、Spring、MySQL、Redis 高频面试知识整理为结构化训练卡片，并在前端按 Java 核心、数据库、Spring、AI 工程组织为可折叠知识体系大纲。知识训练和算法诊断保持边界：算法错误只触发算法相关诊断，知识卡片用于独立自测和统一训练计划展示。
 
 ## 技术栈
 
@@ -127,7 +127,22 @@ npm install
 npm run dev
 ```
 
-前端默认运行在 `http://localhost:3000`。
+前端默认运行在 `http://127.0.0.1:4000`。本机 Windows 已保留 `3000` / `3001` 附近端口，所以 `npm run dev` 直接绑定到 `4000`，不再尝试使用 `3000`。
+
+如果将来有人改回 `3000` / `3001`，Next.js 可能因为 Windows 系统保留端口段启动失败并报：
+
+```text
+Error: listen EACCES: permission denied 0.0.0.0:3000
+```
+
+这通常不是 Next.js 代码问题，而是端口被 Windows 排除。可以先检查：
+
+```powershell
+netsh interface ipv4 show excludedportrange protocol=tcp
+netsh interface ipv6 show excludedportrange protocol=tcp
+```
+
+正常启动后访问 `http://127.0.0.1:4000`。
 
 ## 核心功能
 
@@ -162,13 +177,14 @@ npm run dev
 
 ### 4. 后端知识训练
 
-- 独立 `/knowledge` 页面，分类固定为 Java / MySQL / Redis / Spring / JVM
-- 页面优先读取后端知识接口和 `knowledge_card` 表；后端不可用时回退 3 条本地示例数据
-- `data/knowledge_cards.sql` 提供首批 15 张结构化知识卡，参考小林 coding 和 JavaGuide 的选题覆盖后重新整理表达
-- 每张卡包含问题、模拟自测、点评反馈、标杆回答解析、核心记忆要点、面试官高频追问和“标记已掌握”
+- 独立 `/knowledge` 页面，左侧为可展开/收起的知识体系大纲：Java 核心、数据库、Spring、AI 工程
+- 页面优先读取后端知识接口和 `knowledge_card` 表；后端不可用时回退前端本地示例数据
+- Java 集合专题已按 List / Map / Set 做前端过滤，面包屑、左侧高亮和专题标题共用同一选择状态；Map 不展示 ArrayList / LinkedList 等明显不匹配卡片
+- AI 工程当前是前端专题入口，包含 Agent、RAG、LangChain，并提供少量本地示例卡作为接口不可用时的兜底训练内容；不新增后端接口、不接独立 RAG 聊天、不调用真实 AI
+- `data/knowledge_cards.sql` 提供 120 张结构化知识卡，覆盖侧边栏 24 个最终专题且每个专题至少 5 张；内容参考小林 coding 和 JavaGuide 的选题覆盖后重新整理表达，AI 工程卡片为项目原创整理
+- 每张卡包含难度、分类、tags、训练状态、最近得分或未自测状态、模拟自测、点评反馈、标杆回答解析、核心记忆要点、面试官高频追问和“标记已掌握”
 - 展开后默认先自测，提交自测或点击“跳过自测，直接查看解析”后才显示答案区
 - 提交自测后写入后端自测记录，更新知识卡掌握度；低分自测会进入弱点事件
-- Java 基础、集合、并发只作为 tags 展示，不拆成独立一级 tab
 
 ### 5. 分层提示机制
 

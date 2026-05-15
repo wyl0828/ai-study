@@ -3,7 +3,7 @@ import type {
   KnowledgeCardListItem,
 } from "./types";
 
-export type KnowledgeCategory = "Java" | "MySQL" | "Redis" | "Spring" | "JVM";
+export type KnowledgeCategory = "Java" | "MySQL" | "Redis" | "Spring" | "JVM" | "AI";
 export type KnowledgeDifficulty = "简单" | "中等" | "困难";
 
 export interface KnowledgeTopic {
@@ -22,12 +22,14 @@ export interface KnowledgeTopic {
   mastered: boolean;
 }
 
-export type KnowledgeDomain = "Java 核心" | "数据库" | "Spring";
+export type KnowledgeDomain = "Java 核心" | "数据库" | "Spring" | "AI 工程";
 
 export type KnowledgeSelection = {
   domain: KnowledgeDomain;
   section?: string;
   topic?: string;
+  cardId?: number;
+  cardTitle?: string;
 };
 
 export interface KnowledgeTopicMeta {
@@ -43,6 +45,81 @@ export interface SelfTestFeedback {
   matchedKeyPoints: string[];
   missingKeyPoints: string[];
 }
+
+export type KnowledgeOutlineNode = KnowledgeSelection & {
+  children?: KnowledgeOutlineNode[];
+};
+
+export const baseKnowledgeOutline: KnowledgeOutlineNode[] = [
+  {
+    domain: "Java 核心",
+    children: [
+      {
+        domain: "Java 核心",
+        section: "Java 基础",
+        children: [
+          { domain: "Java 核心", section: "Java 基础", topic: "面向对象" },
+          { domain: "Java 核心", section: "Java 基础", topic: "数据类型" },
+          { domain: "Java 核心", section: "Java 基础", topic: "异常处理" },
+          { domain: "Java 核心", section: "Java 基础", topic: "反射与泛型" },
+        ],
+      },
+      {
+        domain: "Java 核心",
+        section: "集合框架",
+        children: [
+          { domain: "Java 核心", section: "集合框架", topic: "List" },
+          { domain: "Java 核心", section: "集合框架", topic: "Map" },
+          { domain: "Java 核心", section: "集合框架", topic: "Set" },
+        ],
+      },
+      { domain: "Java 核心", section: "并发编程（JUC）" },
+      { domain: "Java 核心", section: "JVM 虚拟机" },
+    ],
+  },
+  {
+    domain: "数据库",
+    children: [
+      {
+        domain: "数据库",
+        section: "MySQL",
+        children: [
+          { domain: "数据库", section: "MySQL", topic: "索引" },
+          { domain: "数据库", section: "MySQL", topic: "事务" },
+          { domain: "数据库", section: "MySQL", topic: "锁" },
+          { domain: "数据库", section: "MySQL", topic: "MVCC" },
+        ],
+      },
+      {
+        domain: "数据库",
+        section: "Redis",
+        children: [
+          { domain: "数据库", section: "Redis", topic: "数据结构" },
+          { domain: "数据库", section: "Redis", topic: "缓存问题" },
+          { domain: "数据库", section: "Redis", topic: "持久化" },
+          { domain: "数据库", section: "Redis", topic: "分布式锁" },
+        ],
+      },
+    ],
+  },
+  {
+    domain: "Spring",
+    children: [
+      { domain: "Spring", topic: "IOC" },
+      { domain: "Spring", topic: "AOP" },
+      { domain: "Spring", topic: "事务" },
+      { domain: "Spring", topic: "Spring MVC" },
+    ],
+  },
+  {
+    domain: "AI 工程",
+    children: [
+      { domain: "AI 工程", topic: "Agent" },
+      { domain: "AI 工程", topic: "RAG" },
+      { domain: "AI 工程", topic: "LangChain" },
+    ],
+  },
+];
 
 export const knowledgeTopics: KnowledgeTopic[] = [
   {
@@ -180,6 +257,90 @@ export const knowledgeTopics: KnowledgeTopic[] = [
     ],
     mastered: false,
   },
+  {
+    id: 9001,
+    title: "Agent 工作流为什么要拆成 Planner、Tool 和 Observation？",
+    category: "AI",
+    difficulty: "中等",
+    tags: ["AI 工程", "Agent", "Planner", "Tool Calling", "Observation"],
+    question:
+      "请解释一个面试训练 Agent 为什么不应该只是单次 prompt 调用，而要拆成 Planner、Tool、Observation 和后续诊断步骤。",
+    answerKeywords: [
+      ["Planner", "计划"],
+      ["Tool", "工具调用"],
+      ["Observation", "观察"],
+      ["Trace", "可解释"],
+    ],
+    referenceAnswer:
+      "Agent 工作流拆成 Planner、Tool 和 Observation，是为了让系统每一步都可解释、可记录、可降级。Planner 负责决定本轮任务目标和步骤，Tool 负责调用代码执行、RAG 检索、错误分类等外部能力，Observation 把工具结果转成后续诊断可用的事实依据。这样比单次 prompt 更适合工程项目：可以复用服务层能力、记录 Agent Step、定位失败步骤，并避免 LLM 在没有执行结果时凭空判断。",
+    keyPoints: [
+      "Planner 负责组织任务步骤",
+      "Tool 调用代码执行、检索和诊断等外部能力",
+      "Observation 把工具结果转为诊断依据",
+      "拆分步骤便于 Trace、降级和面试讲解",
+    ],
+    followUpQuestions: [
+      "为什么代码执行结果必须先于 AI 错误分类？",
+      "Agent Step 记录对排查线上问题有什么价值？",
+    ],
+    mastered: false,
+  },
+  {
+    id: 9002,
+    title: "RAG 在当前项目中为什么作为 Agent 内部 Tool？",
+    category: "AI",
+    difficulty: "中等",
+    tags: ["AI 工程", "RAG", "Agent Tool", "MySQL 检索", "用户记忆"],
+    question:
+      "请说明当前项目为什么把 RAG 设计成 Agent 工作流内部的可选 Tool，而不是做成独立知识库聊天入口。",
+    answerKeywords: [
+      ["Agent", "Tool"],
+      ["Observation", "之后"],
+      ["可选", "失败不阻塞"],
+      ["用户隔离", "user_id"],
+    ],
+    referenceAnswer:
+      "当前项目的核心目标是代码诊断和训练闭环，因此 RAG 只作为 Agent 内部 Tool 使用。它在代码执行 Observation 之后检索题目知识、知识卡和当前用户历史错题记忆，为错误诊断或 AC 点评提供证据。RAG 失败只记录 step，不阻塞判题和最终诊断；用户记忆检索必须按 user_id 隔离，避免不同用户错题互相泄漏。这样可以强化 Agent 诊断质量，同时不把产品扩散成通用聊天系统。",
+    keyPoints: [
+      "RAG 运行在 Observation 之后",
+      "检索结果只作为诊断和代码点评的辅助证据",
+      "RAG 失败不阻塞核心判题和诊断",
+      "用户历史记忆必须按 user_id 隔离",
+    ],
+    followUpQuestions: [
+      "为什么 RAG 证据不能覆盖 Piston 执行结果？",
+      "如果以后升级向量库，当前 MySQL RAG 设计哪些边界可以复用？",
+    ],
+    mastered: false,
+  },
+  {
+    id: 9003,
+    title: "LangChain 和本项目自定义 Agent 编排有什么区别？",
+    category: "AI",
+    difficulty: "困难",
+    tags: ["AI 工程", "LangChain", "Agent", "工程取舍", "Tool"],
+    question:
+      "请从工程可控性、业务集成、学习成本和简历项目表达角度，对比 LangChain 与本项目自定义 Agent 编排。",
+    answerKeywords: [
+      ["LangChain", "框架"],
+      ["自定义", "可控"],
+      ["业务", "Service"],
+      ["Trace", "调试"],
+    ],
+    referenceAnswer:
+      "LangChain 提供了链、工具、记忆和 Agent 等通用抽象，适合快速验证复杂 LLM 应用。但本项目是 Spring Boot 简历项目，核心价值在于把代码执行、Observation、RAG、诊断、弱点记忆和训练计划串成可解释业务流程。自定义 Agent 编排更轻、更贴合现有 Service 和 MyBatis 数据模型，也更容易讲清楚每个 Tool 的输入输出、失败降级和持久化边界。面试中可以说明：不是不用 LangChain，而是 MVP 阶段优先选择可控、可解释、低依赖的状态机式 Agent。",
+    keyPoints: [
+      "LangChain 是通用 LLM 编排框架",
+      "自定义 Agent 更贴合 Spring Boot 业务分层",
+      "当前项目重点是可解释 Tool 链和持久化闭环",
+      "MVP 阶段选择低依赖、易调试的状态机式编排",
+    ],
+    followUpQuestions: [
+      "如果未来接入 LangChain，哪些 Tool 边界可以复用？",
+      "为什么简历项目里可解释性比复杂自动规划更重要？",
+    ],
+    mastered: false,
+  },
 ];
 
 export const defaultKnowledgeSelection: KnowledgeSelection = {
@@ -252,6 +413,26 @@ export const knowledgeTopicMeta: Record<string, KnowledgeTopicMeta> = {
     description: "掌握 IOC、AOP、事务和 Spring MVC 的核心原理与面试表达。",
     iconLabel: "Spring",
   },
+  "AI 工程": {
+    title: "AI 工程",
+    description: "围绕 Agent 工作流、RAG 检索增强和 LangChain 工具链建立项目面试表达。",
+    iconLabel: "AI",
+  },
+  "AI 工程/Agent": {
+    title: "Agent",
+    description: "理解 Planner、Tool Calling、Observation、Memory 等 Agent 工作流核心概念。",
+    iconLabel: "Agent",
+  },
+  "AI 工程/RAG": {
+    title: "RAG",
+    description: "掌握检索增强生成的数据流、证据召回、用户记忆隔离和失败降级设计。",
+    iconLabel: "RAG",
+  },
+  "AI 工程/LangChain": {
+    title: "LangChain",
+    description: "了解 LangChain 的链、工具、记忆和工程化封装思路，便于横向对比项目实现。",
+    iconLabel: "LC",
+  },
 };
 
 export const knowledgeCategories: Array<"全部分类" | KnowledgeCategory> = [
@@ -261,6 +442,7 @@ export const knowledgeCategories: Array<"全部分类" | KnowledgeCategory> = [
   "Redis",
   "Spring",
   "JVM",
+  "AI",
 ];
 
 export const knowledgeDifficulties: Array<"全部" | KnowledgeDifficulty> = [
@@ -271,11 +453,17 @@ export const knowledgeDifficulties: Array<"全部" | KnowledgeDifficulty> = [
 ];
 
 const topicKeywords: Record<string, string[]> = {
+  面向对象: ["面向对象", "OOP", "封装", "继承", "多态", "组合优于继承"],
+  数据类型: ["数据类型", "基本类型", "包装类型", "装箱", "String", "BigDecimal"],
+  异常处理: ["异常", "Exception", "RuntimeException", "try-catch", "全局异常"],
+  反射与泛型: ["反射", "泛型", "注解", "Class", "类型擦除", "通配符"],
   Map: ["Map", "HashMap", "ConcurrentHashMap", "Hashtable", "LinkedHashMap", "TreeMap"],
   List: ["List", "ArrayList", "LinkedList", "Vector"],
   Set: ["Set", "HashSet", "TreeSet", "LinkedHashSet"],
+  "Java 核心/并发编程（JUC）": ["JUC", "并发", "线程", "线程池", "锁", "volatile", "ThreadLocal", "CompletableFuture"],
+  "Java 核心/JVM 虚拟机": ["JVM", "内存区域", "GC", "类加载", "Full GC"],
   索引: ["索引", "B+树", "B+ 树", "最左前缀", "EXPLAIN"],
-  事务: ["事务", "ACID", "隔离级别"],
+  "数据库/MySQL/事务": ["事务", "ACID", "隔离级别", "长事务", "当前读"],
   锁: ["锁", "间隙锁", "行锁", "表锁"],
   MVCC: ["MVCC", "版本链", "ReadView"],
   数据结构: ["数据结构", "String", "Hash", "List", "Set", "ZSet"],
@@ -284,7 +472,11 @@ const topicKeywords: Record<string, string[]> = {
   分布式锁: ["分布式锁", "Redisson", "SETNX"],
   IOC: ["IOC", "IoC", "依赖注入", "Bean"],
   AOP: ["AOP", "切面", "代理"],
+  "Spring/事务": ["Spring事务", "事务", "传播行为", "rollbackFor", "声明式事务", "编程式事务"],
   "Spring MVC": ["Spring MVC", "DispatcherServlet", "MVC"],
+  Agent: ["Agent", "Planner", "Tool", "Observation", "Memory", "工具调用"],
+  RAG: ["RAG", "检索", "召回", "知识库", "向量", "证据"],
+  LangChain: ["LangChain", "Chain", "LCEL", "Tool", "Memory"],
 };
 
 const sectionCategoryMap: Record<string, KnowledgeCategory[]> = {
@@ -297,15 +489,32 @@ const sectionCategoryMap: Record<string, KnowledgeCategory[]> = {
   "数据库/MySQL": ["MySQL"],
   "数据库/Redis": ["Redis"],
   Spring: ["Spring"],
+  "AI 工程": ["AI"],
+  "AI 工程/Agent": ["AI"],
+  "AI 工程/RAG": ["AI"],
+  "AI 工程/LangChain": ["AI"],
 };
 
 export function selectionKey(selection: KnowledgeSelection): string {
-  return [selection.domain, selection.section, selection.topic]
+  return [
+    selection.domain,
+    selection.section,
+    selection.topic,
+    selection.cardId ? `card:${selection.cardId}` : undefined,
+  ]
     .filter(Boolean)
     .join("/");
 }
 
 export function getKnowledgeTopicMeta(selection: KnowledgeSelection): KnowledgeTopicMeta {
+  if (selection.cardId && selection.cardTitle) {
+    return {
+      title: selection.cardTitle,
+      description: "聚焦当前知识卡进行模拟自测、标杆回答解析和高频追问复盘。",
+      iconLabel: "题目",
+    };
+  }
+
   const key = selectionKey(selection);
   return (
     knowledgeTopicMeta[key] ||
@@ -318,26 +527,35 @@ export function getKnowledgeTopicMeta(selection: KnowledgeSelection): KnowledgeT
 }
 
 export function getSelectionBreadcrumb(selection: KnowledgeSelection): string[] {
-  return ["知识训练", selection.domain, selection.section, selection.topic].filter(
-    Boolean
-  ) as string[];
+  return [
+    "知识训练",
+    selection.domain,
+    selection.section,
+    selection.topic,
+    selection.cardTitle,
+  ].filter(Boolean) as string[];
 }
 
 export function matchKnowledgeTopic(
   topic: KnowledgeTopic,
   selection: KnowledgeSelection
 ): boolean {
+  if (selection.cardId) {
+    return topic.id === selection.cardId;
+  }
+
   const key = selectionKey(selection);
   const categories = sectionCategoryMap[key] || sectionCategoryMap[selection.domain];
   if (categories && categories.length > 0 && !categories.includes(topic.category)) {
     return false;
   }
 
-  if (!selection.topic) {
+  const keywords = topicKeywords[key] || topicKeywords[selection.topic || selection.section || ""];
+
+  if (!selection.topic && !keywords) {
     return !categories || categories.length === 0 ? false : categories.includes(topic.category);
   }
 
-  const keywords = topicKeywords[selection.topic];
   if (!keywords) {
     return true;
   }
@@ -354,15 +572,57 @@ export function matchKnowledgeTopic(
   );
 }
 
+export function buildKnowledgeOutline(topics: KnowledgeTopic[]): KnowledgeOutlineNode[] {
+  const appendCards = (node: KnowledgeOutlineNode): KnowledgeOutlineNode => {
+    if (node.children?.length) {
+      return {
+        ...node,
+        children: node.children.map(appendCards),
+      };
+    }
+
+    const children = topics
+      .filter((topic) => matchKnowledgeTopic(topic, node))
+      .map((topic) => ({
+        ...node,
+        cardId: topic.id,
+        cardTitle: topic.title,
+      }));
+
+    return children.length > 0 ? { ...node, children } : node;
+  };
+
+  return baseKnowledgeOutline.map(appendCards);
+}
+
 export function inferKnowledgeSelection(topic: KnowledgeTopic): KnowledgeSelection | null {
   const candidates: KnowledgeSelection[] = [
+    { domain: "Java 核心", section: "Java 基础", topic: "面向对象" },
+    { domain: "Java 核心", section: "Java 基础", topic: "数据类型" },
+    { domain: "Java 核心", section: "Java 基础", topic: "异常处理" },
+    { domain: "Java 核心", section: "Java 基础", topic: "反射与泛型" },
     { domain: "Java 核心", section: "集合框架", topic: "Map" },
     { domain: "Java 核心", section: "集合框架", topic: "List" },
     { domain: "Java 核心", section: "集合框架", topic: "Set" },
+    { domain: "Java 核心", section: "并发编程（JUC）" },
     { domain: "Java 核心", section: "JVM 虚拟机" },
+    { domain: "数据库", section: "MySQL", topic: "索引" },
+    { domain: "数据库", section: "MySQL", topic: "事务" },
+    { domain: "数据库", section: "MySQL", topic: "锁" },
+    { domain: "数据库", section: "MySQL", topic: "MVCC" },
+    { domain: "数据库", section: "Redis", topic: "数据结构" },
+    { domain: "数据库", section: "Redis", topic: "缓存问题" },
+    { domain: "数据库", section: "Redis", topic: "持久化" },
+    { domain: "数据库", section: "Redis", topic: "分布式锁" },
     { domain: "数据库", section: "MySQL" },
     { domain: "数据库", section: "Redis" },
-    { domain: "Spring" },
+    { domain: "Spring", topic: "IOC" },
+    { domain: "Spring", topic: "AOP" },
+    { domain: "Spring", topic: "事务" },
+    { domain: "Spring", topic: "Spring MVC" },
+    { domain: "AI 工程", topic: "Agent" },
+    { domain: "AI 工程", topic: "RAG" },
+    { domain: "AI 工程", topic: "LangChain" },
   ];
 
   return candidates.find((candidate) => matchKnowledgeTopic(topic, candidate)) || null;
@@ -374,6 +634,7 @@ const categoryMap: Record<string, KnowledgeCategory> = {
   REDIS: "Redis",
   SPRING: "Spring",
   JVM: "JVM",
+  AI: "AI",
   Java: "Java",
   MySQL: "MySQL",
   Redis: "Redis",

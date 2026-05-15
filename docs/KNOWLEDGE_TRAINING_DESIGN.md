@@ -25,28 +25,32 @@
 
 ## 2. 当前 V1 范围
 
-当前 `/knowledge` 页面已锁定为前端 V1，目标是先形成“先答后看解析”的训练体验。
+当前 `/knowledge` 页面已锁定为前端 V1，目标是形成“先选专题、再自测、后看解析”的训练体验。
 
 已实现能力：
 
 - 顶部导航“知识训练”入口指向 `/knowledge`。
-- 页面优先调用后端知识接口读取 `knowledge_card` 真实数据；后端不可用时回退 3 条本地示例数据。
-- 支持搜索、难度筛选和分类筛选。
-- 分类固定为 Java / MySQL / Redis / Spring / JVM。
-- 首批真实数据 15 条：Java 4、JVM 2、Spring 3、MySQL 3、Redis 3。
-- 卡片未展开时展示难度、分类、tags、标题、问题描述和“查看解析，或在此之前完成模拟自测”。
+- 页面优先调用后端知识接口读取 `knowledge_card` 真实数据；后端不可用时回退本地示例数据。
+- 支持搜索、难度筛选、训练状态筛选和专题过滤。
+- 左侧知识体系大纲支持多级展开/收起，当前前端组织为 Java 核心、数据库、Spring、AI 工程。
+- Java 核心下的集合框架按 List / Map / Set 展示，当前专题只展示匹配卡片；例如 Map 不展示 ArrayList / LinkedList。
+- AI 工程下提供 Agent、RAG、LangChain 三个专题入口，并提供少量本地示例卡作为接口不可用时的兜底训练内容；不新增后端接口、不接独立 RAG 聊天、不调用真实 AI。
+- 面包屑第一层为“知识训练”，左侧选中项、面包屑、专题标题和描述由同一个选择状态派生。
+- 后端真实分类来自 `JAVA/JVM/SPRING/MYSQL/REDIS/AI`，前端知识树只是展示组织方式。
+- 当前真实数据 120 条：侧边栏 24 个最终专题每个至少 5 张，覆盖 Java 基础、集合、JUC、JVM、MySQL、Redis、Spring 和 AI 工程。
+- 卡片未展开时展示难度、分类、tags、标题、问题描述、训练状态、最近得分或“未自测”和主要动作按钮。
 - 展开后默认只展示题目信息、模拟自测输入框、提交自测按钮和“跳过自测，直接查看解析”。
 - 提交自测后展示点评反馈、评分、命中核心记忆点、标杆回答解析、核心记忆要点、面试官高频追问和“标记已掌握”。
 - 点击“跳过自测，直接查看解析”时只显示解析区，不展示虚假的模拟评分。
-- “标记已掌握”只保存在 React state 中，顶部已掌握数量同步更新。
+- “标记已掌握”当前保存在 React state 中；自测提交会写入后端自测记录并可更新知识卡掌握度。
 
 本次明确不做：
 
 - 不新增数据库表。
 - 不新增 REST 接口。
-- 不把自测结果写入 MySQL 或 localStorage。
+- 不把自测结果写入 localStorage；自测记录通过现有用户学习接口写入 MySQL。
 - 不做真实 AI 调用。
-- 不做 RAG。
+- 不做独立 RAG 聊天或公开检索入口；RAG 只作为 Agent 内部 Tool，与 `/knowledge` 页面保持边界。
 - 不做知识弱点画像或 `knowledge_weakness` 表。
 
 ## 3. 前端结构
@@ -56,6 +60,9 @@
 ```text
 frontend/app/knowledge/page.tsx
 frontend/components/KnowledgeTrainingPage.tsx
+frontend/components/KnowledgeSidebar.tsx
+frontend/components/KnowledgeTopicHeader.tsx
+frontend/components/KnowledgeFilterBar.tsx
 frontend/components/KnowledgeCard.tsx
 frontend/components/KnowledgeSelfTest.tsx
 frontend/components/KnowledgeFeedback.tsx
@@ -67,7 +74,10 @@ frontend/lib/knowledgeData.ts
 | 文件 | 职责 |
 | --- | --- |
 | `page.tsx` | `/knowledge` 路由入口，渲染知识训练页面 |
-| `KnowledgeTrainingPage.tsx` | 页面级状态：接口加载、mock fallback、搜索、筛选、展开卡片、已掌握统计 |
+| `KnowledgeTrainingPage.tsx` | 页面级状态：接口加载、fallback、统一专题选择、搜索、筛选、展开卡片、已掌握统计 |
+| `KnowledgeSidebar.tsx` | 可折叠知识体系大纲，负责左侧选中和展开/收起交互 |
+| `KnowledgeTopicHeader.tsx` | 面包屑、当前专题标题和描述 |
+| `KnowledgeFilterBar.tsx` | 紧凑筛选条：难度、训练状态、数量和搜索 |
 | `KnowledgeCard.tsx` | 单张知识卡片、展开状态、解析区显示时机 |
 | `KnowledgeSelfTest.tsx` | 自测输入、空答案校验、提交自测、跳过自测 |
 | `KnowledgeFeedback.tsx` | 自测评分、点评、命中记忆点展示 |

@@ -760,7 +760,7 @@ GET /api/users/{userId}/submissions/recent
 
 ## 7. 后端知识训练接口
 
-知识训练接口读取 `knowledge_card` 表，只返回 `enabled = true` 的卡片。分类固定为 `JAVA/JVM/SPRING/MYSQL/REDIS`，前端展示为 Java / JVM / Spring / MySQL / Redis；Java 基础、集合、并发等细分只通过 `tags` 展示。
+知识训练接口读取 `knowledge_card` 表，只返回 `enabled = true` 的卡片。分类固定为 `JAVA/JVM/SPRING/MYSQL/REDIS/AI`，前端展示为 Java / JVM / Spring / MySQL / Redis / AI；Java 基础、集合、并发、AI 工程等细分通过 `tags` 和前端知识树组织展示。
 
 ### 7.1 获取知识分类
 
@@ -932,7 +932,7 @@ GET /api/users/{userId}/knowledge/cards/{cardId}/self-tests/recent?limit=5
 
 ### 9.3 知识训练页面当前状态
 
-当前 `/knowledge` 页面为前端 V1 真实数据接入：页面优先调用后端知识接口读取 `knowledge_card` 表；如果后端未启动或接口失败，则回退到 3 条本地示例数据，并在页面顶部显示浅提示。它展示以下模块：
+当前 `/knowledge` 页面为前端 V1 真实数据接入：页面优先调用后端知识接口读取 `knowledge_card` 表；如果后端未启动或接口失败，则回退到前端本地示例数据，并在页面顶部显示浅提示。它展示以下模块：
 
 - 搜索框
 - 难度筛选：全部 / 简单 / 中等 / 困难
@@ -945,7 +945,7 @@ GET /api/users/{userId}/knowledge/cards/{cardId}/self-tests/recent?limit=5
 
 本地自测评分仍在前端根据 `keyPoints` / `answerKeywords` 简单计算；后端负责保存自测记录、更新 `user_knowledge_card_mastery`，低分自测会写入 `user_weakness_event` 作为学习趋势来源。顶部“标记已掌握”仍是页面内轻量状态，不作为 durable mastery 的唯一来源。
 
-首批真实数据由 `data/knowledge_cards.sql` 提供 15 张结构化知识卡，分类配比为 Java 4、JVM 2、Spring 3、MySQL 3、Redis 3。内容参考小林 coding 和 JavaGuide 的公开面试知识目录做选题覆盖，不复制原文。`/knowledge` 页面本身不是 RAG 查询入口；这些知识卡会被 RAG V1 索引为 Agent 诊断和训练计划的内部证据来源。
+真实数据由 `data/knowledge_cards.sql` 提供 120 张结构化知识卡，侧边栏 24 个最终专题每个至少 5 张。内容参考小林 coding 和 JavaGuide 的公开面试知识目录做选题覆盖后重新整理，AI 工程内容按本项目 Agent/RAG 设计原创组织，不复制原文。`/knowledge` 页面本身不是 RAG 查询入口；这些知识卡会被 RAG V1 索引为 Agent 诊断和训练计划的内部证据来源。
 
 ### 9.4 Dashboard 联调排查
 

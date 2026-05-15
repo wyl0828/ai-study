@@ -14,7 +14,14 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://127.0.0.1:4000](http://127.0.0.1:4000) with your browser to see the result.
+
+This project uses port `4000` by default because Windows may reserve `3000` or `3001`. If someone changes the script back and Next.js fails with `EACCES: permission denied`, check reserved ports:
+
+```powershell
+netsh interface ipv4 show excludedportrange protocol=tcp
+netsh interface ipv6 show excludedportrange protocol=tcp
+```
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

@@ -18,6 +18,7 @@ import DifficultyBadge from "./DifficultyBadge";
 import ProblemHintPanel from "./ProblemHintPanel";
 import ProblemNavigator from "./ProblemNavigator";
 import ProblemSolutionPanel from "./ProblemSolutionPanel";
+import ProblemExampleVisual from "./ProblemExampleVisual";
 
 interface ProblemDescriptionProps {
   problem: ProblemDetail;
@@ -156,6 +157,7 @@ function ProblemStatement({
                 </span>
                 {example.output}
               </div>
+              {example.visual && <ProblemExampleVisual visual={example.visual} />}
             </div>
           ))}
         </div>

@@ -38,6 +38,7 @@ const categoryStyle: Record<KnowledgeTopic["category"], string> = {
   Redis: "bg-rose-50 text-rose-700 border-rose-100",
   Spring: "bg-emerald-50 text-emerald-700 border-emerald-100",
   JVM: "bg-slate-50 text-slate-700 border-slate-200",
+  AI: "bg-cyan-50 text-cyan-700 border-cyan-100",
 };
 
 export default function KnowledgeCard({
@@ -268,12 +269,18 @@ export default function KnowledgeCard({
                     核心记忆要点
                   </div>
                   <div className="space-y-2">
-                    {topic.keyPoints.map((point) => (
-                      <div key={point} className="flex gap-2 text-sm text-on-surface-variant">
-                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                        <span>{point}</span>
-                      </div>
-                    ))}
+                    {topic.keyPoints.length > 0 ? (
+                      topic.keyPoints.map((point) => (
+                        <div key={point} className="flex gap-2 text-sm text-on-surface-variant">
+                          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                          <span>{point}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-on-surface-variant">
+                        暂无核心记忆点，建议先围绕题目整理定义、机制、场景和风险。
+                      </p>
+                    )}
                   </div>
                   {topic.sourceName && (
                     <div className="mt-4 border-t border-outline-variant/20 pt-3 text-xs text-on-surface-variant">
@@ -302,12 +309,18 @@ export default function KnowledgeCard({
                     </h3>
                   </div>
                   <ul className="space-y-2">
-                    {topic.followUpQuestions.map((question) => (
-                      <li key={question} className="flex gap-2 text-sm text-on-surface-variant">
-                        <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary/70" />
-                        <span>{question}</span>
+                    {topic.followUpQuestions.length > 0 ? (
+                      topic.followUpQuestions.map((question) => (
+                        <li key={question} className="flex gap-2 text-sm text-on-surface-variant">
+                          <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary/70" />
+                          <span>{question}</span>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="text-sm text-on-surface-variant">
+                        暂无追问，建议从机制、边界和项目落地三个方向继续追问自己。
                       </li>
-                    ))}
+                    )}
                   </ul>
                 </section>
 

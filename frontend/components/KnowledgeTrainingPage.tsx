@@ -26,7 +26,7 @@ type KnowledgeSelection = SharedKnowledgeSelection;
 
 type TopicTrainingStatus = "未练" | "已掌握" | "需复习";
 
-const categoryLabels: KnowledgeCategory[] = ["Java", "MySQL", "Redis", "Spring", "JVM"];
+const categoryLabels: KnowledgeCategory[] = ["Java", "MySQL", "Redis", "Spring", "JVM", "AI"];
 const DEMO_USER_ID = 1;
 
 function isKnowledgeCategory(value: string): value is KnowledgeCategory {
@@ -90,7 +90,11 @@ export default function KnowledgeTrainingPage() {
       if (!targetTopic) return;
       const inferred = inferKnowledgeSelection(targetTopic);
       if (inferred) {
-        setSelection(inferred);
+        setSelection({
+          ...inferred,
+          cardId: targetTopic.id,
+          cardTitle: targetTopic.title,
+        });
       }
     };
 
@@ -208,9 +212,31 @@ export default function KnowledgeTrainingPage() {
     setRecentScores((current) => ({ ...current, [id]: score }));
   }, []);
 
+  const loadTopicDetail = useCallback((topicId: number) => {
+    knowledgeApi
+      .detail(topicId)
+      .then((response) => {
+        const detailTopic = toKnowledgeTopic(response.data);
+        setTopics((current) =>
+          current.map((item) => (item.id === detailTopic.id ? detailTopic : item))
+        );
+        setDetailIds((current) => {
+          const next = new Set(current);
+          next.add(topicId);
+          return next;
+        });
+      })
+      .catch((err) => {
+        setNotice(formatApiError(err, "knowledge"));
+      });
+  }, []);
+
   const selectOutlineItem = (nextSelection: KnowledgeSelection) => {
     setSelection(nextSelection);
-    setExpandedId(null);
+    setExpandedId(nextSelection.cardId ?? null);
+    if (nextSelection.cardId && !detailIds.has(nextSelection.cardId)) {
+      loadTopicDetail(nextSelection.cardId);
+    }
   };
 
   const showAllKnowledge = () => {
@@ -228,22 +254,7 @@ export default function KnowledgeTrainingPage() {
       return;
     }
 
-    knowledgeApi
-      .detail(topic.id)
-      .then((response) => {
-        const detailTopic = toKnowledgeTopic(response.data);
-        setTopics((current) =>
-          current.map((item) => (item.id === detailTopic.id ? detailTopic : item))
-        );
-        setDetailIds((current) => {
-          const next = new Set(current);
-          next.add(topic.id);
-          return next;
-        });
-      })
-      .catch((err) => {
-        setNotice(formatApiError(err, "knowledge"));
-      });
+    loadTopicDetail(topic.id);
   };
 
   return (
