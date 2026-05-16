@@ -222,6 +222,8 @@ export interface KnowledgeCardListItem {
   label: string;
   title: string;
   question: string;
+  answer?: string | null;
+  followUp?: string | null;
   difficulty: string;
   keyPoints: string[];
   tags: string[];

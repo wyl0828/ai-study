@@ -6,307 +6,227 @@ WHERE source_name IN ('小林 coding', 'JavaGuide', '小林 coding, JavaGuide', 
 INSERT INTO knowledge_card
 (category, title, question, answer, follow_up, key_points, difficulty, tags, source_name, source_url, enabled, sort_order, created_at, updated_at)
 VALUES
-('JAVA', '封装、继承、多态的面试表达', '请结合后端面试场景解释：封装、继承、多态的面试表达？', '封装控制对象状态访问，继承表达稳定 is-a，多态让调用方依赖抽象而不是具体类。
+('JAVA', '什么是封装', '什么是封装？', '封装是面向对象的三大特性之一，它指的是把对象的属性和行为封装到一个类中，并隐藏内部实现细节，只对外暴露必要的方法。
 
-具体展开时，先讲清楚核心机制：封装不是简单写 getter/setter，而是把状态修改规则放在对象内部。 继承适合父子关系稳定的场景，多态适合扩展不同实现而不改调用方。
+但我认为封装的重点不只是把字段设置成 private，然后生成 getter/setter。更核心的是：对象内部的状态应该由对象自己维护，外部代码不能随意修改对象的关键状态。
 
-再补充使用边界和常见问题：容易出问题的地方是滥用继承、父类变动牵连子类，以及实体类只有字段没有行为。 回答时要用业务扩展示例说明为什么组合和接口常比深继承更稳。
+比如订单对象里有一个订单状态，如果直接提供 setStatus()，外部就可能随便把“已支付”改回“待支付”，这样状态流转规则就会散落在 Controller、Service 或定时任务里，后续出现数据异常会很难排查。', '为什么不建议给所有字段都生成 public setter？
+订单状态流转这类业务规则适合放在哪里？
+贫血模型和充血模型分别适合什么项目复杂度？', '封装是把对象的属性和行为组织到一个类中。
+封装会隐藏内部实现细节，只对外暴露必要方法。
+private 字段和 getter/setter 只是语法手段，不等于完整封装。
+对象内部状态应该由对象自己维护，外部代码不能随意修改关键状态。
+直接暴露 setStatus 会让状态流转规则散落到 Controller、Service 或定时任务里。', 'EASY', 'Java 核心,OOP,封装', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 10, NOW(), NOW()),
+('JAVA', '接口和抽象类如何取舍', '接口和抽象类怎么取舍？', '接口定义能力契约，抽象类沉淀公共状态和模板步骤。
 
-如果面试官继续追问“什么场景下你会放弃继承改用组合？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
+如果多个实现没有稳定父类关系，优先用接口隔离能力。 如果子类共享字段、构造逻辑或固定流程，抽象类更适合承载复用。
 
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '什么场景下你会放弃继承改用组合？
-多态和接口回调在业务扩展里有什么关系？
-贫血模型和充血模型分别适合什么项目复杂度？', '封装控制对象状态访问，继承表达稳定 is-a，多态让调用方依赖抽象而不是具体类。
-封装不是简单写 getter/setter，而是把状态修改规则放在对象内部。
-继承适合父子关系稳定的场景，多态适合扩展不同实现而不改调用方。
-容易踩坑的是滥用继承、父类变动牵连子类，以及实体类只有字段没有行为。
-面试表达要用业务扩展示例说明为什么组合和接口常比深继承更稳。', 'EASY', 'Java 核心,OOP,封装,继承,多态', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 10, NOW(), NOW()),
-('JAVA', '接口和抽象类如何取舍', '请结合后端面试场景解释：接口和抽象类如何取舍？', '接口定义能力契约，抽象类沉淀公共状态和模板步骤。
-
-具体展开时，先讲清楚核心机制：如果多个实现没有稳定父类关系，优先用接口隔离能力。 如果子类共享字段、构造逻辑或固定流程，抽象类更适合承载复用。
-
-再补充使用边界和常见问题：容易出问题的地方是为了复用几行代码建立脆弱继承层级。 Java 8 以后接口有 default 方法，但它不应该替代清晰的类层次设计。
-
-如果面试官继续追问“一个支付渠道扩展场景你会用接口还是抽象类？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '一个支付渠道扩展场景你会用接口还是抽象类？
+容易踩坑的是为了复用几行代码建立脆弱继承层级。 Java 8 以后接口有 default 方法，但它不应该替代清晰的类层次设计。', '一个支付渠道扩展场景你会用接口还是抽象类？
 接口 default 方法过多会带来什么问题？
 抽象类的构造方法和状态对测试有什么影响？', '接口定义能力契约，抽象类沉淀公共状态和模板步骤。
 如果多个实现没有稳定父类关系，优先用接口隔离能力。
 如果子类共享字段、构造逻辑或固定流程，抽象类更适合承载复用。
 容易踩坑的是为了复用几行代码建立脆弱继承层级。
 Java 8 以后接口有 default 方法，但它不应该替代清晰的类层次设计。', 'EASY', 'Java 核心,OOP,封装,继承,多态', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 11, NOW(), NOW()),
-('JAVA', '重载与重写的区别', '请结合后端面试场景解释：重载与重写的区别？', '重载是同一类中方法签名不同的编译期选择，重写是子类覆盖父类方法的运行期分派。
+('JAVA', '重载与重写的区别', '重载和重写有什么区别？', '重载是同一类中方法签名不同的编译期选择，重写是子类覆盖父类方法的运行期分派。
 
-具体展开时，先讲清楚核心机制：重载看参数列表，不看返回值；重写要求方法签名兼容并遵守访问权限和异常约束。 多态真正依赖的是重写，父类引用调用时会按实际对象类型分派。
+重载看参数列表，不看返回值；重写要求方法签名兼容并遵守访问权限和异常约束。 多态真正依赖的是重写，父类引用调用时会按实际对象类型分派。
 
-再补充使用边界和常见问题：容易出问题的地方是把参数类型自动转换导致的重载选择误判成重写。 面试时要区分编译期绑定和运行期动态绑定两个层次。
-
-如果面试官继续追问“为什么只改返回值不能构成重载？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '为什么只改返回值不能构成重载？
+容易踩坑的是把参数类型自动转换导致的重载选择误判成重写。 面试时要区分编译期绑定和运行期动态绑定两个层次。', '为什么只改返回值不能构成重载？
 父类引用调用子类对象时为什么会执行子类重写方法？
 private、static、final 方法能不能被重写？', '重载是同一类中方法签名不同的编译期选择，重写是子类覆盖父类方法的运行期分派。
 重载看参数列表，不看返回值；重写要求方法签名兼容并遵守访问权限和异常约束。
 多态真正依赖的是重写，父类引用调用时会按实际对象类型分派。
 容易踩坑的是把参数类型自动转换导致的重载选择误判成重写。
 面试时要区分编译期绑定和运行期动态绑定两个层次。', 'EASY', 'Java 核心,OOP,封装,继承,多态', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 12, NOW(), NOW()),
-('JAVA', 'Java 对象创建过程', '请结合后端面试场景解释：Java 对象创建过程？', 'Java 对象创建通常经历类加载检查、分配内存、零值初始化、对象头设置和构造方法执行。
+('JAVA', 'Java 对象创建过程', 'Java 对象创建过程是什么？', 'Java 对象创建通常经历类加载检查、分配内存、零值初始化、对象头设置和构造方法执行。
 
-具体展开时，先讲清楚核心机制：分配内存可能使用指针碰撞或空闲列表，具体取决于堆是否规整。 构造方法执行前对象字段已经有默认零值，随后才按代码初始化。
+分配内存可能使用指针碰撞或空闲列表，具体取决于堆是否规整。 构造方法执行前对象字段已经有默认零值，随后才按代码初始化。
 
-再补充使用边界和常见问题：容易出问题的地方是把 new 只理解成调用构造器，忽略类加载和内存分配阶段。 并发分配会通过 TLAB 或 CAS 保证线程安全。
-
-如果面试官继续追问“对象头里通常包含哪些信息？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到排查场景，我会结合 GC 日志、对象分配、类加载边界、线程栈和内存区域表现来解释，而不是只背 JVM 名词。', '对象头里通常包含哪些信息？
+容易踩坑的是把 new 只理解成调用构造器，忽略类加载和内存分配阶段。 并发分配会通过 TLAB 或 CAS 保证线程安全。', '对象头里通常包含哪些信息？
 为什么构造方法执行前字段已经有默认值？
 TLAB 解决对象分配里的什么问题？', 'Java 对象创建通常经历类加载检查、分配内存、零值初始化、对象头设置和构造方法执行。
 分配内存可能使用指针碰撞或空闲列表，具体取决于堆是否规整。
 构造方法执行前对象字段已经有默认零值，随后才按代码初始化。
 容易踩坑的是把 new 只理解成调用构造器，忽略类加载和内存分配阶段。
 并发分配会通过 TLAB 或 CAS 保证线程安全。', 'EASY', 'Java 核心,OOP,封装,继承,多态', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 13, NOW(), NOW()),
-('JAVA', '组合优于继承的原因', '请结合后端面试场景解释：组合优于继承的原因？', '组合优于继承的核心原因是降低父类变化对子类的连锁影响。
+('JAVA', '组合优于继承的原因', '为什么说组合优于继承？', '组合优于继承的核心原因是降低父类变化对子类的连锁影响。
 
-具体展开时，先讲清楚核心机制：继承会把父类实现细节暴露给子类，组合只依赖成员对象的公开能力。 组合可以在运行期替换策略，继承通常在编译期固定层级关系。
+继承会把父类实现细节暴露给子类，组合只依赖成员对象的公开能力。 组合可以在运行期替换策略，继承通常在编译期固定层级关系。
 
-再补充使用边界和常见问题：容易出问题的地方是为了复用代码而继承，最后产生脆弱基类问题。 业务策略、通知渠道、支付方式这类可替换能力更适合组合。
-
-如果面试官继续追问“策略模式为什么通常用组合表达？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '策略模式为什么通常用组合表达？
+容易踩坑的是为了复用代码而继承，最后产生脆弱基类问题。 业务策略、通知渠道、支付方式这类可替换能力更适合组合。', '策略模式为什么通常用组合表达？
 继承层级过深会怎样影响测试和维护？
 什么时候继承仍然是合理选择？', '组合优于继承的核心原因是降低父类变化对子类的连锁影响。
 继承会把父类实现细节暴露给子类，组合只依赖成员对象的公开能力。
 组合可以在运行期替换策略，继承通常在编译期固定层级关系。
 容易踩坑的是为了复用代码而继承，最后产生脆弱基类问题。
 业务策略、通知渠道、支付方式这类可替换能力更适合组合。', 'EASY', 'Java 核心,OOP,封装,继承,多态', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 14, NOW(), NOW()),
-('JAVA', '基本类型和包装类型区别', '请结合后端面试场景解释：基本类型和包装类型区别？', '基本类型直接表示值，包装类型是对象，能为 null 并参与泛型和集合。
+('JAVA', '基本类型和包装类型区别', '基本类型和包装类型有什么区别？', '基本类型直接表示值，包装类型是对象，能为 null 并参与泛型和集合。
 
-具体展开时，先讲清楚核心机制：集合和泛型不能直接使用基本类型，所以会发生自动装箱和拆箱。 包装类型比较要注意 equals，不能随意用 == 判断数值相等。
+集合和泛型不能直接使用基本类型，所以会发生自动装箱和拆箱。 包装类型比较要注意 equals，不能随意用 == 判断数值相等。
 
-再补充使用边界和常见问题：容易出问题的地方是包装类型为 null 时自动拆箱触发 NullPointerException。 性能敏感场景要关注装箱对象创建和缓存范围。
-
-如果面试官继续追问“Integer 的缓存范围默认是多少？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'Integer 的缓存范围默认是多少？
+容易踩坑的是包装类型为 null 时自动拆箱触发 NullPointerException。 性能敏感场景要关注装箱对象创建和缓存范围。', 'Integer 的缓存范围默认是多少？
 为什么 Long 包装类型用 == 比较会出问题？
 接口 DTO 字段为什么常用包装类型而不是基本类型？', '基本类型直接表示值，包装类型是对象，能为 null 并参与泛型和集合。
 集合和泛型不能直接使用基本类型，所以会发生自动装箱和拆箱。
 包装类型比较要注意 equals，不能随意用 == 判断数值相等。
 容易踩坑的是包装类型为 null 时自动拆箱触发 NullPointerException。
 性能敏感场景要关注装箱对象创建和缓存范围。', 'EASY', 'Java 核心,数据类型,包装类型,String', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 20, NOW(), NOW()),
-('JAVA', '自动装箱与拆箱风险', '请结合后端面试场景解释：自动装箱与拆箱风险？', '自动装箱把基本类型转包装对象，自动拆箱把包装对象转基本类型。
+('JAVA', '自动装箱与拆箱风险', '自动装箱与拆箱风险是什么？', '自动装箱把基本类型转包装对象，自动拆箱把包装对象转基本类型。
 
-具体展开时，先讲清楚核心机制：拆箱本质会调用 xxxValue，包装对象为 null 时会直接空指针。 循环、集合计算和三目表达式里可能隐式发生装箱拆箱。
+拆箱本质会调用 xxxValue，包装对象为 null 时会直接空指针。 循环、集合计算和三目表达式里可能隐式发生装箱拆箱。
 
-再补充使用边界和常见问题：容易出问题的地方是以为语法自动转换没有成本也没有空指针风险。 生产代码对包装类型做计算前应先判空或给默认值。
-
-如果面试官继续追问“三目表达式里包装类型为什么可能触发拆箱？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '三目表达式里包装类型为什么可能触发拆箱？
+容易踩坑的是以为语法自动转换没有成本也没有空指针风险。 生产代码对包装类型做计算前应先判空或给默认值。', '三目表达式里包装类型为什么可能触发拆箱？
 装箱对高频循环有什么性能影响？
 接口返回字段什么时候不该使用基本类型？', '自动装箱把基本类型转包装对象，自动拆箱把包装对象转基本类型。
 拆箱本质会调用 xxxValue，包装对象为 null 时会直接空指针。
 循环、集合计算和三目表达式里可能隐式发生装箱拆箱。
 容易踩坑的是以为语法自动转换没有成本也没有空指针风险。
 生产代码对包装类型做计算前应先判空或给默认值。', 'EASY', 'Java 核心,数据类型,包装类型,String', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 21, NOW(), NOW()),
-('JAVA', 'String 为什么不可变', '请结合后端面试场景解释：String 为什么不可变？', 'String 不可变是指字符串内容创建后不能被修改，修改操作会产生新对象。
+('JAVA', 'String 为什么不可变', 'String 为什么不可变？', 'String 不可变是指字符串内容创建后不能被修改，修改操作会产生新对象。
 
-具体展开时，先讲清楚核心机制：不可变支持常量池复用、hash 缓存、线程共享和安全地作为 Map key。 JDK 9 以后底层从 char[] 优化为 byte[] 加编码标记，但不可变语义不变。
+不可变支持常量池复用、hash 缓存、线程共享和安全地作为 Map key。 JDK 9 以后底层从 char[] 优化为 byte[] 加编码标记，但不可变语义不变。
 
-再补充使用边界和常见问题：容易出问题的地方是在循环中用 + 拼接大量字符串导致临时对象过多。 需要频繁拼接时应使用 StringBuilder，跨线程共享拼接再考虑同步边界。
-
-如果面试官继续追问“String 作为 HashMap key 为什么比较安全？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'String 作为 HashMap key 为什么比较安全？
+容易踩坑的是在循环中用 + 拼接大量字符串导致临时对象过多。 需要频繁拼接时应使用 StringBuilder，跨线程共享拼接再考虑同步边界。', 'String 作为 HashMap key 为什么比较安全？
 StringBuilder 和 String 的拼接成本差在哪里？
 反射能改 String 内容时，为什么仍说 String 语义不可变？', 'String 不可变是指字符串内容创建后不能被修改，修改操作会产生新对象。
 不可变支持常量池复用、hash 缓存、线程共享和安全地作为 Map key。
 JDK 9 以后底层从 char[] 优化为 byte[] 加编码标记，但不可变语义不变。
 容易踩坑的是在循环中用 + 拼接大量字符串导致临时对象过多。
 需要频繁拼接时应使用 StringBuilder，跨线程共享拼接再考虑同步边界。', 'EASY', 'Java 核心,数据类型,包装类型,String', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 22, NOW(), NOW()),
-('JAVA', 'StringBuilder 和 StringBuffer 区别', '请结合后端面试场景解释：StringBuilder 和 StringBuffer 区别？', 'StringBuilder 非线程安全但性能更好，StringBuffer 方法带同步开销但线程安全。
+('JAVA', 'StringBuilder 和 StringBuffer 区别', 'StringBuilder 和 StringBuffer 有什么区别？', 'StringBuilder 非线程安全但性能更好，StringBuffer 方法带同步开销但线程安全。
 
-具体展开时，先讲清楚核心机制：两者都维护可变字符序列，适合多次拼接减少中间 String 对象。 单线程局部变量拼接优先 StringBuilder，多线程共享才考虑同步保护。
+两者都维护可变字符序列，适合多次拼接减少中间 String 对象。 单线程局部变量拼接优先 StringBuilder，多线程共享才考虑同步保护。
 
-再补充使用边界和常见问题：容易出问题的地方是为了线程安全盲目使用 StringBuffer，却没有共享场景。 实际项目更常通过局部变量隔离避免共享，而不是依赖 StringBuffer。
-
-如果面试官继续追问“为什么局部 StringBuilder 通常不需要线程安全？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '为什么局部 StringBuilder 通常不需要线程安全？
+容易踩坑的是为了线程安全盲目使用 StringBuffer，却没有共享场景。 实际项目更常通过局部变量隔离避免共享，而不是依赖 StringBuffer。', '为什么局部 StringBuilder 通常不需要线程安全？
 StringBuffer 的 synchronized 会带来什么开销？
 编译器什么时候会自动把 + 优化成 StringBuilder？', 'StringBuilder 非线程安全但性能更好，StringBuffer 方法带同步开销但线程安全。
 两者都维护可变字符序列，适合多次拼接减少中间 String 对象。
 单线程局部变量拼接优先 StringBuilder，多线程共享才考虑同步保护。
 容易踩坑的是为了线程安全盲目使用 StringBuffer，却没有共享场景。
 实际项目更常通过局部变量隔离避免共享，而不是依赖 StringBuffer。', 'EASY', 'Java 核心,数据类型,包装类型,String', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 23, NOW(), NOW()),
-('JAVA', 'BigDecimal 为什么适合金额计算', '请结合后端面试场景解释：BigDecimal 为什么适合金额计算？', 'BigDecimal 用十进制精确表示和运算，适合金额这类不能接受二进制浮点误差的场景。
+('JAVA', 'BigDecimal 为什么适合金额计算', 'BigDecimal 为什么适合金额计算？', 'BigDecimal 用十进制精确表示和运算，适合金额这类不能接受二进制浮点误差的场景。
 
-具体展开时，先讲清楚核心机制：构造 BigDecimal 推荐使用字符串或 valueOf，避免直接传 double 误差。 除法和保留小数必须显式指定 scale 和 RoundingMode。
+构造 BigDecimal 推荐使用字符串或 valueOf，避免直接传 double 误差。 除法和保留小数必须显式指定 scale 和 RoundingMode。
 
-再补充使用边界和常见问题：容易出问题的地方是用 equals 比较不同 scale 的数值，例如 1.0 和 1.00。 金额字段还要统一数据库精度、接口格式和舍入规则。
-
-如果面试官继续追问“为什么 new BigDecimal(0.1) 不推荐？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '为什么 new BigDecimal(0.1) 不推荐？
+容易踩坑的是用 equals 比较不同 scale 的数值，例如 1.0 和 1.00。 金额字段还要统一数据库精度、接口格式和舍入规则。', '为什么 new BigDecimal(0.1) 不推荐？
 BigDecimal 的 equals 和 compareTo 有什么差别？
 金额除法不指定舍入模式会发生什么？', 'BigDecimal 用十进制精确表示和运算，适合金额这类不能接受二进制浮点误差的场景。
 构造 BigDecimal 推荐使用字符串或 valueOf，避免直接传 double 误差。
 除法和保留小数必须显式指定 scale 和 RoundingMode。
 容易踩坑的是用 equals 比较不同 scale 的数值，例如 1.0 和 1.00。
 金额字段还要统一数据库精度、接口格式和舍入规则。', 'EASY', 'Java 核心,数据类型,包装类型,String', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 24, NOW(), NOW()),
-('JAVA', 'Checked Exception 和 RuntimeException 区别', '请结合后端面试场景解释：Checked Exception 和 RuntimeException 区别？', 'Checked Exception 编译期要求处理，RuntimeException 通常表示业务不可继续或编程错误。
+('JAVA', 'Checked Exception 和 RuntimeException 区别', 'Checked Exception 和 RuntimeException 有什么区别？', 'Checked Exception 编译期要求处理，RuntimeException 通常表示业务不可继续或编程错误。
 
-具体展开时，先讲清楚核心机制：Checked Exception 适合调用方有明确恢复动作的失败，例如文件不存在。 RuntimeException 常用于参数错误、状态错误和业务规则失败。
+Checked Exception 适合调用方有明确恢复动作的失败，例如文件不存在。 RuntimeException 常用于参数错误、状态错误和业务规则失败。
 
-再补充使用边界和常见问题：容易出问题的地方是把所有异常都吞掉或统一包装后丢失原始原因。 Spring 事务默认只对 RuntimeException 和 Error 回滚。
-
-如果面试官继续追问“为什么 Spring 默认不回滚 Checked Exception？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '为什么 Spring 默认不回滚 Checked Exception？
+容易踩坑的是把所有异常都吞掉或统一包装后丢失原始原因。 Spring 事务默认只对 RuntimeException 和 Error 回滚。', '为什么 Spring 默认不回滚 Checked Exception？
 业务异常更适合 Checked 还是 Runtime？
 异常包装时怎样保留原始 cause？', 'Checked Exception 编译期要求处理，RuntimeException 通常表示业务不可继续或编程错误。
 Checked Exception 适合调用方有明确恢复动作的失败，例如文件不存在。
 RuntimeException 常用于参数错误、状态错误和业务规则失败。
 容易踩坑的是把所有异常都吞掉或统一包装后丢失原始原因。
 Spring 事务默认只对 RuntimeException 和 Error 回滚。', 'MEDIUM', 'Java 核心,异常处理,RuntimeException,全局异常', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 30, NOW(), NOW()),
-('JAVA', 'try-catch-finally 执行顺序', '请结合后端面试场景解释：try-catch-finally 执行顺序？', 'try 先执行，出现异常后进入匹配 catch，finally 通常在方法退出前执行。
+('JAVA', 'try-catch-finally 执行顺序', 'try-catch-finally 执行顺序怎么理解？', 'try 先执行，出现异常后进入匹配 catch，finally 通常在方法退出前执行。
 
-具体展开时，先讲清楚核心机制：finally 里如果 return，会覆盖 try 或 catch 中的返回值。 资源释放更推荐 try-with-resources，避免 finally 关闭资源时再抛异常。
+finally 里如果 return，会覆盖 try 或 catch 中的返回值。 资源释放更推荐 try-with-resources，避免 finally 关闭资源时再抛异常。
 
-再补充使用边界和常见问题：容易出问题的地方是在 finally 中写复杂业务逻辑或吞掉异常。 面试时要特别说明 System.exit 等极端情况会绕过 finally。
-
-如果面试官继续追问“finally 中 return 为什么危险？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'finally 中 return 为什么危险？
+容易踩坑的是在 finally 中写复杂业务逻辑或吞掉异常。 面试时要特别说明 System.exit 等极端情况会绕过 finally。', 'finally 中 return 为什么危险？
 try-with-resources 的关闭顺序是什么？
 finally 中关闭资源失败应该怎么处理？', 'try 先执行，出现异常后进入匹配 catch，finally 通常在方法退出前执行。
 finally 里如果 return，会覆盖 try 或 catch 中的返回值。
 资源释放更推荐 try-with-resources，避免 finally 关闭资源时再抛异常。
 容易踩坑的是在 finally 中写复杂业务逻辑或吞掉异常。
 面试时要特别说明 System.exit 等极端情况会绕过 finally。', 'MEDIUM', 'Java 核心,异常处理,RuntimeException,全局异常', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 31, NOW(), NOW()),
-('JAVA', '业务异常如何设计', '请结合后端面试场景解释：业务异常如何设计？', '业务异常应携带稳定错误码、可展示信息和必要上下文，不应直接暴露底层异常细节。
+('JAVA', '业务异常如何设计', '业务异常如何设计？', '业务异常应携带稳定错误码、可展示信息和必要上下文，不应直接暴露底层异常细节。
 
-具体展开时，先讲清楚核心机制：错误码方便前端展示、日志检索和接口调用方处理不同失败类型。 异常应在 service 层按业务语义抛出，由全局异常处理转成统一响应。
+错误码方便前端展示、日志检索和接口调用方处理不同失败类型。 异常应在 service 层按业务语义抛出，由全局异常处理转成统一响应。
 
-再补充使用边界和常见问题：容易出问题的地方是所有失败都返回同一个错误码，导致排查和用户提示都模糊。 敏感信息、SQL、内部堆栈不应出现在用户可见 message 中。
-
-如果面试官继续追问“错误码应该按模块设计还是按 HTTP 状态码设计？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '错误码应该按模块设计还是按 HTTP 状态码设计？
+容易踩坑的是所有失败都返回同一个错误码，导致排查和用户提示都模糊。 敏感信息、SQL、内部堆栈不应出现在用户可见 message 中。', '错误码应该按模块设计还是按 HTTP 状态码设计？
 业务异常和参数校验异常怎么区分？
 全局异常处理里应该记录哪些上下文？', '业务异常应携带稳定错误码、可展示信息和必要上下文，不应直接暴露底层异常细节。
 错误码方便前端展示、日志检索和接口调用方处理不同失败类型。
 异常应在 service 层按业务语义抛出，由全局异常处理转成统一响应。
 容易踩坑的是所有失败都返回同一个错误码，导致排查和用户提示都模糊。
 敏感信息、SQL、内部堆栈不应出现在用户可见 message 中。', 'MEDIUM', 'Java 核心,异常处理,RuntimeException,全局异常', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 32, NOW(), NOW()),
-('JAVA', '异常被吞掉的排查思路', '请结合后端面试场景解释：异常被吞掉的排查思路？', '异常被吞通常表现为接口成功但数据不对、事务未回滚或日志缺少根因。
+('JAVA', '异常被吞掉的排查思路', '异常被吞掉的排查思路是什么？', '异常被吞通常表现为接口成功但数据不对、事务未回滚或日志缺少根因。
 
-具体展开时，先讲清楚核心机制：排查先看 catch 是否只打印不抛出，再看异步任务、AOP 和事务边界。 要沿调用链确认异常在哪一层被转换、覆盖或忽略。
+排查先看 catch 是否只打印不抛出，再看异步任务、AOP 和事务边界。 要沿调用链确认异常在哪一层被转换、覆盖或忽略。
 
-再补充使用边界和常见问题：容易出问题的地方是 catch 后返回默认值，让上游误以为流程成功。 修复时应保留日志上下文，并按业务语义继续抛出或返回明确失败。
-
-如果面试官继续追问“catch 后只 log 不 throw 会影响事务吗？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'catch 后只 log 不 throw 会影响事务吗？
+容易踩坑的是 catch 后返回默认值，让上游误以为流程成功。 修复时应保留日志上下文，并按业务语义继续抛出或返回明确失败。', 'catch 后只 log 不 throw 会影响事务吗？
 异步任务里的异常为什么容易丢？
 如何设计日志让异常链路可追踪？', '异常被吞通常表现为接口成功但数据不对、事务未回滚或日志缺少根因。
 排查先看 catch 是否只打印不抛出，再看异步任务、AOP 和事务边界。
 要沿调用链确认异常在哪一层被转换、覆盖或忽略。
 容易踩坑的是 catch 后返回默认值，让上游误以为流程成功。
 修复时应保留日志上下文，并按业务语义继续抛出或返回明确失败。', 'MEDIUM', 'Java 核心,异常处理,RuntimeException,全局异常', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 33, NOW(), NOW()),
-('JAVA', '全局异常处理的分层边界', '请结合后端面试场景解释：全局异常处理的分层边界？', '全局异常处理负责把异常转换成统一 HTTP 响应，不负责做业务决策。
+('JAVA', '全局异常处理的分层边界', '全局异常处理的分层边界是什么？', '全局异常处理负责把异常转换成统一 HTTP 响应，不负责做业务决策。
 
-具体展开时，先讲清楚核心机制：Controller 负责参数入口，Service 负责业务规则，异常处理器负责响应格式。 不同异常类型应映射到不同错误码和可读提示。
+Controller 负责参数入口，Service 负责业务规则，异常处理器负责响应格式。 不同异常类型应映射到不同错误码和可读提示。
 
-再补充使用边界和常见问题：容易出问题的地方是在全局异常处理里补偿业务状态或吞掉系统异常。 日志记录要包含请求路径、用户、错误码和 trace 信息。
-
-如果面试官继续追问“ControllerAdvice 适合处理哪些异常？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'ControllerAdvice 适合处理哪些异常？
+容易踩坑的是在全局异常处理里补偿业务状态或吞掉系统异常。 日志记录要包含请求路径、用户、错误码和 trace 信息。', 'ControllerAdvice 适合处理哪些异常？
 参数校验异常和业务异常响应有什么区别？
 全局异常处理怎样避免泄露内部堆栈？', '全局异常处理负责把异常转换成统一 HTTP 响应，不负责做业务决策。
 Controller 负责参数入口，Service 负责业务规则，异常处理器负责响应格式。
 不同异常类型应映射到不同错误码和可读提示。
 容易踩坑的是在全局异常处理里补偿业务状态或吞掉系统异常。
 日志记录要包含请求路径、用户、错误码和 trace 信息。', 'MEDIUM', 'Java 核心,异常处理,RuntimeException,全局异常', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 34, NOW(), NOW()),
-('JAVA', '反射的使用场景和代价', '请结合后端面试场景解释：反射的使用场景和代价？', '反射允许运行期读取类、字段、方法和注解信息，常用于框架装配和序列化。
+('JAVA', '反射的使用场景和代价', '反射的使用场景和代价是什么？', '反射允许运行期读取类、字段、方法和注解信息，常用于框架装配和序列化。
 
-具体展开时，先讲清楚核心机制：Spring 依赖注入、注解扫描、ORM 映射和测试工具都会用到反射。 反射绕过编译期检查，可读性和性能都弱于直接调用。
+Spring 依赖注入、注解扫描、ORM 映射和测试工具都会用到反射。 反射绕过编译期检查，可读性和性能都弱于直接调用。
 
-再补充使用边界和常见问题：容易出问题的地方是暴力访问私有成员破坏封装，或缺少参数类型校验。 高频路径应缓存反射元数据，避免重复查找 Method 和 Field。
-
-如果面试官继续追问“Spring 为什么大量使用反射但业务代码不建议滥用？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'Spring 为什么大量使用反射但业务代码不建议滥用？
+容易踩坑的是暴力访问私有成员破坏封装，或缺少参数类型校验。 高频路径应缓存反射元数据，避免重复查找 Method 和 Field。', 'Spring 为什么大量使用反射但业务代码不建议滥用？
 反射调用为什么比直接调用慢？
 setAccessible(true) 有什么风险？', '反射允许运行期读取类、字段、方法和注解信息，常用于框架装配和序列化。
 Spring 依赖注入、注解扫描、ORM 映射和测试工具都会用到反射。
 反射绕过编译期检查，可读性和性能都弱于直接调用。
 容易踩坑的是暴力访问私有成员破坏封装，或缺少参数类型校验。
 高频路径应缓存反射元数据，避免重复查找 Method 和 Field。', 'MEDIUM', 'Java 核心,反射,泛型,注解', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 40, NOW(), NOW()),
-('JAVA', '泛型擦除是什么', '请结合后端面试场景解释：泛型擦除是什么？', '泛型擦除是指 Java 泛型主要在编译期生效，运行期多数类型参数会被擦成原始类型。
+('JAVA', '泛型擦除是什么', '泛型擦除是什么？', '泛型擦除是指 Java 泛型主要在编译期生效，运行期多数类型参数会被擦成原始类型。
 
-具体展开时，先讲清楚核心机制：编译器通过类型检查、强转和桥接方法维持泛型语义。 List<String> 和 List<Integer> 运行期通常都是 List 类型。
+编译器通过类型检查、强转和桥接方法维持泛型语义。 List<String> 和 List<Integer> 运行期通常都是 List 类型。
 
-再补充使用边界和常见问题：容易出问题的地方是运行期无法直接 new T 或判断 List<String> 的精确泛型。 需要保留泛型信息时常借助 TypeReference、方法签名或显式 Class 参数。
-
-如果面试官继续追问“为什么不能 new T()？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '为什么不能 new T()？
+容易踩坑的是运行期无法直接 new T 或判断 List<String> 的精确泛型。 需要保留泛型信息时常借助 TypeReference、方法签名或显式 Class 参数。', '为什么不能 new T()？
 桥接方法解决了什么问题？
 Jackson 等框架如何读取泛型类型？', '泛型擦除是指 Java 泛型主要在编译期生效，运行期多数类型参数会被擦成原始类型。
 编译器通过类型检查、强转和桥接方法维持泛型语义。
 List<String> 和 List<Integer> 运行期通常都是 List 类型。
 容易踩坑的是运行期无法直接 new T 或判断 List<String> 的精确泛型。
 需要保留泛型信息时常借助 TypeReference、方法签名或显式 Class 参数。', 'MEDIUM', 'Java 核心,反射,泛型,注解', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 41, NOW(), NOW()),
-('JAVA', 'Class 对象和类加载关系', '请结合后端面试场景解释：Class 对象和类加载关系？', 'Class 对象是 JVM 中类元数据的运行期入口，同一个类加载器下同名类对应一个 Class。
+('JAVA', 'Class 对象和类加载关系', 'Class 对象和类加载关系是什么？', 'Class 对象是 JVM 中类元数据的运行期入口，同一个类加载器下同名类对应一个 Class。
 
-具体展开时，先讲清楚核心机制：类加载器参与决定类型身份，不同加载器加载的同名类也不是同一类型。 通过 Class 可以读取构造器、方法、字段和注解。
+类加载器参与决定类型身份，不同加载器加载的同名类也不是同一类型。 通过 Class 可以读取构造器、方法、字段和注解。
 
-再补充使用边界和常见问题：容易出问题的地方是只按类名判断类型，忽略类加载器隔离。 框架扫描 Bean、创建代理和反射调用都依赖 Class 元数据。
-
-如果面试官继续追问“为什么同名类被不同类加载器加载后不能互相强转？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到排查场景，我会结合 GC 日志、对象分配、类加载边界、线程栈和内存区域表现来解释，而不是只背 JVM 名词。', '为什么同名类被不同类加载器加载后不能互相强转？
+容易踩坑的是只按类名判断类型，忽略类加载器隔离。 框架扫描 Bean、创建代理和反射调用都依赖 Class 元数据。', '为什么同名类被不同类加载器加载后不能互相强转？
 Class.forName 会不会触发类初始化？
 类加载器隔离在插件化或容器里有什么价值？', 'Class 对象是 JVM 中类元数据的运行期入口，同一个类加载器下同名类对应一个 Class。
 类加载器参与决定类型身份，不同加载器加载的同名类也不是同一类型。
 通过 Class 可以读取构造器、方法、字段和注解。
 容易踩坑的是只按类名判断类型，忽略类加载器隔离。
 框架扫描 Bean、创建代理和反射调用都依赖 Class 元数据。', 'MEDIUM', 'Java 核心,反射,泛型,注解', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 42, NOW(), NOW()),
-('JAVA', '注解如何配合反射工作', '请结合后端面试场景解释：注解如何配合反射工作？', '注解提供元数据，反射读取元数据，再由框架把元数据转换成运行期行为。
+('JAVA', '注解如何配合反射工作', '注解如何配合反射工作？', '注解提供元数据，反射读取元数据，再由框架把元数据转换成运行期行为。
 
-具体展开时，先讲清楚核心机制：Spring 读取 Controller、Service、Autowired 等注解完成路由和依赖注入。 只有保留策略为 RUNTIME 的注解才能在运行期通过反射读取。
+Spring 读取 Controller、Service、Autowired 等注解完成路由和依赖注入。 只有保留策略为 RUNTIME 的注解才能在运行期通过反射读取。
 
-再补充使用边界和常见问题：容易出问题的地方是自定义注解忘记设置 Retention 或 Target。 注解本身不执行逻辑，真正执行逻辑的是扫描和处理注解的框架代码。
-
-如果面试官继续追问“RetentionPolicy.CLASS 和 RUNTIME 有什么区别？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'RetentionPolicy.CLASS 和 RUNTIME 有什么区别？
+容易踩坑的是自定义注解忘记设置 Retention 或 Target。 注解本身不执行逻辑，真正执行逻辑的是扫描和处理注解的框架代码。', 'RetentionPolicy.CLASS 和 RUNTIME 有什么区别？
 自定义注解通常需要配合什么处理器？
 注解过多会给代码可读性带来什么问题？', '注解提供元数据，反射读取元数据，再由框架把元数据转换成运行期行为。
 Spring 读取 Controller、Service、Autowired 等注解完成路由和依赖注入。
 只有保留策略为 RUNTIME 的注解才能在运行期通过反射读取。
 容易踩坑的是自定义注解忘记设置 Retention 或 Target。
 注解本身不执行逻辑，真正执行逻辑的是扫描和处理注解的框架代码。', 'MEDIUM', 'Java 核心,反射,泛型,注解', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 43, NOW(), NOW()),
-('JAVA', '泛型通配符 extends 和 super 区别', '请结合后端面试场景解释：泛型通配符 extends 和 super 区别？', 'extends 表示读取某个上界类型，super 表示可以写入某个下界类型。
+('JAVA', '泛型通配符 extends 和 super 区别', '泛型通配符 extends 和 super 有什么区别？', 'extends 表示读取某个上界类型，super 表示可以写入某个下界类型。
 
-具体展开时，先讲清楚核心机制：PECS 口诀是 Producer Extends、Consumer Super。 List<? extends Number> 适合读取 Number，不能安全写入具体子类。
+PECS 口诀是 Producer Extends、Consumer Super。 List<? extends Number> 适合读取 Number，不能安全写入具体子类。
 
-再补充使用边界和常见问题：容易出问题的地方是以为 extends 更灵活，结果集合无法 add 元素。 API 设计时用通配符表达读写意图，比裸类型更安全。
-
-如果面试官继续追问“为什么 List<? extends Number> 不能 add Integer？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '为什么 List<? extends Number> 不能 add Integer？
+容易踩坑的是以为 extends 更灵活，结果集合无法 add 元素。 API 设计时用通配符表达读写意图，比裸类型更安全。', '为什么 List<? extends Number> 不能 add Integer？
 Collections.copy 为什么同时用了 extends 和 super？
 什么时候应该避免过度复杂的泛型声明？', 'extends 表示读取某个上界类型，super 表示可以写入某个下界类型。
 PECS 口诀是 Producer Extends、Consumer Super。
 List<? extends Number> 适合读取 Number，不能安全写入具体子类。
 容易踩坑的是以为 extends 更灵活，结果集合无法 add 元素。
 API 设计时用通配符表达读写意图，比裸类型更安全。', 'MEDIUM', 'Java 核心,反射,泛型,注解', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 44, NOW(), NOW()),
-('JAVA', 'ArrayList 和 LinkedList 的区别', '请结合后端面试场景解释：ArrayList 和 LinkedList 的区别？', 'ArrayList 和 LinkedList 可以先从底层结构说起：ArrayList 底层是动态数组，内存连续；LinkedList 底层是双向链表，节点在内存中不要求连续。
+('JAVA', 'ArrayList 和 LinkedList 的区别', 'ArrayList 和 LinkedList 有什么区别？', 'ArrayList 和 LinkedList 可以先从底层结构说起：ArrayList 底层是动态数组，内存连续；LinkedList 底层是双向链表，节点在内存中不要求连续。
 
 所以按下标查询时，ArrayList 可以通过寻址公式直接定位，时间复杂度是 O(1)；LinkedList 需要从头或尾遍历到目标节点，通常是 O(n)。但如果已经拿到了某个链表节点，LinkedList 在节点前后插入、删除只需要改前驱和后继指针。
 
@@ -318,15 +238,11 @@ ArrayList 按下标查询是 O(1)，LinkedList 按位置查询通常是 O(n)。
 LinkedList 只有在已定位节点或头尾操作时，插入删除才更接近 O(1)。
 不能笼统说 LinkedList 增删一定快，因为大多数场景还要先遍历查找位置。
 ArrayList 内存连续、缓存友好；LinkedList 每个节点要额外保存前后指针。', 'EASY', 'Java 核心,集合框架,List,ArrayList,LinkedList', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 50, NOW(), NOW()),
-('JAVA', 'ArrayList 扩容机制', '请结合后端面试场景解释：ArrayList 扩容机制？', 'ArrayList 底层是 Object 数组，扩容发生在新增元素容量不足时。
+('JAVA', 'ArrayList 扩容机制', 'ArrayList 扩容机制是什么？', 'ArrayList 底层是 Object 数组，扩容发生在新增元素容量不足时。JDK 1.8 的无参构造不会一开始就创建长度为 10 的数组，而是先使用空数组，第一次 add 时才扩到默认容量 10。
 
-具体展开时，先讲清楚核心机制：JDK 1.8 无参构造先是空数组，第一次 add 时默认扩到 10。 常规扩容后的容量约为旧容量的 1.5 倍。
+添加元素时会先判断 size + 1 是否超过当前数组长度。容量不够时会进入 grow 流程，新容量通常是旧容量的 1.5 倍，然后创建新数组，把旧数组元素拷贝过去，最后把新元素写到 size 对应的位置。
 
-再补充使用边界和常见问题：扩容会创建新数组并拷贝旧元素，因此频繁扩容有性能成本。 已知元素规模时应指定初始容量，降低扩容次数。
-
-如果面试官继续追问“new ArrayList(10) 后立刻 add 第一个元素会扩容吗？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'new ArrayList(10) 后立刻 add 第一个元素会扩容吗？
+所以这题不能只背“1.5 倍扩容”。真正要说清楚的是：扩容有数组拷贝成本，数据量越大拷贝越明显；如果业务里能预估集合规模，比如批量导入、分页聚合、一次性装载结果集，就应该指定初始容量，减少反复扩容。', 'new ArrayList(10) 后立刻 add 第一个元素会扩容吗？
 ArrayList 第一次 add 时默认容量是多少？
 为什么扩容会影响性能？
 如果一次要放 10 万条数据，你会怎么初始化 ArrayList？', 'ArrayList 底层是 Object 数组，扩容发生在新增元素容量不足时。
@@ -334,15 +250,11 @@ JDK 1.8 无参构造先是空数组，第一次 add 时默认扩到 10。
 常规扩容后的容量约为旧容量的 1.5 倍。
 扩容会创建新数组并拷贝旧元素，因此频繁扩容有性能成本。
 已知元素规模时应指定初始容量，降低扩容次数。', 'EASY', 'Java 核心,集合框架,List,ArrayList,LinkedList', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 51, NOW(), NOW()),
-('JAVA', 'ArrayList 删除元素的坑', '请结合后端面试场景解释：ArrayList 删除元素的坑？', 'ArrayList 删除中间元素会移动后续元素，时间复杂度通常是 O(n)。
+('JAVA', 'ArrayList 删除元素的坑', 'ArrayList 删除元素的坑怎么理解？', 'ArrayList 删除中间元素会移动后续元素，时间复杂度通常是 O(n)。
 
-具体展开时，先讲清楚核心机制：普通 for 正序删除可能因为元素左移而跳过数据。 for-each 中直接 list.remove 会触发 fail-fast。
+普通 for 正序删除可能因为元素左移而跳过数据。 for-each 中直接 list.remove 会触发 fail-fast。
 
-再补充使用边界和常见问题：Iterator.remove 会同步迭代器状态，是遍历删除的安全方式。 倒序删除或 removeIf 也能避免下标错位问题。
-
-如果面试官继续追问“为什么正序遍历删除 ArrayList 可能漏删？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '为什么正序遍历删除 ArrayList 可能漏删？
+Iterator.remove 会同步迭代器状态，是遍历删除的安全方式。 倒序删除或 removeIf 也能避免下标错位问题。', '为什么正序遍历删除 ArrayList 可能漏删？
 ConcurrentModificationException 是怎么触发的？
 Iterator.remove 和 list.remove 有什么区别？
 批量删除时 removeIf 有什么优势？', 'ArrayList 删除中间元素会移动后续元素，时间复杂度通常是 O(n)。
@@ -350,22 +262,18 @@ Iterator.remove 和 list.remove 有什么区别？
 for-each 中直接 list.remove 会触发 fail-fast。
 Iterator.remove 会同步迭代器状态，是遍历删除的安全方式。
 倒序删除或 removeIf 也能避免下标错位问题。', 'EASY', 'Java 核心,集合框架,List,ArrayList,LinkedList', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 52, NOW(), NOW()),
-('JAVA', 'CopyOnWriteArrayList 适用场景', '请结合后端面试场景解释：CopyOnWriteArrayList 适用场景？', 'CopyOnWriteArrayList 写入时复制新数组，读操作无需加锁。
+('JAVA', 'CopyOnWriteArrayList 适用场景', 'CopyOnWriteArrayList 适用场景是什么？', 'CopyOnWriteArrayList 写入时复制新数组，读操作无需加锁。
 
-具体展开时，先讲清楚核心机制：它适合读多写少、集合规模不大、读一致性要求相对宽松的场景。 迭代器读到的是创建时的快照，不会感知后续写入。
+它适合读多写少、集合规模不大、读一致性要求相对宽松的场景。 迭代器读到的是创建时的快照，不会感知后续写入。
 
-再补充使用边界和常见问题：容易出问题的地方是高频写入下大量复制数组导致性能和内存压力。 配置列表、监听器列表这类少写多读场景比较适合。
-
-如果面试官继续追问“CopyOnWriteArrayList 的迭代器为什么不会 fail-fast？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'CopyOnWriteArrayList 的迭代器为什么不会 fail-fast？
+容易踩坑的是高频写入下大量复制数组导致性能和内存压力。 配置列表、监听器列表这类少写多读场景比较适合。', 'CopyOnWriteArrayList 的迭代器为什么不会 fail-fast？
 写多场景使用它会有什么问题？
 它读到的数据是强实时的吗？', 'CopyOnWriteArrayList 写入时复制新数组，读操作无需加锁。
 它适合读多写少、集合规模不大、读一致性要求相对宽松的场景。
 迭代器读到的是创建时的快照，不会感知后续写入。
 容易踩坑的是高频写入下大量复制数组导致性能和内存压力。
 配置列表、监听器列表这类少写多读场景比较适合。', 'EASY', 'Java 核心,集合框架,List,ArrayList,LinkedList', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 53, NOW(), NOW()),
-('JAVA', 'List 遍历时修改为什么会失败', '请结合后端面试场景解释：List 遍历时修改为什么会失败？', 'List 遍历时修改失败，核心原因是集合的结构变化和迭代器看到的结构版本不一致。
+('JAVA', 'List 遍历时修改为什么会失败', 'List 遍历时修改为什么会失败？', 'List 遍历时修改失败，核心原因是集合的结构变化和迭代器看到的结构版本不一致。
 
 以 ArrayList 为例，集合内部有 modCount 记录结构修改次数，Iterator 创建时会保存 expectedModCount。遍历过程中如果直接调用 list.add 或 list.remove，modCount 变化了，但迭代器自己的 expectedModCount 没同步，下一次检查就会抛 ConcurrentModificationException。
 
@@ -377,13 +285,13 @@ ArrayList 用 modCount 记录结构修改次数。
 Iterator 会保存 expectedModCount，发现不一致就抛 ConcurrentModificationException。
 fail-fast 不是线程安全保证，单线程错误修改也会触发。
 安全做法包括 Iterator.remove、removeIf 或读多写少场景使用 CopyOnWriteArrayList。', 'EASY', 'Java 核心,集合框架,List,ArrayList,LinkedList', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 54, NOW(), NOW()),
-('JAVA', 'HashMap 在 JDK 1.8 中的底层结构', '请结合后端面试场景解释：HashMap 在 JDK 1.8 中的底层结构？', 'HashMap 可以先说它是基于哈希表实现的 Map。JDK 1.8 中底层主要由数组、链表和红黑树组成，数组负责定位桶，链表和红黑树负责处理哈希冲突。
+('JAVA', 'HashMap 在 JDK 1.8 中的底层结构', 'HashMap 在 JDK 1.8 中的底层结构是什么？', 'HashMap 可以先说它是基于哈希表实现的 Map。JDK 1.8 中底层主要由数组、链表和红黑树组成，数组负责定位桶，链表和红黑树负责处理哈希冲突。
 
 put 一个元素时，会先根据 key 的 hashCode 做扰动计算 hash，再通过 (n - 1) & hash 定位数组下标。桶为空就直接放节点；桶不为空就比较 key，相同则覆盖 value，不同则挂到链表或红黑树上。
 
 JDK 1.8 的关键变化是链表过长会树化，但不是长度到 8 就立刻转红黑树。需要链表长度达到 8，并且数组容量至少是 64；如果容量小于 64，会优先扩容。红黑树节点减少到一定数量后还会退化回链表，避免小数据量下维护树的成本。
 
-面试官常继续问 JDK 1.7 和 1.8 的差异：1.7 主要是数组加链表，扩容迁移时使用头插法；1.8 引入红黑树并改为尾插迁移，降低长链表查询退化和并发扩容下链表成环的风险。', 'HashMap 为什么要用数组加链表或红黑树？
+常见追问是 JDK 1.7 和 1.8 的差异：1.7 主要是数组加链表，扩容迁移时使用头插法；1.8 引入红黑树并改为尾插迁移，降低长链表查询退化和并发扩容下链表成环的风险。', 'HashMap 为什么要用数组加链表或红黑树？
 树化阈值为什么是链表长度达到 8 后还不一定立刻树化？
 数组容量小于 64 时为什么优先扩容？
 JDK 1.7 和 JDK 1.8 的 HashMap 底层结构有什么变化？
@@ -393,7 +301,7 @@ put 时通过 hash 扰动和 (n - 1) & hash 定位数组下标。
 树化需要链表长度达到 8 且数组容量至少 64。
 容量小于 64 时优先扩容，红黑树节点减少后会退化回链表。
 JDK 1.7 主要是数组加链表，JDK 1.8 增加红黑树并改进迁移方式。', 'MEDIUM', 'Java 核心,集合框架,Map,HashMap,ConcurrentHashMap', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 60, NOW(), NOW()),
-('JAVA', 'HashMap put 流程', '请结合后端面试场景解释：HashMap put 流程？', 'HashMap 的 put 流程可以按四步说：计算 hash、定位桶、处理冲突、必要时扩容或树化。
+('JAVA', 'HashMap put 流程', 'HashMap put 流程是什么？', 'HashMap 的 put 流程可以按四步说：计算 hash、定位桶、处理冲突、必要时扩容或树化。
 
 具体来说，先对 key 的 hashCode 做高低位扰动，然后用 (n - 1) & hash 算出数组下标。桶为空就新建节点放进去；桶不为空先判断桶头 key 是否相同，相同就覆盖 value；如果桶是红黑树，就走树节点插入；如果是链表，就遍历链表，找到相同 key 覆盖，找不到就追加新节点。
 
@@ -407,15 +315,11 @@ put 什么时候触发扩容？
 key 已存在时覆盖旧 value，不会新增节点。
 桶是链表就遍历链表，桶是红黑树就按树节点插入。
 链表达到树化条件或 size 超过阈值时，会触发树化判断或扩容。', 'MEDIUM', 'Java 核心,集合框架,Map,HashMap,ConcurrentHashMap', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 61, NOW(), NOW()),
-('JAVA', 'HashMap 扩容为什么是 2 的幂', '请结合后端面试场景解释：HashMap 扩容为什么是 2 的幂？', '容量为 2 的幂时，可以用 (n - 1) & hash 代替取模。
+('JAVA', 'HashMap 扩容为什么是 2 的幂', 'HashMap 扩容为什么是 2 的幂？', 'HashMap 容量设计成 2 的幂，是为了让下标计算和扩容迁移都更简单。正常定位桶时，可以用 (n - 1) & hash 代替 hash % n，也就是用位运算代替取模。
 
-具体展开时，先讲清楚核心机制：n - 1 的低位全为 1，有利于利用 hash 低位分布。 扩容为 2 倍后，节点只会留在原位置或移动到原位置加旧容量。
+这个条件成立的原因是：当 n 是 2 的幂时，n - 1 的二进制低位都是 1。例如 16 - 1 是 15，低 4 位全是 1，和 hash 做与运算后能保留 hash 的低位结果，得到 0 到 n - 1 之间的数组下标。
 
-再补充使用边界和常见问题：这种设计降低了扩容迁移时重新计算位置的成本。 只说位运算快不够，还要说明扩容迁移为什么简单。
-
-如果面试官继续追问“为什么 n 是 2 的幂时可以用位运算定位？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '为什么 n 是 2 的幂时可以用位运算定位？
+扩容时容量变成原来的 2 倍，节点也不需要重新完整取模。它只需要看 hash 新参与计算的那一位：这一位是 0，节点留在原位置；这一位是 1，节点移动到原位置加旧容量的位置。这样既降低重新计算位置的成本，也解释了为什么 HashMap 扩容迁移可以按原链表拆成两段。', '为什么 n 是 2 的幂时可以用位运算定位？
 扩容后节点为什么只会有两个去向？
 HashMap 如何保证传入初始容量也调整成 2 的幂？
 hash 扰动和 2 的幂容量有什么关系？', '容量为 2 的幂时，可以用 (n - 1) & hash 代替取模。
@@ -423,37 +327,29 @@ n - 1 的低位全为 1，有利于利用 hash 低位分布。
 扩容为 2 倍后，节点只会留在原位置或移动到原位置加旧容量。
 这种设计降低了扩容迁移时重新计算位置的成本。
 只说位运算快不够，还要说明扩容迁移为什么简单。', 'MEDIUM', 'Java 核心,集合框架,Map,HashMap,ConcurrentHashMap', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 62, NOW(), NOW()),
-('JAVA', 'ConcurrentHashMap 如何保证线程安全', '请结合后端面试场景解释：ConcurrentHashMap 如何保证线程安全？', 'JDK 1.8 ConcurrentHashMap 通过 CAS、volatile、桶级 synchronized 和协助扩容保证并发安全。
+('JAVA', 'ConcurrentHashMap 如何保证线程安全', 'ConcurrentHashMap 如何保证线程安全？', 'JDK 1.8 ConcurrentHashMap 通过 CAS、volatile、桶级 synchronized 和协助扩容保证并发安全。
 
-具体展开时，先讲清楚核心机制：空桶插入常用 CAS，桶内已有节点时锁住桶头节点，避免锁整张表。 sizeCtl 控制初始化和扩容状态，多线程可以协助迁移桶数据。
+空桶插入常用 CAS，桶内已有节点时锁住桶头节点，避免锁整张表。 sizeCtl 控制初始化和扩容状态，多线程可以协助迁移桶数据。
 
-再补充使用边界和常见问题：容易出问题的地方是把它理解成 JDK 7 的 Segment 分段锁模型。 读操作多依赖 volatile 可见性，通常不需要加锁。
-
-如果面试官继续追问“JDK 1.7 和 JDK 1.8 ConcurrentHashMap 锁粒度有什么变化？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'JDK 1.7 和 JDK 1.8 ConcurrentHashMap 锁粒度有什么变化？
+容易踩坑的是把它理解成 JDK 7 的 Segment 分段锁模型。 读操作多依赖 volatile 可见性，通常不需要加锁。', 'JDK 1.7 和 JDK 1.8 ConcurrentHashMap 锁粒度有什么变化？
 sizeCtl 在扩容中起什么作用？
 为什么 get 通常不需要加锁？', 'JDK 1.8 ConcurrentHashMap 通过 CAS、volatile、桶级 synchronized 和协助扩容保证并发安全。
 空桶插入常用 CAS，桶内已有节点时锁住桶头节点，避免锁整张表。
 sizeCtl 控制初始化和扩容状态，多线程可以协助迁移桶数据。
 容易踩坑的是把它理解成 JDK 7 的 Segment 分段锁模型。
 读操作多依赖 volatile 可见性，通常不需要加锁。', 'MEDIUM', 'Java 核心,集合框架,Map,HashMap,ConcurrentHashMap', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 63, NOW(), NOW()),
-('JAVA', 'LinkedHashMap 如何实现 LRU', '请结合后端面试场景解释：LinkedHashMap 如何实现 LRU？', 'LinkedHashMap 在 HashMap 节点基础上维护双向链表，用链表表达遍历顺序。
+('JAVA', 'LinkedHashMap 如何实现 LRU', 'LinkedHashMap 如何实现 LRU？', 'LinkedHashMap 在 HashMap 节点基础上维护双向链表，用链表表达遍历顺序。
 
-具体展开时，先讲清楚核心机制：默认 insertionOrder 表示插入顺序，开启 accessOrder 后访问过的节点会移动到尾部。 重写 removeEldestEntry 可以在插入后淘汰最老节点，实现简单 LRU。
+默认 insertionOrder 表示插入顺序，开启 accessOrder 后访问过的节点会移动到尾部。 重写 removeEldestEntry 可以在插入后淘汰最老节点，实现简单 LRU。
 
-再补充使用边界和常见问题：容易出问题的地方是忘记开启 accessOrder，导致按插入顺序而不是访问顺序淘汰。 它适合单机小缓存，复杂缓存仍应考虑容量、并发和过期策略。
-
-如果面试官继续追问“accessOrder 为 true 时 get 会改变什么？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'accessOrder 为 true 时 get 会改变什么？
+容易踩坑的是忘记开启 accessOrder，导致按插入顺序而不是访问顺序淘汰。 它适合单机小缓存，复杂缓存仍应考虑容量、并发和过期策略。', 'accessOrder 为 true 时 get 会改变什么？
 removeEldestEntry 在什么时候被调用？
 LinkedHashMap 实现的 LRU 为什么不适合高并发缓存？', 'LinkedHashMap 在 HashMap 节点基础上维护双向链表，用链表表达遍历顺序。
 默认 insertionOrder 表示插入顺序，开启 accessOrder 后访问过的节点会移动到尾部。
 重写 removeEldestEntry 可以在插入后淘汰最老节点，实现简单 LRU。
 容易踩坑的是忘记开启 accessOrder，导致按插入顺序而不是访问顺序淘汰。
 它适合单机小缓存，复杂缓存仍应考虑容量、并发和过期策略。', 'MEDIUM', 'Java 核心,集合框架,Map,HashMap,ConcurrentHashMap', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 64, NOW(), NOW()),
-('JAVA', 'HashSet 如何保证元素唯一', '请结合后端面试场景解释：HashSet 如何保证元素唯一？', 'HashSet 自己并没有单独的去重算法，它底层主要借助 HashMap 实现。放入 HashSet 的元素会作为 HashMap 的 key，value 使用一个固定的占位对象。
+('JAVA', 'HashSet 如何保证元素唯一', 'HashSet 如何保证元素唯一？', 'HashSet 自己并没有单独的去重算法，它底层主要借助 HashMap 实现。放入 HashSet 的元素会作为 HashMap 的 key，value 使用一个固定的占位对象。
 
 add 元素时，本质上调用的是 HashMap.put。先根据 hashCode 定位桶，再用 equals 判断桶内是否已有相同元素。如果已经存在相同 key，put 会覆盖占位 value，HashSet.add 返回 false；如果不存在，才新增成功。
 
@@ -467,52 +363,40 @@ add 元素时，本质上调用的是 HashMap.put。先根据 hashCode 定位桶
 先用 hashCode 定位桶，再用 equals 判断是否相同。
 equals 和 hashCode 不一致会导致去重失效。
 自定义对象放入 HashSet 后，不应修改参与 hash 或 equals 的字段。', 'EASY', 'Java 核心,集合框架,Set,HashSet,TreeSet', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 70, NOW(), NOW()),
-('JAVA', 'TreeSet 的排序和去重规则', '请结合后端面试场景解释：TreeSet 的排序和去重规则？', 'TreeSet 基于红黑树维护排序，去重依据是比较结果是否为 0。
+('JAVA', 'TreeSet 的排序和去重规则', 'TreeSet 的排序和去重规则是什么？', 'TreeSet 基于红黑树维护排序，去重依据是比较结果是否为 0。
 
-具体展开时，先讲清楚核心机制：元素要么实现 Comparable，要么在构造 TreeSet 时提供 Comparator。 compareTo 或 Comparator 返回 0 时，TreeSet 会认为两个元素重复。
+元素要么实现 Comparable，要么在构造 TreeSet 时提供 Comparator。 compareTo 或 Comparator 返回 0 时，TreeSet 会认为两个元素重复。
 
-再补充使用边界和常见问题：容易出问题的地方是比较器和 equals 语义不一致，导致看似不同的对象被去重。 TreeSet 适合需要有序遍历和范围查询的集合场景。
-
-如果面试官继续追问“TreeSet 为什么不依赖 hashCode 去重？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'TreeSet 为什么不依赖 hashCode 去重？
+容易踩坑的是比较器和 equals 语义不一致，导致看似不同的对象被去重。 TreeSet 适合需要有序遍历和范围查询的集合场景。', 'TreeSet 为什么不依赖 hashCode 去重？
 Comparator 返回 0 会产生什么效果？
 TreeSet 和 HashSet 在性能和语义上怎么选？', 'TreeSet 基于红黑树维护排序，去重依据是比较结果是否为 0。
 元素要么实现 Comparable，要么在构造 TreeSet 时提供 Comparator。
 compareTo 或 Comparator 返回 0 时，TreeSet 会认为两个元素重复。
 容易踩坑的是比较器和 equals 语义不一致，导致看似不同的对象被去重。
 TreeSet 适合需要有序遍历和范围查询的集合场景。', 'EASY', 'Java 核心,集合框架,Set,HashSet,TreeSet', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 71, NOW(), NOW()),
-('JAVA', 'LinkedHashSet 如何保持插入顺序', '请结合后端面试场景解释：LinkedHashSet 如何保持插入顺序？', 'LinkedHashSet 在 HashSet 去重基础上维护一条链表记录插入顺序。
+('JAVA', 'LinkedHashSet 如何保持插入顺序', 'LinkedHashSet 如何保持插入顺序？', 'LinkedHashSet 在 HashSet 去重基础上维护一条链表记录插入顺序。
 
-具体展开时，先讲清楚核心机制：它底层依赖 LinkedHashMap，元素仍然作为 key 保存。 遍历时按插入顺序输出，而不是按 hash 桶顺序输出。
+它底层依赖 LinkedHashMap，元素仍然作为 key 保存。 遍历时按插入顺序输出，而不是按 hash 桶顺序输出。
 
-再补充使用边界和常见问题：容易出问题的地方是把插入顺序等同于排序，LinkedHashSet 不会按大小排序。 需要稳定去重结果顺序时，LinkedHashSet 比 HashSet 更合适。
-
-如果面试官继续追问“LinkedHashSet 和 TreeSet 的有序有什么区别？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'LinkedHashSet 和 TreeSet 的有序有什么区别？
+容易踩坑的是把插入顺序等同于排序，LinkedHashSet 不会按大小排序。 需要稳定去重结果顺序时，LinkedHashSet 比 HashSet 更合适。', 'LinkedHashSet 和 TreeSet 的有序有什么区别？
 LinkedHashSet 的额外链表会带来什么成本？
 什么时候接口返回去重结果应选择 LinkedHashSet？', 'LinkedHashSet 在 HashSet 去重基础上维护一条链表记录插入顺序。
 它底层依赖 LinkedHashMap，元素仍然作为 key 保存。
 遍历时按插入顺序输出，而不是按 hash 桶顺序输出。
 容易踩坑的是把插入顺序等同于排序，LinkedHashSet 不会按大小排序。
 需要稳定去重结果顺序时，LinkedHashSet 比 HashSet 更合适。', 'EASY', 'Java 核心,集合框架,Set,HashSet,TreeSet', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 72, NOW(), NOW()),
-('JAVA', 'Set 中可变对象为什么危险', '请结合后端面试场景解释：Set 中可变对象为什么危险？', 'Set 中可变对象危险，是因为修改参与 hash 或比较的字段会破坏集合内部定位。
+('JAVA', 'Set 中可变对象为什么危险', 'Set 中可变对象为什么危险？', 'Set 中可变对象危险，是因为修改参与 hash 或比较的字段会破坏集合内部定位。
 
-具体展开时，先讲清楚核心机制：HashSet 不会因为对象字段变化自动重新分桶。 TreeSet 不会因为排序字段变化自动调整树位置。
+HashSet 不会因为对象字段变化自动重新分桶。 TreeSet 不会因为排序字段变化自动调整树位置。
 
-再补充使用边界和常见问题：容易出问题的地方是 contains 查不到原对象，甚至出现逻辑重复元素。 放入 Set 的对象应尽量使用不可变 key 字段，或修改前先移除再加入。
-
-如果面试官继续追问“HashSet 中对象 hashCode 变化后为什么 contains 失败？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到排查场景，我会结合 GC 日志、对象分配、类加载边界、线程栈和内存区域表现来解释，而不是只背 JVM 名词。', 'HashSet 中对象 hashCode 变化后为什么 contains 失败？
+容易踩坑的是 contains 查不到原对象，甚至出现逻辑重复元素。 放入 Set 的对象应尽量使用不可变 key 字段，或修改前先移除再加入。', 'HashSet 中对象 hashCode 变化后为什么 contains 失败？
 TreeSet 中排序字段变化会造成什么现象？
 如何设计适合作为 Set 元素的对象？', 'Set 中可变对象危险，是因为修改参与 hash 或比较的字段会破坏集合内部定位。
 HashSet 不会因为对象字段变化自动重新分桶。
 TreeSet 不会因为排序字段变化自动调整树位置。
 容易踩坑的是 contains 查不到原对象，甚至出现逻辑重复元素。
 放入 Set 的对象应尽量使用不可变 key 字段，或修改前先移除再加入。', 'EASY', 'Java 核心,集合框架,Set,HashSet,TreeSet', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 73, NOW(), NOW()),
-('JAVA', 'HashSet 和 ConcurrentHashMap.newKeySet 的区别', '请结合后端面试场景解释：HashSet 和 ConcurrentHashMap.newKeySet 的区别？', 'HashSet 和 ConcurrentHashMap.newKeySet 都能表达不重复集合，但线程安全边界完全不同。
+('JAVA', 'HashSet 和 ConcurrentHashMap.newKeySet 的区别', 'HashSet 和 ConcurrentHashMap.newKeySet 有什么区别？', 'HashSet 和 ConcurrentHashMap.newKeySet 都能表达不重复集合，但线程安全边界完全不同。
 
 HashSet 底层是 HashMap，适合单线程或外部已经加锁的场景。多线程同时 add、remove 时，可能出现数据覆盖、结构异常或遍历时 fail-fast。
 
@@ -526,532 +410,392 @@ ConcurrentHashMap.newKeySet 底层借助 ConcurrentHashMap 的 key 集合。
 newKeySet 适合多线程共享去重场景。
 局部变量集合没有共享修改时，不需要使用并发集合。
 选择集合时要先判断是否存在并发读写，而不是只看能不能去重。', 'EASY', 'Java 核心,集合框架,Set,HashSet,TreeSet', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 74, NOW(), NOW()),
-('JAVA', 'synchronized 和 ReentrantLock 的区别', '请结合后端面试场景解释：synchronized 和 ReentrantLock 的区别？', 'synchronized 是 JVM 内置锁，ReentrantLock 是 JUC 提供的显式可重入锁。
+('JAVA', 'synchronized 和 ReentrantLock 的区别', 'synchronized 和 ReentrantLock 有什么区别？', 'synchronized 是 JVM 内置锁，ReentrantLock 是 JUC 提供的显式可重入锁。
 
-具体展开时，先讲清楚核心机制：synchronized 自动释放锁，ReentrantLock 必须在 finally 中 unlock。 ReentrantLock 支持公平锁、可中断获取锁、超时获取锁和多个 Condition。
+synchronized 自动释放锁，ReentrantLock 必须在 finally 中 unlock。 ReentrantLock 支持公平锁、可中断获取锁、超时获取锁和多个 Condition。
 
-再补充使用边界和常见问题：容易出问题的地方是显式锁忘记释放，导致线程永久阻塞。 普通互斥优先 synchronized，需要高级锁能力时再选 ReentrantLock。
-
-如果面试官继续追问“ReentrantLock 为什么必须在 finally 里释放？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'ReentrantLock 为什么必须在 finally 里释放？
+容易踩坑的是显式锁忘记释放，导致线程永久阻塞。 普通互斥优先 synchronized，需要高级锁能力时再选 ReentrantLock。', 'ReentrantLock 为什么必须在 finally 里释放？
 公平锁和非公平锁有什么吞吐差异？
 Condition 相比 Object wait/notify 有什么优势？', 'synchronized 是 JVM 内置锁，ReentrantLock 是 JUC 提供的显式可重入锁。
 synchronized 自动释放锁，ReentrantLock 必须在 finally 中 unlock。
 ReentrantLock 支持公平锁、可中断获取锁、超时获取锁和多个 Condition。
 容易踩坑的是显式锁忘记释放，导致线程永久阻塞。
 普通互斥优先 synchronized，需要高级锁能力时再选 ReentrantLock。', 'MEDIUM', 'Java 核心,并发编程,JUC,锁,线程池,volatile,ThreadLocal', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 80, NOW(), NOW()),
-('JAVA', 'ThreadLocal 使用场景和风险', '请结合后端面试场景解释：ThreadLocal 使用场景和风险？', 'ThreadLocal 用来保存线程私有变量，典型场景是用户上下文、traceId 和格式化对象。
+('JAVA', 'ThreadLocal 使用场景和风险', 'ThreadLocal 使用场景和风险是什么？', 'ThreadLocal 用来保存线程私有变量，典型场景是用户上下文、traceId 和格式化对象。
 
-具体展开时，先讲清楚核心机制：每个线程持有自己的 ThreadLocalMap，线程之间互不共享值。 在线程池中线程会复用，使用后必须 remove 清理。
+每个线程持有自己的 ThreadLocalMap，线程之间互不共享值。 在线程池中线程会复用，使用后必须 remove 清理。
 
-再补充使用边界和常见问题：容易出问题的地方是请求结束不清理，导致下一个请求读到旧上下文或造成内存滞留。 它解决的是线程内上下文传递，不是跨线程共享数据。
-
-如果面试官继续追问“ThreadLocalMap 的 key 为什么是弱引用？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'ThreadLocalMap 的 key 为什么是弱引用？
+容易踩坑的是请求结束不清理，导致下一个请求读到旧上下文或造成内存滞留。 它解决的是线程内上下文传递，不是跨线程共享数据。', 'ThreadLocalMap 的 key 为什么是弱引用？
 线程池里 ThreadLocal 不 remove 会有什么后果？
 异步任务中 ThreadLocal 为什么可能丢失？', 'ThreadLocal 用来保存线程私有变量，典型场景是用户上下文、traceId 和格式化对象。
 每个线程持有自己的 ThreadLocalMap，线程之间互不共享值。
 在线程池中线程会复用，使用后必须 remove 清理。
 容易踩坑的是请求结束不清理，导致下一个请求读到旧上下文或造成内存滞留。
 它解决的是线程内上下文传递，不是跨线程共享数据。', 'MEDIUM', 'Java 核心,并发编程,JUC,锁,线程池,volatile,ThreadLocal', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 81, NOW(), NOW()),
-('JAVA', 'volatile 能保证什么', '请结合后端面试场景解释：volatile 能保证什么？', 'volatile 保证变量写入对其他线程可见，并禁止相关指令重排序。
+('JAVA', 'volatile 能保证什么', 'volatile 能保证什么？', 'volatile 保证变量写入对其他线程可见，并禁止相关指令重排序。
 
-具体展开时，先讲清楚核心机制：volatile 不保证复合操作的原子性，例如 i++ 仍然不安全。 适合状态标记、单次发布和双重检查锁中的引用可见性。
+volatile 不保证复合操作的原子性，例如 i++ 仍然不安全。 适合状态标记、单次发布和双重检查锁中的引用可见性。
 
-再补充使用边界和常见问题：容易出问题的地方是把 volatile 当成锁来保护多个变量的一致性。 需要原子递增时应使用 AtomicInteger 或锁。
-
-如果面试官继续追问“volatile 为什么不能保证 i++ 的线程安全？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'volatile 为什么不能保证 i++ 的线程安全？
+容易踩坑的是把 volatile 当成锁来保护多个变量的一致性。 需要原子递增时应使用 AtomicInteger 或锁。', 'volatile 为什么不能保证 i++ 的线程安全？
 双重检查锁为什么需要 volatile？
 volatile 和 synchronized 在可见性上有什么关系？', 'volatile 保证变量写入对其他线程可见，并禁止相关指令重排序。
 volatile 不保证复合操作的原子性，例如 i++ 仍然不安全。
 适合状态标记、单次发布和双重检查锁中的引用可见性。
 容易踩坑的是把 volatile 当成锁来保护多个变量的一致性。
 需要原子递增时应使用 AtomicInteger 或锁。', 'MEDIUM', 'Java 核心,并发编程,JUC,锁,线程池,volatile,ThreadLocal', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 82, NOW(), NOW()),
-('JAVA', '线程池核心参数如何设置', '请结合后端面试场景解释：线程池核心参数如何设置？', '线程池参数要结合任务类型、队列容量、拒绝策略和监控指标设置。
+('JAVA', '线程池核心参数如何设置', '线程池核心参数如何设置？', '线程池参数要结合任务类型、队列容量、拒绝策略和监控指标设置。
 
-具体展开时，先讲清楚核心机制：CPU 密集任务线程数接近 CPU 核数，IO 密集任务可以适当提高线程数。 队列不能无脑用无界队列，否则压力会堆成内存风险。
+CPU 密集任务线程数接近 CPU 核数，IO 密集任务可以适当提高线程数。 队列不能无脑用无界队列，否则压力会堆成内存风险。
 
-再补充使用边界和常见问题：容易出问题的地方是套公式不看业务耗时、QPS、下游限流和失败策略。 生产线程池应命名、监控活跃线程数、队列长度和拒绝次数。
-
-如果面试官继续追问“为什么不建议直接使用 Executors.newFixedThreadPool？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '为什么不建议直接使用 Executors.newFixedThreadPool？
+容易踩坑的是套公式不看业务耗时、QPS、下游限流和失败策略。 生产线程池应命名、监控活跃线程数、队列长度和拒绝次数。', '为什么不建议直接使用 Executors.newFixedThreadPool？
 有界队列满了以后拒绝策略怎么选？
 如何判断线程池是 CPU 瓶颈还是 IO 等待？', '线程池参数要结合任务类型、队列容量、拒绝策略和监控指标设置。
 CPU 密集任务线程数接近 CPU 核数，IO 密集任务可以适当提高线程数。
 队列不能无脑用无界队列，否则压力会堆成内存风险。
 容易踩坑的是套公式不看业务耗时、QPS、下游限流和失败策略。
 生产线程池应命名、监控活跃线程数、队列长度和拒绝次数。', 'MEDIUM', 'Java 核心,并发编程,JUC,锁,线程池,volatile,ThreadLocal', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 83, NOW(), NOW()),
-('JAVA', 'CompletableFuture 适合什么场景', '请结合后端面试场景解释：CompletableFuture 适合什么场景？', 'CompletableFuture 适合异步任务编排、并行查询聚合和依赖链组合。
+('JAVA', 'CompletableFuture 适合什么场景', 'CompletableFuture 适合什么场景？', 'CompletableFuture 适合异步任务编排、并行查询聚合和依赖链组合。
 
-具体展开时，先讲清楚核心机制：它可以表达 thenApply、thenCompose、allOf 等异步关系。 业务中应显式指定线程池，避免把阻塞任务丢到公共 ForkJoinPool。
+它可以表达 thenApply、thenCompose、allOf 等异步关系。 业务中应显式指定线程池，避免把阻塞任务丢到公共 ForkJoinPool。
 
-再补充使用边界和常见问题：容易出问题的地方是异常没有统一处理，导致异步失败被静默吞掉。 复杂链路要控制超时、降级和上下文传递。
-
-如果面试官继续追问“thenApply 和 thenCompose 有什么区别？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'thenApply 和 thenCompose 有什么区别？
+容易踩坑的是异常没有统一处理，导致异步失败被静默吞掉。 复杂链路要控制超时、降级和上下文传递。', 'thenApply 和 thenCompose 有什么区别？
 allOf 之后如何收集每个任务结果？
 为什么不建议业务阻塞任务使用默认公共线程池？', 'CompletableFuture 适合异步任务编排、并行查询聚合和依赖链组合。
 它可以表达 thenApply、thenCompose、allOf 等异步关系。
 业务中应显式指定线程池，避免把阻塞任务丢到公共 ForkJoinPool。
 容易踩坑的是异常没有统一处理，导致异步失败被静默吞掉。
 复杂链路要控制超时、降级和上下文传递。', 'MEDIUM', 'Java 核心,并发编程,JUC,锁,线程池,volatile,ThreadLocal', '小林 coding, JavaGuide', 'https://javaguide.cn/home.html', 1, 84, NOW(), NOW()),
-('JVM', 'JVM 运行时内存区域', '请结合后端面试场景解释：JVM 运行时内存区域？', 'JVM 运行时内存主要包括堆、虚拟机栈、本地方法栈、程序计数器和方法区。
+('JVM', 'JVM 运行时内存区域', 'JVM 运行时内存区域怎么理解？', 'JVM 运行时内存主要包括堆、虚拟机栈、本地方法栈、程序计数器和方法区。
 
-具体展开时，先讲清楚核心机制：堆存放对象实例，是 GC 管理的主要区域。 栈保存方法调用帧，包含局部变量表、操作数栈和返回地址等信息。
+堆存放对象实例，是 GC 管理的主要区域。 栈保存方法调用帧，包含局部变量表、操作数栈和返回地址等信息。
 
-再补充使用边界和常见问题：容易出问题的地方是把方法区、元空间和永久代概念混为一谈。 不同区域异常不同，例如堆 OOM、栈 StackOverflowError、元空间 OOM。
-
-如果面试官继续追问“堆和栈分别保存什么？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到排查场景，我会结合 GC 日志、对象分配、类加载边界、线程栈和内存区域表现来解释，而不是只背 JVM 名词。', '堆和栈分别保存什么？
+容易踩坑的是把方法区、元空间和永久代概念混为一谈。 不同区域异常不同，例如堆 OOM、栈 StackOverflowError、元空间 OOM。', '堆和栈分别保存什么？
 方法区、永久代、元空间是什么关系？
 StackOverflowError 通常由什么代码触发？', 'JVM 运行时内存主要包括堆、虚拟机栈、本地方法栈、程序计数器和方法区。
 堆存放对象实例，是 GC 管理的主要区域。
 栈保存方法调用帧，包含局部变量表、操作数栈和返回地址等信息。
 容易踩坑的是把方法区、元空间和永久代概念混为一谈。
 不同区域异常不同，例如堆 OOM、栈 StackOverflowError、元空间 OOM。', 'MEDIUM', 'JVM,JVM,内存区域,GC,类加载', '小林 coding, JavaGuide', 'https://javaguide.cn/java/jvm/', 1, 100, NOW(), NOW()),
-('JVM', 'CMS 和 G1 垃圾收集器区别', '请结合后端面试场景解释：CMS 和 G1 垃圾收集器区别？', 'CMS 以老年代低停顿为目标，G1 以 Region 管理整堆并支持可预测停顿。
+('JVM', 'CMS 和 G1 垃圾收集器区别', 'CMS 和 G1 垃圾收集器有什么区别？', 'CMS 以老年代低停顿为目标，G1 以 Region 管理整堆并支持可预测停顿。
 
-具体展开时，先讲清楚核心机制：CMS 使用标记清除，容易产生内存碎片。 G1 把堆划分为多个 Region，根据回收收益选择优先回收集合。
+CMS 使用标记清除，容易产生内存碎片。 G1 把堆划分为多个 Region，根据回收收益选择优先回收集合。
 
-再补充使用边界和常见问题：容易出问题的地方是只背收集器名称，不说明停顿、碎片和大堆场景取舍。 现代服务端大堆应用更常考虑 G1 或更新的低延迟收集器。
-
-如果面试官继续追问“CMS 为什么会产生内存碎片？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'CMS 为什么会产生内存碎片？
+容易踩坑的是只背收集器名称，不说明停顿、碎片和大堆场景取舍。 现代服务端大堆应用更常考虑 G1 或更新的低延迟收集器。', 'CMS 为什么会产生内存碎片？
 G1 的 Region 设计解决了什么问题？
 什么场景下 CMS 可能发生 concurrent mode failure？', 'CMS 以老年代低停顿为目标，G1 以 Region 管理整堆并支持可预测停顿。
 CMS 使用标记清除，容易产生内存碎片。
 G1 把堆划分为多个 Region，根据回收收益选择优先回收集合。
 容易踩坑的是只背收集器名称，不说明停顿、碎片和大堆场景取舍。
 现代服务端大堆应用更常考虑 G1 或更新的低延迟收集器。', 'MEDIUM', 'JVM,JVM,内存区域,GC,类加载', '小林 coding, JavaGuide', 'https://javaguide.cn/java/jvm/', 1, 101, NOW(), NOW()),
-('JVM', '类加载过程和双亲委派', '请结合后端面试场景解释：类加载过程和双亲委派？', '类加载过程包括加载、验证、准备、解析和初始化。
+('JVM', '类加载过程和双亲委派', '类加载过程和双亲委派是什么？', '类加载过程包括加载、验证、准备、解析和初始化。
 
-具体展开时，先讲清楚核心机制：双亲委派是先让父加载器尝试加载，父加载器无法加载时子加载器再处理。 它保护核心类库不被应用随意替换，并避免类重复加载。
+双亲委派是先让父加载器尝试加载，父加载器无法加载时子加载器再处理。 它保护核心类库不被应用随意替换，并避免类重复加载。
 
-再补充使用边界和常见问题：容易出问题的地方是把加载和初始化混为一谈。 破坏双亲委派常见于 SPI、热部署和容器隔离场景。
-
-如果面试官继续追问“准备阶段会给静态变量赋什么值？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到排查场景，我会结合 GC 日志、对象分配、类加载边界、线程栈和内存区域表现来解释，而不是只背 JVM 名词。', '准备阶段会给静态变量赋什么值？
+容易踩坑的是把加载和初始化混为一谈。 破坏双亲委派常见于 SPI、热部署和容器隔离场景。', '准备阶段会给静态变量赋什么值？
 双亲委派如何保护 java.lang.String？
 为什么 JDBC SPI 会涉及破坏双亲委派？', '类加载过程包括加载、验证、准备、解析和初始化。
 双亲委派是先让父加载器尝试加载，父加载器无法加载时子加载器再处理。
 它保护核心类库不被应用随意替换，并避免类重复加载。
 容易踩坑的是把加载和初始化混为一谈。
 破坏双亲委派常见于 SPI、热部署和容器隔离场景。', 'MEDIUM', 'JVM,JVM,内存区域,GC,类加载', '小林 coding, JavaGuide', 'https://javaguide.cn/java/jvm/', 1, 102, NOW(), NOW()),
-('JVM', '对象从创建到回收的过程', '请结合后端面试场景解释：对象从创建到回收的过程？', '对象从 new 开始分配内存并初始化，随后在可达性分析中决定是否可回收。
+('JVM', '对象从创建到回收的过程', '对象从创建到回收的过程是什么？', '对象从 new 开始分配内存并初始化，随后在可达性分析中决定是否可回收。
 
-具体展开时，先讲清楚核心机制：新对象通常先进入 Eden，经历 Minor GC 后可能进入 Survivor 或晋升老年代。 GC Roots 不可达的对象才有机会被回收。
+新对象通常先进入 Eden，经历 Minor GC 后可能进入 Survivor 或晋升老年代。 GC Roots 不可达的对象才有机会被回收。
 
-再补充使用边界和常见问题：容易出问题的地方是以为对象置为 null 会立刻释放内存。 对象回收还受引用类型、年龄、空间担保和收集器策略影响。
-
-如果面试官继续追问“哪些对象可以作为 GC Roots？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到排查场景，我会结合 GC 日志、对象分配、类加载边界、线程栈和内存区域表现来解释，而不是只背 JVM 名词。', '哪些对象可以作为 GC Roots？
+容易踩坑的是以为对象置为 null 会立刻释放内存。 对象回收还受引用类型、年龄、空间担保和收集器策略影响。', '哪些对象可以作为 GC Roots？
 对象什么时候会晋升到老年代？
 finalize 为什么不推荐依赖？', '对象从 new 开始分配内存并初始化，随后在可达性分析中决定是否可回收。
 新对象通常先进入 Eden，经历 Minor GC 后可能进入 Survivor 或晋升老年代。
 GC Roots 不可达的对象才有机会被回收。
 容易踩坑的是以为对象置为 null 会立刻释放内存。
 对象回收还受引用类型、年龄、空间担保和收集器策略影响。', 'MEDIUM', 'JVM,JVM,内存区域,GC,类加载', '小林 coding, JavaGuide', 'https://javaguide.cn/java/jvm/', 1, 103, NOW(), NOW()),
-('JVM', '线上 Full GC 如何排查', '请结合后端面试场景解释：线上 Full GC 如何排查？', 'Full GC 排查要先看 GC 日志，确认频率、停顿时间和触发原因。
+('JVM', '线上 Full GC 如何排查', '线上 Full GC 如何排查？', 'Full GC 排查要先看 GC 日志，确认频率、停顿时间和触发原因。
 
-具体展开时，先讲清楚核心机制：重点观察老年代、元空间、对象分配速率和大对象分配。 再结合 jmap、jstack、arthas 或堆 dump 查对象引用链。
+重点观察老年代、元空间、对象分配速率和大对象分配。 再结合 jmap、jstack、arthas 或堆 dump 查对象引用链。
 
-再补充使用边界和常见问题：容易出问题的地方是只调大堆内存，不找对象持续增长的来源。 常见原因包括内存泄漏、大对象、元空间增长和显式 System.gc。
-
-如果面试官继续追问“GC 日志中哪些字段最能说明问题？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到排查场景，我会结合 GC 日志、对象分配、类加载边界、线程栈和内存区域表现来解释，而不是只背 JVM 名词。', 'GC 日志中哪些字段最能说明问题？
+容易踩坑的是只调大堆内存，不找对象持续增长的来源。 常见原因包括内存泄漏、大对象、元空间增长和显式 System.gc。', 'GC 日志中哪些字段最能说明问题？
 如何判断是内存泄漏还是流量突增？
 拿到 heap dump 后先看什么？', 'Full GC 排查要先看 GC 日志，确认频率、停顿时间和触发原因。
 重点观察老年代、元空间、对象分配速率和大对象分配。
 再结合 jmap、jstack、arthas 或堆 dump 查对象引用链。
 容易踩坑的是只调大堆内存，不找对象持续增长的来源。
 常见原因包括内存泄漏、大对象、元空间增长和显式 System.gc。', 'MEDIUM', 'JVM,JVM,内存区域,GC,类加载', '小林 coding, JavaGuide', 'https://javaguide.cn/java/jvm/', 1, 104, NOW(), NOW()),
-('MYSQL', 'MySQL 索引失效场景及优化', '请结合后端面试场景解释：MySQL 索引失效场景及优化？', '索引失效要结合 EXPLAIN 判断，而不是只背口诀。
+('MYSQL', 'MySQL 索引失效场景及优化', 'MySQL 索引失效场景及优化是什么？', '索引失效要结合 EXPLAIN 判断，而不是只背口诀。
 
-具体展开时，先讲清楚核心机制：常见原因包括联合索引跳过最左列、索引列函数运算、隐式类型转换和 LIKE 前置百分号。 优化先看 type、key、rows、Extra，再决定改 SQL 还是调整索引。
+常见原因包括联合索引跳过最左列、索引列函数运算、隐式类型转换和 LIKE 前置百分号。 优化先看 type、key、rows、Extra，再决定改 SQL 还是调整索引。
 
-再补充使用边界和常见问题：容易出问题的地方是只为了某个查询加宽索引，增加写入和维护成本。 覆盖索引、索引下推和合适的联合索引都可以减少扫描和回表。
-
-如果面试官继续追问“LIKE ''abc%'' 和 LIKE ''%abc'' 对索引有什么区别？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', 'LIKE ''abc%'' 和 LIKE ''%abc'' 对索引有什么区别？
+容易踩坑的是只为了某个查询加宽索引，增加写入和维护成本。 覆盖索引、索引下推和合适的联合索引都可以减少扫描和回表。', 'LIKE ''abc%'' 和 LIKE ''%abc'' 对索引有什么区别？
 隐式类型转换为什么可能让索引失效？
 EXPLAIN 里 rows 很大时你会怎么优化？', '索引失效要结合 EXPLAIN 判断，而不是只背口诀。
 常见原因包括联合索引跳过最左列、索引列函数运算、隐式类型转换和 LIKE 前置百分号。
 优化先看 type、key、rows、Extra，再决定改 SQL 还是调整索引。
 容易踩坑的是只为了某个查询加宽索引，增加写入和维护成本。
 覆盖索引、索引下推和合适的联合索引都可以减少扫描和回表。', 'HARD', 'MySQL,MySQL索引,B+树,最左前缀,EXPLAIN', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 200, NOW(), NOW()),
-('MYSQL', 'InnoDB 为什么使用 B+ 树索引', '请结合后端面试场景解释：InnoDB 为什么使用 B+ 树索引？', 'InnoDB 使用 B+ 树是因为它树高低、扇出大，并且适合范围查询。
+('MYSQL', 'InnoDB 为什么使用 B+ 树索引', 'InnoDB 为什么使用 B+ 树索引？', 'InnoDB 使用 B+ 树是因为它树高低、扇出大，并且适合范围查询。
 
-具体展开时，先讲清楚核心机制：非叶子节点只保存键和指针，能减少磁盘 IO 次数。 叶子节点有序并通过链表连接，范围扫描效率高。
+非叶子节点只保存键和指针，能减少磁盘 IO 次数。 叶子节点有序并通过链表连接，范围扫描效率高。
 
-再补充使用边界和常见问题：容易出问题的地方是只说 B+ 树查询快，不说明磁盘页和范围查询优势。 主键索引叶子节点保存整行数据，二级索引叶子节点保存主键值。
-
-如果面试官继续追问“B+ 树和 B 树在数据存放位置上有什么区别？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', 'B+ 树和 B 树在数据存放位置上有什么区别？
+容易踩坑的是只说 B+ 树查询快，不说明磁盘页和范围查询优势。 主键索引叶子节点保存整行数据，二级索引叶子节点保存主键值。', 'B+ 树和 B 树在数据存放位置上有什么区别？
 为什么 B+ 树比红黑树更适合数据库索引？
 二级索引为什么需要回表？', 'InnoDB 使用 B+ 树是因为它树高低、扇出大，并且适合范围查询。
 非叶子节点只保存键和指针，能减少磁盘 IO 次数。
 叶子节点有序并通过链表连接，范围扫描效率高。
 容易踩坑的是只说 B+ 树查询快，不说明磁盘页和范围查询优势。
 主键索引叶子节点保存整行数据，二级索引叶子节点保存主键值。', 'HARD', 'MySQL,MySQL索引,B+树,最左前缀,EXPLAIN', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 201, NOW(), NOW()),
-('MYSQL', '联合索引最左前缀原则', '请结合后端面试场景解释：联合索引最左前缀原则？', '联合索引按定义顺序建立有序结构，查询要从最左列开始才能有效定位。
+('MYSQL', '联合索引最左前缀原则', '联合索引最左前缀原则怎么理解？', '联合索引按定义顺序建立有序结构，查询要从最左列开始才能有效定位。
 
-具体展开时，先讲清楚核心机制：例如 (a,b,c) 会先按 a 排，再在 a 相同范围内按 b、c 排。 跳过 a 直接查 b，索引整体顺序无法用于快速定位。
+例如 (a,b,c) 会先按 a 排，再在 a 相同范围内按 b、c 排。 跳过 a 直接查 b，索引整体顺序无法用于快速定位。
 
-再补充使用边界和常见问题：容易出问题的地方是范围条件后的列通常不能继续用于精确定位。 设计联合索引要结合等值列、范围列、排序和选择度。
-
-如果面试官继续追问“联合索引 (a,b,c) 查询 b、c 能不能用上索引？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', '联合索引 (a,b,c) 查询 b、c 能不能用上索引？
+容易踩坑的是范围条件后的列通常不能继续用于精确定位。 设计联合索引要结合等值列、范围列、排序和选择度。', '联合索引 (a,b,c) 查询 b、c 能不能用上索引？
 范围查询为什么会影响后续列使用？
 WHERE 条件顺序和索引列顺序是一回事吗？', '联合索引按定义顺序建立有序结构，查询要从最左列开始才能有效定位。
 例如 (a,b,c) 会先按 a 排，再在 a 相同范围内按 b、c 排。
 跳过 a 直接查 b，索引整体顺序无法用于快速定位。
 容易踩坑的是范围条件后的列通常不能继续用于精确定位。
 设计联合索引要结合等值列、范围列、排序和选择度。', 'HARD', 'MySQL,MySQL索引,B+树,最左前缀,EXPLAIN', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 202, NOW(), NOW()),
-('MYSQL', '覆盖索引和回表', '请结合后端面试场景解释：覆盖索引和回表？', '覆盖索引是查询需要的列都能从二级索引中拿到，不必再回聚簇索引查整行。
+('MYSQL', '覆盖索引和回表', '覆盖索引和回表怎么理解？', '覆盖索引是查询需要的列都能从二级索引中拿到，不必再回聚簇索引查整行。
 
-具体展开时，先讲清楚核心机制：回表是根据二级索引叶子节点里的主键值，再去主键索引读取完整记录。 EXPLAIN 的 Extra 出现 Using index 通常表示使用了覆盖索引。
+回表是根据二级索引叶子节点里的主键值，再去主键索引读取完整记录。 EXPLAIN 的 Extra 出现 Using index 通常表示使用了覆盖索引。
 
-再补充使用边界和常见问题：容易出问题的地方是为了覆盖所有列建立过宽联合索引，反而拖慢写入和占用空间。 优化慢查询时要平衡减少回表和索引维护成本。
-
-如果面试官继续追问“为什么二级索引查询可能需要回表？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', '为什么二级索引查询可能需要回表？
+容易踩坑的是为了覆盖所有列建立过宽联合索引，反而拖慢写入和占用空间。 优化慢查询时要平衡减少回表和索引维护成本。', '为什么二级索引查询可能需要回表？
 Using index 和 Using where 分别说明什么？
 覆盖索引是不是越宽越好？', '覆盖索引是查询需要的列都能从二级索引中拿到，不必再回聚簇索引查整行。
 回表是根据二级索引叶子节点里的主键值，再去主键索引读取完整记录。
 EXPLAIN 的 Extra 出现 Using index 通常表示使用了覆盖索引。
 容易踩坑的是为了覆盖所有列建立过宽联合索引，反而拖慢写入和占用空间。
 优化慢查询时要平衡减少回表和索引维护成本。', 'HARD', 'MySQL,MySQL索引,B+树,最左前缀,EXPLAIN', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 203, NOW(), NOW()),
-('MYSQL', 'Explain 执行计划怎么看', '请结合后端面试场景解释：Explain 执行计划怎么看？', 'Explain 要重点看 type、possible_keys、key、key_len、rows、filtered 和 Extra。
+('MYSQL', 'Explain 执行计划怎么看', 'Explain 执行计划怎么看？', 'Explain 要重点看 type、possible_keys、key、key_len、rows、filtered 和 Extra。
 
-具体展开时，先讲清楚核心机制：type 反映访问方式，通常 const、ref、range 优于 index 和 ALL。 key 表示实际使用的索引，rows 表示预估扫描行数。
+type 反映访问方式，通常 const、ref、range 优于 index 和 ALL。 key 表示实际使用的索引，rows 表示预估扫描行数。
 
-再补充使用边界和常见问题：容易出问题的地方是只看 key 非空就认为 SQL 没问题。 Extra 中 Using temporary、Using filesort 往往提示排序或分组需要继续优化。
-
-如果面试官继续追问“type=ALL 一定很差吗？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', 'type=ALL 一定很差吗？
+容易踩坑的是只看 key 非空就认为 SQL 没问题。 Extra 中 Using temporary、Using filesort 往往提示排序或分组需要继续优化。', 'type=ALL 一定很差吗？
 key_len 能帮助判断联合索引用到了几列吗？
 Using filesort 一定表示磁盘排序吗？', 'Explain 要重点看 type、possible_keys、key、key_len、rows、filtered 和 Extra。
 type 反映访问方式，通常 const、ref、range 优于 index 和 ALL。
 key 表示实际使用的索引，rows 表示预估扫描行数。
 容易踩坑的是只看 key 非空就认为 SQL 没问题。
 Extra 中 Using temporary、Using filesort 往往提示排序或分组需要继续优化。', 'HARD', 'MySQL,MySQL索引,B+树,最左前缀,EXPLAIN', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 204, NOW(), NOW()),
-('MYSQL', '事务 ACID 如何理解', '请结合后端面试场景解释：事务 ACID 如何理解？', 'ACID 分别是原子性、一致性、隔离性和持久性，描述事务可靠执行的四个维度。
+('MYSQL', '事务 ACID 如何理解', '事务 ACID 如何理解？', 'ACID 分别是原子性、一致性、隔离性和持久性，描述事务可靠执行的四个维度。
 
-具体展开时，先讲清楚核心机制：原子性依赖 undo log 回滚，持久性依赖 redo log 刷盘。 隔离性依赖锁和 MVCC，一致性是业务约束与数据库机制共同保证的结果。
+原子性依赖 undo log 回滚，持久性依赖 redo log 刷盘。 隔离性依赖锁和 MVCC，一致性是业务约束与数据库机制共同保证的结果。
 
-再补充使用边界和常见问题：容易出问题的地方是把一致性只理解成数据库自动保证，忽略业务约束。 面试要能把 ACID 和日志、锁、MVCC 对应起来。
-
-如果面试官继续追问“undo log 和 redo log 分别支撑 ACID 中哪几项？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', 'undo log 和 redo log 分别支撑 ACID 中哪几项？
+容易踩坑的是把一致性只理解成数据库自动保证，忽略业务约束。 面试要能把 ACID 和日志、锁、MVCC 对应起来。', 'undo log 和 redo log 分别支撑 ACID 中哪几项？
 一致性和隔离性有什么区别？
 事务提交前后崩溃时 redo log 怎么保证持久性？', 'ACID 分别是原子性、一致性、隔离性和持久性，描述事务可靠执行的四个维度。
 原子性依赖 undo log 回滚，持久性依赖 redo log 刷盘。
 隔离性依赖锁和 MVCC，一致性是业务约束与数据库机制共同保证的结果。
 容易踩坑的是把一致性只理解成数据库自动保证，忽略业务约束。
 面试要能把 ACID 和日志、锁、MVCC 对应起来。', 'HARD', 'MySQL,MySQL事务,ACID,隔离级别', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 210, NOW(), NOW()),
-('MYSQL', '隔离级别解决哪些问题', '请结合后端面试场景解释：隔离级别解决哪些问题？', '隔离级别用于在并发性能和读一致性之间取舍。
+('MYSQL', '隔离级别解决哪些问题', '隔离级别解决哪些问题？', '隔离级别用于在并发性能和读一致性之间取舍。
 
-具体展开时，先讲清楚核心机制：读未提交可能脏读，读已提交避免脏读，可重复读避免不可重复读。 串行化隔离最强但并发性能最低。
+读未提交可能脏读，读已提交避免脏读，可重复读避免不可重复读。 串行化隔离最强但并发性能最低。
 
-再补充使用边界和常见问题：容易出问题的地方是把 MySQL 可重复读等同于所有场景都没有幻读。 InnoDB 可重复读通过 MVCC 和 next-key lock 共同降低幻读风险。
-
-如果面试官继续追问“脏读、不可重复读、幻读分别是什么？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '脏读、不可重复读、幻读分别是什么？
+容易踩坑的是把 MySQL 可重复读等同于所有场景都没有幻读。 InnoDB 可重复读通过 MVCC 和 next-key lock 共同降低幻读风险。', '脏读、不可重复读、幻读分别是什么？
 MySQL 默认隔离级别是什么？
 为什么读已提交下同一事务两次查询可能结果不同？', '隔离级别用于在并发性能和读一致性之间取舍。
 读未提交可能脏读，读已提交避免脏读，可重复读避免不可重复读。
 串行化隔离最强但并发性能最低。
 容易踩坑的是把 MySQL 可重复读等同于所有场景都没有幻读。
 InnoDB 可重复读通过 MVCC 和 next-key lock 共同降低幻读风险。', 'HARD', 'MySQL,MySQL事务,ACID,隔离级别', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 211, NOW(), NOW()),
-('MYSQL', '可重复读为什么还可能有当前读', '请结合后端面试场景解释：可重复读为什么还可能有当前读？', '可重复读下普通 select 是快照读，update、delete、select for update 是当前读。
+('MYSQL', '可重复读为什么还可能有当前读', '可重复读为什么还可能有当前读？', '可重复读下普通 select 是快照读，update、delete、select for update 是当前读。
 
-具体展开时，先讲清楚核心机制：快照读读取 Read View 可见的历史版本，当前读读取最新记录并加锁。 同一事务里快照读和当前读看到的结果可能不同。
+快照读读取 Read View 可见的历史版本，当前读读取最新记录并加锁。 同一事务里快照读和当前读看到的结果可能不同。
 
-再补充使用边界和常见问题：容易出问题的地方是用普通 select 的结果推断后续 update 的加锁行为。 分析并发问题时必须先区分 SQL 是快照读还是当前读。
-
-如果面试官继续追问“哪些 SQL 属于当前读？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '哪些 SQL 属于当前读？
+容易踩坑的是用普通 select 的结果推断后续 update 的加锁行为。 分析并发问题时必须先区分 SQL 是快照读还是当前读。', '哪些 SQL 属于当前读？
 当前读为什么要读取最新版本？
 可重复读下 update 会不会看到别的事务已提交数据？', '可重复读下普通 select 是快照读，update、delete、select for update 是当前读。
 快照读读取 Read View 可见的历史版本，当前读读取最新记录并加锁。
 同一事务里快照读和当前读看到的结果可能不同。
 容易踩坑的是用普通 select 的结果推断后续 update 的加锁行为。
 分析并发问题时必须先区分 SQL 是快照读还是当前读。', 'HARD', 'MySQL,MySQL事务,ACID,隔离级别', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 212, NOW(), NOW()),
-('MYSQL', '事务传播到业务代码的边界', '请结合后端面试场景解释：事务传播到业务代码的边界？', '事务边界应该覆盖一个业务一致性单元，而不是越大越安全。
+('MYSQL', '事务传播到业务代码的边界', '事务传播到业务代码的边界是什么？', '事务边界应该覆盖一个业务一致性单元，而不是越大越安全。
 
-具体展开时，先讲清楚核心机制：数据库写入、状态变更和相关校验应在同一个事务里完成。 远程调用、长时间 IO 和用户交互不应放在事务中长期占用连接。
+数据库写入、状态变更和相关校验应在同一个事务里完成。 远程调用、长时间 IO 和用户交互不应放在事务中长期占用连接。
 
-再补充使用边界和常见问题：容易出问题的地方是事务包住外部接口调用，导致锁持有时间过长。 业务代码要明确哪些失败需要回滚，哪些可以补偿或重试。
-
-如果面试官继续追问“事务方法里调用远程接口有什么风险？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', '事务方法里调用远程接口有什么风险？
+容易踩坑的是事务包住外部接口调用，导致锁持有时间过长。 业务代码要明确哪些失败需要回滚，哪些可以补偿或重试。', '事务方法里调用远程接口有什么风险？
 一个订单创建流程事务边界应该怎么划？
 事务和消息发送如何保证最终一致？', '事务边界应该覆盖一个业务一致性单元，而不是越大越安全。
 数据库写入、状态变更和相关校验应在同一个事务里完成。
 远程调用、长时间 IO 和用户交互不应放在事务中长期占用连接。
 容易踩坑的是事务包住外部接口调用，导致锁持有时间过长。
 业务代码要明确哪些失败需要回滚，哪些可以补偿或重试。', 'HARD', 'MySQL,MySQL事务,ACID,隔离级别', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 213, NOW(), NOW()),
-('MYSQL', '长事务会带来什么风险', '请结合后端面试场景解释：长事务会带来什么风险？', '长事务会长时间持有锁、Read View 和数据库连接。
+('MYSQL', '长事务会带来什么风险', '长事务会带来什么风险？', '长事务会长时间持有锁、Read View 和数据库连接。
 
-具体展开时，先讲清楚核心机制：Read View 长时间存在会阻止 undo 历史版本清理，导致版本链膨胀。 锁持有时间变长会放大阻塞和死锁概率。
+Read View 长时间存在会阻止 undo 历史版本清理，导致版本链膨胀。 锁持有时间变长会放大阻塞和死锁概率。
 
-再补充使用边界和常见问题：容易出问题的地方是把大批量任务放进一个事务一次性提交。 治理长事务要拆批、缩短锁范围，并监控事务持续时间。
-
-如果面试官继续追问“长事务为什么会影响 undo 清理？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', '长事务为什么会影响 undo 清理？
+容易踩坑的是把大批量任务放进一个事务一次性提交。 治理长事务要拆批、缩短锁范围，并监控事务持续时间。', '长事务为什么会影响 undo 清理？
 如何在 MySQL 中查看长事务？
 大批量更新为什么要分批提交？', '长事务会长时间持有锁、Read View 和数据库连接。
 Read View 长时间存在会阻止 undo 历史版本清理，导致版本链膨胀。
 锁持有时间变长会放大阻塞和死锁概率。
 容易踩坑的是把大批量任务放进一个事务一次性提交。
 治理长事务要拆批、缩短锁范围，并监控事务持续时间。', 'HARD', 'MySQL,MySQL事务,ACID,隔离级别', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 214, NOW(), NOW()),
-('MYSQL', '行锁、表锁和间隙锁区别', '请结合后端面试场景解释：行锁、表锁和间隙锁区别？', '行锁锁住具体索引记录，表锁锁住整张表，间隙锁锁住索引记录之间的范围。
+('MYSQL', '行锁、表锁和间隙锁区别', '行锁、表锁和间隙锁有什么区别？', '行锁锁住具体索引记录，表锁锁住整张表，间隙锁锁住索引记录之间的范围。
 
-具体展开时，先讲清楚核心机制：InnoDB 行锁依赖索引，未命中索引可能扩大锁范围。 间隙锁主要用于范围约束，防止其他事务插入幻影记录。
+InnoDB 行锁依赖索引，未命中索引可能扩大锁范围。 间隙锁主要用于范围约束，防止其他事务插入幻影记录。
 
-再补充使用边界和常见问题：容易出问题的地方是以为 where 条件写了主键以外字段就一定是行锁。 分析锁问题要看 SQL 是否命中索引和事务隔离级别。
-
-如果面试官继续追问“InnoDB 行锁为什么说是加在索引上的？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', 'InnoDB 行锁为什么说是加在索引上的？
+容易踩坑的是以为 where 条件写了主键以外字段就一定是行锁。 分析锁问题要看 SQL 是否命中索引和事务隔离级别。', 'InnoDB 行锁为什么说是加在索引上的？
 间隙锁锁住的是已有记录还是范围？
 没有索引的更新为什么可能锁很多行？', '行锁锁住具体索引记录，表锁锁住整张表，间隙锁锁住索引记录之间的范围。
 InnoDB 行锁依赖索引，未命中索引可能扩大锁范围。
 间隙锁主要用于范围约束，防止其他事务插入幻影记录。
 容易踩坑的是以为 where 条件写了主键以外字段就一定是行锁。
 分析锁问题要看 SQL 是否命中索引和事务隔离级别。', 'HARD', 'MySQL,MySQL锁,行锁,间隙锁,死锁', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 220, NOW(), NOW()),
-('MYSQL', 'Next-Key Lock 解决什么问题', '请结合后端面试场景解释：Next-Key Lock 解决什么问题？', 'Next-Key Lock 是记录锁加间隙锁，用来锁住记录和记录前的范围。
+('MYSQL', 'Next-Key Lock 解决什么问题', 'Next-Key Lock 解决什么问题？', 'Next-Key Lock 是记录锁加间隙锁，用来锁住记录和记录前的范围。
 
-具体展开时，先讲清楚核心机制：它主要用于可重复读下的范围当前读，降低幻读风险。 锁住范围后，其他事务不能在范围内插入新记录。
+它主要用于可重复读下的范围当前读，降低幻读风险。 锁住范围后，其他事务不能在范围内插入新记录。
 
-再补充使用边界和常见问题：容易出问题的地方是忽略索引条件，导致 next-key lock 范围比预期大。 优化时要让范围查询命中合适索引，减少无关范围被锁。
-
-如果面试官继续追问“Next-Key Lock 和 Record Lock 有什么关系？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'Next-Key Lock 和 Record Lock 有什么关系？
+容易踩坑的是忽略索引条件，导致 next-key lock 范围比预期大。 优化时要让范围查询命中合适索引，减少无关范围被锁。', 'Next-Key Lock 和 Record Lock 有什么关系？
 为什么范围查询更容易产生间隙锁？
 唯一索引等值查询还会加间隙锁吗？', 'Next-Key Lock 是记录锁加间隙锁，用来锁住记录和记录前的范围。
 它主要用于可重复读下的范围当前读，降低幻读风险。
 锁住范围后，其他事务不能在范围内插入新记录。
 容易踩坑的是忽略索引条件，导致 next-key lock 范围比预期大。
 优化时要让范围查询命中合适索引，减少无关范围被锁。', 'HARD', 'MySQL,MySQL锁,行锁,间隙锁,死锁', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 221, NOW(), NOW()),
-('MYSQL', '死锁如何定位和避免', '请结合后端面试场景解释：死锁如何定位和避免？', '死锁定位先看 InnoDB 死锁日志，确认两个事务各自持有什么锁、等待什么锁。
+('MYSQL', '死锁如何定位和避免', '死锁如何定位和避免？', '死锁定位先看 InnoDB 死锁日志，确认两个事务各自持有什么锁、等待什么锁。
 
-具体展开时，先讲清楚核心机制：常见原因是多个事务以不同顺序访问同一批资源。 避免死锁要统一加锁顺序、缩短事务、命中索引并减少锁范围。
+常见原因是多个事务以不同顺序访问同一批资源。 避免死锁要统一加锁顺序、缩短事务、命中索引并减少锁范围。
 
-再补充使用边界和常见问题：容易出问题的地方是只重试死锁，不分析 SQL 和加锁顺序。 业务上要允许死锁重试，因为数据库只能回滚其中一个事务。
-
-如果面试官继续追问“SHOW ENGINE INNODB STATUS 里死锁信息怎么看？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', 'SHOW ENGINE INNODB STATUS 里死锁信息怎么看？
+容易踩坑的是只重试死锁，不分析 SQL 和加锁顺序。 业务上要允许死锁重试，因为数据库只能回滚其中一个事务。', 'SHOW ENGINE INNODB STATUS 里死锁信息怎么看？
 统一加锁顺序为什么能减少死锁？
 死锁重试应该放在业务哪一层？', '死锁定位先看 InnoDB 死锁日志，确认两个事务各自持有什么锁、等待什么锁。
 常见原因是多个事务以不同顺序访问同一批资源。
 避免死锁要统一加锁顺序、缩短事务、命中索引并减少锁范围。
 容易踩坑的是只重试死锁，不分析 SQL 和加锁顺序。
 业务上要允许死锁重试，因为数据库只能回滚其中一个事务。', 'HARD', 'MySQL,MySQL锁,行锁,间隙锁,死锁', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 222, NOW(), NOW()),
-('MYSQL', '乐观锁和悲观锁怎么选', '请结合后端面试场景解释：乐观锁和悲观锁怎么选？', '乐观锁假设冲突少，通过版本号或条件更新检测冲突。
+('MYSQL', '乐观锁和悲观锁怎么选', '乐观锁和悲观锁怎么选？', '乐观锁假设冲突少，通过版本号或条件更新检测冲突。
 
-具体展开时，先讲清楚核心机制：悲观锁假设冲突多，先加锁再修改，例如 select for update。 读多写少且冲突低适合乐观锁，强一致扣减和高冲突资源适合悲观锁。
+悲观锁假设冲突多，先加锁再修改，例如 select for update。 读多写少且冲突低适合乐观锁，强一致扣减和高冲突资源适合悲观锁。
 
-再补充使用边界和常见问题：容易出问题的地方是乐观锁失败后没有重试或用户提示。 选择锁策略要看冲突概率、等待成本和业务是否允许重试。
-
-如果面试官继续追问“版本号乐观锁 SQL 通常怎么写？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', '版本号乐观锁 SQL 通常怎么写？
+容易踩坑的是乐观锁失败后没有重试或用户提示。 选择锁策略要看冲突概率、等待成本和业务是否允许重试。', '版本号乐观锁 SQL 通常怎么写？
 库存扣减适合乐观锁还是悲观锁？
 乐观锁失败后应该自动重试吗？', '乐观锁假设冲突少，通过版本号或条件更新检测冲突。
 悲观锁假设冲突多，先加锁再修改，例如 select for update。
 读多写少且冲突低适合乐观锁，强一致扣减和高冲突资源适合悲观锁。
 容易踩坑的是乐观锁失败后没有重试或用户提示。
 选择锁策略要看冲突概率、等待成本和业务是否允许重试。', 'HARD', 'MySQL,MySQL锁,行锁,间隙锁,死锁', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 223, NOW(), NOW()),
-('MYSQL', 'select for update 使用边界', '请结合后端面试场景解释：select for update 使用边界？', 'select for update 是当前读，会对读取到的索引记录加排他锁。
+('MYSQL', 'select for update 使用边界', 'select for update 使用边界是什么？', 'select for update 是当前读，会对读取到的索引记录加排他锁。
 
-具体展开时，先讲清楚核心机制：它必须在事务中使用，否则锁会很快释放，达不到保护效果。 查询条件应命中合适索引，避免锁范围扩大。
+它必须在事务中使用，否则锁会很快释放，达不到保护效果。 查询条件应命中合适索引，避免锁范围扩大。
 
-再补充使用边界和常见问题：容易出问题的地方是在普通查询接口里使用它，造成并发吞吐下降。 适合需要先读后改且必须防并发修改的关键资源。
-
-如果面试官继续追问“select for update 不在事务里有什么问题？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'select for update 不在事务里有什么问题？
+容易踩坑的是在普通查询接口里使用它，造成并发吞吐下降。 适合需要先读后改且必须防并发修改的关键资源。', 'select for update 不在事务里有什么问题？
 它和普通 select 的读视图有什么区别？
 没有命中索引时锁范围会怎样变化？', 'select for update 是当前读，会对读取到的索引记录加排他锁。
 它必须在事务中使用，否则锁会很快释放，达不到保护效果。
 查询条件应命中合适索引，避免锁范围扩大。
 容易踩坑的是在普通查询接口里使用它，造成并发吞吐下降。
 适合需要先读后改且必须防并发修改的关键资源。', 'HARD', 'MySQL,MySQL锁,行锁,间隙锁,死锁', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 224, NOW(), NOW()),
-('MYSQL', 'MVCC 是什么', '请结合后端面试场景解释：MVCC 是什么？', 'MVCC 是多版本并发控制，用历史版本减少读写互相阻塞。
+('MYSQL', 'MVCC 是什么', 'MVCC 是什么？', 'MVCC 是多版本并发控制，用历史版本减少读写互相阻塞。
 
-具体展开时，先讲清楚核心机制：InnoDB 通过隐藏事务字段、undo log 版本链和 Read View 实现可见性判断。 快照读可以读取对当前事务可见的历史版本。
+InnoDB 通过隐藏事务字段、undo log 版本链和 Read View 实现可见性判断。 快照读可以读取对当前事务可见的历史版本。
 
-再补充使用边界和常见问题：容易出问题的地方是认为 MVCC 能解决所有并发问题，写写冲突仍需要锁。 MVCC 主要优化读一致性和读写并发。
-
-如果面试官继续追问“MVCC 依赖哪些隐藏字段？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', 'MVCC 依赖哪些隐藏字段？
+容易踩坑的是认为 MVCC 能解决所有并发问题，写写冲突仍需要锁。 MVCC 主要优化读一致性和读写并发。', 'MVCC 依赖哪些隐藏字段？
 undo log 在 MVCC 中起什么作用？
 为什么写写冲突不能只靠 MVCC？', 'MVCC 是多版本并发控制，用历史版本减少读写互相阻塞。
 InnoDB 通过隐藏事务字段、undo log 版本链和 Read View 实现可见性判断。
 快照读可以读取对当前事务可见的历史版本。
 容易踩坑的是认为 MVCC 能解决所有并发问题，写写冲突仍需要锁。
 MVCC 主要优化读一致性和读写并发。', 'HARD', 'MySQL,MVCC,Read View,undo log,版本链', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 230, NOW(), NOW()),
-('MYSQL', 'Read View 如何判断版本可见', '请结合后端面试场景解释：Read View 如何判断版本可见？', 'Read View 记录当前活跃事务集合和事务 ID 边界，用于判断版本是否可见。
+('MYSQL', 'Read View 如何判断版本可见', 'Read View 如何判断版本可见？', 'Read View 记录当前活跃事务集合和事务 ID 边界，用于判断版本是否可见。
 
-具体展开时，先讲清楚核心机制：版本的 trx_id 小于低水位通常可见，大于等于高水位通常不可见。 如果版本事务 ID 在活跃事务集合中，说明创建它的事务当时还未提交，不可见。
+版本的 trx_id 小于低水位通常可见，大于等于高水位通常不可见。 如果版本事务 ID 在活跃事务集合中，说明创建它的事务当时还未提交，不可见。
 
-再补充使用边界和常见问题：容易出问题的地方是只背规则，不结合 undo 版本链从新到旧查找。 不同隔离级别下 Read View 创建时机不同。
-
-如果面试官继续追问“读已提交和可重复读的 Read View 创建时机有什么不同？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', '读已提交和可重复读的 Read View 创建时机有什么不同？
+容易踩坑的是只背规则，不结合 undo 版本链从新到旧查找。 不同隔离级别下 Read View 创建时机不同。', '读已提交和可重复读的 Read View 创建时机有什么不同？
 活跃事务列表在可见性判断里有什么作用？
 版本链中当前版本不可见时会继续看哪里？', 'Read View 记录当前活跃事务集合和事务 ID 边界，用于判断版本是否可见。
 版本的 trx_id 小于低水位通常可见，大于等于高水位通常不可见。
 如果版本事务 ID 在活跃事务集合中，说明创建它的事务当时还未提交，不可见。
 容易踩坑的是只背规则，不结合 undo 版本链从新到旧查找。
 不同隔离级别下 Read View 创建时机不同。', 'HARD', 'MySQL,MVCC,Read View,undo log,版本链', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 231, NOW(), NOW()),
-('MYSQL', 'undo log 和版本链关系', '请结合后端面试场景解释：undo log 和版本链关系？', 'undo log 既支持事务回滚，也保存旧版本用于 MVCC 快照读。
+('MYSQL', 'undo log 和版本链关系', 'undo log 和版本链关系是什么？', 'undo log 既支持事务回滚，也保存旧版本用于 MVCC 快照读。
 
-具体展开时，先讲清楚核心机制：每次更新会把旧值写入 undo log，并通过回滚指针串成版本链。 快照读沿版本链查找对当前 Read View 可见的版本。
+每次更新会把旧值写入 undo log，并通过回滚指针串成版本链。 快照读沿版本链查找对当前 Read View 可见的版本。
 
-再补充使用边界和常见问题：容易出问题的地方是把 undo log 只理解成回滚日志。 长事务会让旧版本无法及时清理，导致 undo 空间增长。
-
-如果面试官继续追问“更新一行记录时版本链如何变化？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', '更新一行记录时版本链如何变化？
+容易踩坑的是把 undo log 只理解成回滚日志。 长事务会让旧版本无法及时清理，导致 undo 空间增长。', '更新一行记录时版本链如何变化？
 为什么长事务会拖住 undo 清理？
 purge 线程主要清理什么？', 'undo log 既支持事务回滚，也保存旧版本用于 MVCC 快照读。
 每次更新会把旧值写入 undo log，并通过回滚指针串成版本链。
 快照读沿版本链查找对当前 Read View 可见的版本。
 容易踩坑的是把 undo log 只理解成回滚日志。
 长事务会让旧版本无法及时清理，导致 undo 空间增长。', 'HARD', 'MySQL,MVCC,Read View,undo log,版本链', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 232, NOW(), NOW()),
-('MYSQL', '快照读和当前读区别', '请结合后端面试场景解释：快照读和当前读区别？', '快照读读取 Read View 可见的历史版本，当前读读取最新版本并参与加锁。
+('MYSQL', '快照读和当前读区别', '快照读和当前读有什么区别？', '快照读读取 Read View 可见的历史版本，当前读读取最新版本并参与加锁。
 
-具体展开时，先讲清楚核心机制：普通 select 通常是快照读，update、delete、select for update 是当前读。 当前读必须看到最新数据，才能保证后续修改基于真实当前状态。
+普通 select 通常是快照读，update、delete、select for update 是当前读。 当前读必须看到最新数据，才能保证后续修改基于真实当前状态。
 
-再补充使用边界和常见问题：容易出问题的地方是用快照读结果判断当前读是否会阻塞。 排查并发问题时先给每条 SQL 分类。
-
-如果面试官继续追问“普通 select 在什么情况下不是快照读？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '普通 select 在什么情况下不是快照读？
+容易踩坑的是用快照读结果判断当前读是否会阻塞。 排查并发问题时先给每条 SQL 分类。', '普通 select 在什么情况下不是快照读？
 当前读为什么需要加锁？
 可重复读下快照读和当前读可能看到不同结果吗？', '快照读读取 Read View 可见的历史版本，当前读读取最新版本并参与加锁。
 普通 select 通常是快照读，update、delete、select for update 是当前读。
 当前读必须看到最新数据，才能保证后续修改基于真实当前状态。
 容易踩坑的是用快照读结果判断当前读是否会阻塞。
 排查并发问题时先给每条 SQL 分类。', 'HARD', 'MySQL,MVCC,Read View,undo log,版本链', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 233, NOW(), NOW()),
-('MYSQL', 'MVCC 为什么不能完全替代锁', '请结合后端面试场景解释：MVCC 为什么不能完全替代锁？', 'MVCC 优化读写并发，但不能替代写写互斥、范围约束和唯一性检查。
+('MYSQL', 'MVCC 为什么不能完全替代锁', 'MVCC 为什么不能完全替代锁？', 'MVCC 优化读写并发，但不能替代写写互斥、范围约束和唯一性检查。
 
-具体展开时，先讲清楚核心机制：两个事务同时修改同一行时仍需要锁保证最终一致。 范围插入、防幻读和 select for update 这类当前读也需要锁。
+两个事务同时修改同一行时仍需要锁保证最终一致。 范围插入、防幻读和 select for update 这类当前读也需要锁。
 
-再补充使用边界和常见问题：容易出问题的地方是以为有 MVCC 就不会发生阻塞。 真实并发控制是 MVCC 和锁共同工作。
-
-如果面试官继续追问“为什么两个事务更新同一行还会互相等待？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', '为什么两个事务更新同一行还会互相等待？
+容易踩坑的是以为有 MVCC 就不会发生阻塞。 真实并发控制是 MVCC 和锁共同工作。', '为什么两个事务更新同一行还会互相等待？
 唯一索引冲突为什么不能只靠版本链判断？
 MVCC 和 next-key lock 分别负责什么？', 'MVCC 优化读写并发，但不能替代写写互斥、范围约束和唯一性检查。
 两个事务同时修改同一行时仍需要锁保证最终一致。
 范围插入、防幻读和 select for update 这类当前读也需要锁。
 容易踩坑的是以为有 MVCC 就不会发生阻塞。
 真实并发控制是 MVCC 和锁共同工作。', 'HARD', 'MySQL,MVCC,Read View,undo log,版本链', '小林 coding, JavaGuide', 'https://xiaolincoding.com/mysql/', 1, 234, NOW(), NOW()),
-('REDIS', 'Redis 为什么快', '请结合后端面试场景解释：Redis 为什么快？', 'Redis 快主要来自内存访问、单线程命令执行、高效数据结构和 IO 多路复用。
+('REDIS', 'Redis 为什么快', 'Redis 为什么快？', 'Redis 快主要来自内存访问、单线程命令执行、高效数据结构和 IO 多路复用。
 
-具体展开时，先讲清楚核心机制：单线程避免了命令执行阶段的大量锁竞争和上下文切换。 网络层使用 IO 多路复用处理大量连接。
+单线程避免了命令执行阶段的大量锁竞争和上下文切换。 网络层使用 IO 多路复用处理大量连接。
 
-再补充使用边界和常见问题：容易出问题的地方是认为 Redis 永远不会慢，大 key 和慢命令会阻塞事件循环。 Redis 6 以后有多线程 IO，但命令执行核心仍需理解单线程模型。
-
-如果面试官继续追问“Redis 单线程为什么还能支撑高并发？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到线上排查，我会把它和 Redis 慢查询、命令耗时、key 规模、过期策略、主从高可用以及降级预案联系起来，而不是只停在概念定义上。', 'Redis 单线程为什么还能支撑高并发？
+容易踩坑的是认为 Redis 永远不会慢，大 key 和慢命令会阻塞事件循环。 Redis 6 以后有多线程 IO，但命令执行核心仍需理解单线程模型。', 'Redis 单线程为什么还能支撑高并发？
 哪些命令可能让 Redis 变慢？
 Redis 6 多线程主要优化了什么？', 'Redis 快主要来自内存访问、单线程命令执行、高效数据结构和 IO 多路复用。
 单线程避免了命令执行阶段的大量锁竞争和上下文切换。
 网络层使用 IO 多路复用处理大量连接。
 容易踩坑的是认为 Redis 永远不会慢，大 key 和慢命令会阻塞事件循环。
 Redis 6 以后有多线程 IO，但命令执行核心仍需理解单线程模型。', 'MEDIUM', 'Redis,Redis数据结构,String,Hash,List,Set,ZSet', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 300, NOW(), NOW()),
-('REDIS', 'String 的典型使用场景', '请结合后端面试场景解释：String 的典型使用场景？', 'Redis String 适合缓存简单值、计数器、分布式锁 value 和位图类场景。
+('REDIS', 'String 的典型使用场景', 'String 的典型使用场景是什么？', 'Redis String 适合缓存简单值、计数器、分布式锁 value 和位图类场景。
 
-具体展开时，先讲清楚核心机制：String 可以存文本、数字和二进制安全数据。 INCR/DECR 适合原子计数，SET NX EX 适合锁的基础原语。
+String 可以存文本、数字和二进制安全数据。 INCR/DECR 适合原子计数，SET NX EX 适合锁的基础原语。
 
-再补充使用边界和常见问题：容易出问题的地方是把很大的对象整体塞成 String，形成 big key。 对象字段频繁局部更新时 Hash 可能比 String 更合适。
-
-如果面试官继续追问“String 和 Hash 存对象时怎么选？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'String 和 Hash 存对象时怎么选？
+容易踩坑的是把很大的对象整体塞成 String，形成 big key。 对象字段频繁局部更新时 Hash 可能比 String 更合适。', 'String 和 Hash 存对象时怎么选？
 INCR 为什么能做原子计数？
 String big key 会影响哪些环节？', 'Redis String 适合缓存简单值、计数器、分布式锁 value 和位图类场景。
 String 可以存文本、数字和二进制安全数据。
 INCR/DECR 适合原子计数，SET NX EX 适合锁的基础原语。
 容易踩坑的是把很大的对象整体塞成 String，形成 big key。
 对象字段频繁局部更新时 Hash 可能比 String 更合适。', 'MEDIUM', 'Redis,Redis数据结构,String,Hash,List,Set,ZSet', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 301, NOW(), NOW()),
-('REDIS', 'Hash 结构适合存什么', '请结合后端面试场景解释：Hash 结构适合存什么？', 'Redis Hash 适合存对象的多个字段，支持字段级读写。
+('REDIS', 'Hash 结构适合存什么', 'Hash 结构适合存什么？', 'Redis Hash 适合存对象的多个字段，支持字段级读写。
 
-具体展开时，先讲清楚核心机制：相比整个对象序列化成 String，Hash 更新单个字段更方便。 小 Hash 会使用紧凑编码，大 Hash 仍要关注内存和 big key。
+相比整个对象序列化成 String，Hash 更新单个字段更方便。 小 Hash 会使用紧凑编码，大 Hash 仍要关注内存和 big key。
 
-再补充使用边界和常见问题：容易出问题的地方是把超大对象所有字段塞进一个 Hash。 用户资料、配置项、购物车条目都可以考虑 Hash。
-
-如果面试官继续追问“Hash 相比 String 存对象有什么优势？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'Hash 相比 String 存对象有什么优势？
+容易踩坑的是把超大对象所有字段塞进一个 Hash。 用户资料、配置项、购物车条目都可以考虑 Hash。', 'Hash 相比 String 存对象有什么优势？
 Hash 什么时候也会变成 big key？
 字段级过期 Redis 原生支持吗？', 'Redis Hash 适合存对象的多个字段，支持字段级读写。
 相比整个对象序列化成 String，Hash 更新单个字段更方便。
 小 Hash 会使用紧凑编码，大 Hash 仍要关注内存和 big key。
 容易踩坑的是把超大对象所有字段塞进一个 Hash。
 用户资料、配置项、购物车条目都可以考虑 Hash。', 'MEDIUM', 'Redis,Redis数据结构,String,Hash,List,Set,ZSet', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 302, NOW(), NOW()),
-('REDIS', 'List、Set、ZSet 如何选择', '请结合后端面试场景解释：List、Set、ZSet 如何选择？', 'List 保持插入顺序，Set 做无序去重，ZSet 在去重基础上按 score 排序。
+('REDIS', 'List、Set、ZSet 如何选择', 'Redis 的 List、Set、ZSet 怎么选择？', 'List 保持插入顺序，Set 做无序去重，ZSet 在去重基础上按 score 排序。
 
-具体展开时，先讲清楚核心机制：消息队列或时间顺序列表可用 List，但复杂队列更推荐 Stream。 用户标签、共同好友可用 Set，排行榜和延时任务可用 ZSet。
+消息队列或时间顺序列表可用 List，但复杂队列更推荐 Stream。 用户标签、共同好友可用 Set，排行榜和延时任务可用 ZSet。
 
-再补充使用边界和常见问题：容易出问题的地方是为了排序使用 List 手动维护，复杂度高且不稳定。 选择结构要看是否需要顺序、去重、排序和范围查询。
-
-如果面试官继续追问“排行榜为什么通常用 ZSet？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '排行榜为什么通常用 ZSet？
+容易踩坑的是为了排序使用 List 手动维护，复杂度高且不稳定。 选择结构要看是否需要顺序、去重、排序和范围查询。', '排行榜为什么通常用 ZSet？
 Set 和 ZSet 的去重依据是什么？
 Redis Stream 相比 List 队列多了什么能力？', 'List 保持插入顺序，Set 做无序去重，ZSet 在去重基础上按 score 排序。
 消息队列或时间顺序列表可用 List，但复杂队列更推荐 Stream。
 用户标签、共同好友可用 Set，排行榜和延时任务可用 ZSet。
 容易踩坑的是为了排序使用 List 手动维护，复杂度高且不稳定。
 选择结构要看是否需要顺序、去重、排序和范围查询。', 'MEDIUM', 'Redis,Redis数据结构,String,Hash,List,Set,ZSet', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 303, NOW(), NOW()),
-('REDIS', '大 key 会带来什么问题', '请结合后端面试场景解释：大 key 会带来什么问题？', '大 key 会拖慢命令执行、网络传输、持久化和主从同步。
+('REDIS', '大 key 会带来什么问题', '大 key 会带来什么问题？', '大 key 会拖慢命令执行、网络传输、持久化和主从同步。
 
-具体展开时，先讲清楚核心机制：Redis 单线程执行大 key 操作时，其他请求会被阻塞。 删除大 key 可能造成明显卡顿，通常要异步删除或分批清理。
+Redis 单线程执行大 key 操作时，其他请求会被阻塞。 删除大 key 可能造成明显卡顿，通常要异步删除或分批清理。
 
-再补充使用边界和常见问题：容易出问题的地方是只关注 key 数量，不关注单个 key 的体积和元素数量。 治理大 key 要拆分结构、限制元素数量并建立扫描监控。
-
-如果面试官继续追问“如何在线上发现 Redis 大 key？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '如何在线上发现 Redis 大 key？
+容易踩坑的是只关注 key 数量，不关注单个 key 的体积和元素数量。 治理大 key 要拆分结构、限制元素数量并建立扫描监控。', '如何在线上发现 Redis 大 key？
 DEL 和 UNLINK 删除大 key 有什么区别？
 大 key 对 RDB/AOF 有什么影响？', '大 key 会拖慢命令执行、网络传输、持久化和主从同步。
 Redis 单线程执行大 key 操作时，其他请求会被阻塞。
 删除大 key 可能造成明显卡顿，通常要异步删除或分批清理。
 容易踩坑的是只关注 key 数量，不关注单个 key 的体积和元素数量。
 治理大 key 要拆分结构、限制元素数量并建立扫描监控。', 'MEDIUM', 'Redis,Redis数据结构,String,Hash,List,Set,ZSet', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 304, NOW(), NOW()),
-('REDIS', 'Redis 缓存击穿、穿透与雪崩', '请结合后端面试场景解释：Redis 缓存击穿、穿透与雪崩？', '这三个问题要分开答，不能混在一起说。它们共同点都是请求绕过缓存打到后端，但发生原因和治理手段不一样。
+('REDIS', 'Redis 缓存击穿、穿透与雪崩', 'Redis 缓存击穿、穿透与雪崩怎么理解？', '这三个问题要分开答，不能混在一起说。它们共同点都是请求绕过缓存打到后端，但发生原因和治理手段不一样。
 
 1. 缓存穿透：请求查的是数据库里根本不存在的数据，比如恶意请求随机 id，缓存查不到，数据库也查不到。因为缓存没有命中记录，每次请求都会继续打数据库。常见处理是缓存空值、做参数校验，或者在缓存前加布隆过滤器，把明显不存在的数据挡掉。
 
@@ -1069,67 +813,53 @@ Redis 单线程执行大 key 操作时，其他请求会被阻塞。
 缓存雪崩是大量 key 同时失效或缓存服务整体异常，影响范围比击穿更大。
 雪崩常用随机 TTL、分批预热、多级缓存、限流降级和 Redis 高可用处理。
 三者不要混答：穿透看数据是否存在，击穿看单个热点，雪崩看大面积失效。', 'MEDIUM', 'Redis,Redis缓存,缓存穿透,缓存击穿,缓存雪崩,布隆过滤器', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 310, NOW(), NOW()),
-('REDIS', '缓存与数据库一致性', '请结合后端面试场景解释：缓存与数据库一致性？', '缓存与数据库一致性通常追求最终一致，而不是强行做分布式强一致。
+('REDIS', '缓存与数据库一致性', '缓存与数据库一致性怎么理解？', '缓存与数据库一致性通常追求最终一致，而不是强行做分布式强一致。
 
-具体展开时，先讲清楚核心机制：常见策略是先更新数据库，再删除缓存，并配合重试或消息补偿。 删除缓存失败要有重试机制，否则旧缓存可能长期存在。
+常见策略是先更新数据库，再删除缓存，并配合重试或消息补偿。 删除缓存失败要有重试机制，否则旧缓存可能长期存在。
 
-再补充使用边界和常见问题：容易出问题的地方是更新数据库后直接更新缓存，多个并发写可能覆盖新值。 高一致要求场景要评估延迟双删、binlog 订阅或读写串行化。
-
-如果面试官继续追问“为什么常说更新数据库后删除缓存？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到线上排查，我会把它和 Redis 慢查询、命令耗时、key 规模、过期策略、主从高可用以及降级预案联系起来，而不是只停在概念定义上。', '为什么常说更新数据库后删除缓存？
+容易踩坑的是更新数据库后直接更新缓存，多个并发写可能覆盖新值。 高一致要求场景要评估延迟双删、binlog 订阅或读写串行化。', '为什么常说更新数据库后删除缓存？
 删除缓存失败怎么补偿？
 延迟双删解决的是什么窗口问题？', '缓存与数据库一致性通常追求最终一致，而不是强行做分布式强一致。
 常见策略是先更新数据库，再删除缓存，并配合重试或消息补偿。
 删除缓存失败要有重试机制，否则旧缓存可能长期存在。
 容易踩坑的是更新数据库后直接更新缓存，多个并发写可能覆盖新值。
 高一致要求场景要评估延迟双删、binlog 订阅或读写串行化。', 'MEDIUM', 'Redis,Redis缓存,缓存穿透,缓存击穿,缓存雪崩,布隆过滤器', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 311, NOW(), NOW()),
-('REDIS', '热点 key 如何治理', '请结合后端面试场景解释：热点 key 如何治理？', '热点 key 是被大量请求集中访问的 key，会让单节点或单分片压力过高。
+('REDIS', '热点 key 如何治理', '热点 key 如何治理？', '热点 key 是被大量请求集中访问的 key，会让单节点或单分片压力过高。
 
-具体展开时，先讲清楚核心机制：治理手段包括本地缓存、请求合并、逻辑过期、分片 key 和限流降级。 热点 key 失效前要预热或续期，避免瞬间打到数据库。
+治理手段包括本地缓存、请求合并、逻辑过期、分片 key 和限流降级。 热点 key 失效前要预热或续期，避免瞬间打到数据库。
 
-再补充使用边界和常见问题：容易出问题的地方是只加机器，不处理热点集中在单 key 的问题。 监控要能发现访问频率异常和单节点流量倾斜。
-
-如果面试官继续追问“热点 key 和大 key 有什么区别？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到线上排查，我会把它和 Redis 慢查询、命令耗时、key 规模、过期策略、主从高可用以及降级预案联系起来，而不是只停在概念定义上。', '热点 key 和大 key 有什么区别？
+容易踩坑的是只加机器，不处理热点集中在单 key 的问题。 监控要能发现访问频率异常和单节点流量倾斜。', '热点 key 和大 key 有什么区别？
 本地缓存热点数据有什么一致性风险？
 热点 key 拆分后读写如何聚合？', '热点 key 是被大量请求集中访问的 key，会让单节点或单分片压力过高。
 治理手段包括本地缓存、请求合并、逻辑过期、分片 key 和限流降级。
 热点 key 失效前要预热或续期，避免瞬间打到数据库。
 容易踩坑的是只加机器，不处理热点集中在单 key 的问题。
 监控要能发现访问频率异常和单节点流量倾斜。', 'MEDIUM', 'Redis,Redis缓存,缓存穿透,缓存击穿,缓存雪崩,布隆过滤器', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 312, NOW(), NOW()),
-('REDIS', '布隆过滤器解决什么问题', '请结合后端面试场景解释：布隆过滤器解决什么问题？', '布隆过滤器用于快速判断元素可能存在或一定不存在，适合拦截缓存穿透。
+('REDIS', '布隆过滤器解决什么问题', '布隆过滤器解决什么问题？', '布隆过滤器主要用来解决缓存穿透问题。缓存穿透指的是大量请求查询一些数据库中根本不存在的数据，这些请求无法命中缓存，最终都打到数据库上，给数据库造成压力。
 
-具体展开时，先讲清楚核心机制：它用多个 hash 函数映射到位图，查询时检查多个位置是否都为 1。 布隆过滤器可能误判存在，但不会把真实存在判断为不存在。
+布隆过滤器的核心结构是一个 bit 数组和多个 hash 函数。当一个 key 需要加入布隆过滤器时，会通过多个 hash 函数计算出多个下标，并把 bit 数组中对应的位置置为 1。查询时也对这个 key 做同样的 hash 计算。
 
-再补充使用边界和常见问题：容易出问题的地方是以为布隆过滤器可以删除任意元素或完全准确。 容量和误判率需要提前估算，数据变化大时要考虑重建或计数布隆过滤器。
+如果发现任意一个位置是 0，就说明这个 key 一定不存在，可以直接拦截，不再查缓存和数据库。如果所有位置都是 1，只能说明这个 key 可能存在，这时候再继续查缓存或数据库。这个结论是布隆过滤器最重要的边界：它能确定不存在，但不能百分百确定存在。
 
-如果面试官继续追问“布隆过滤器为什么会误判？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到线上排查，我会把它和 Redis 慢查询、命令耗时、key 规模、过期策略、主从高可用以及降级预案联系起来，而不是只停在概念定义上。', '布隆过滤器为什么会误判？
+它不会把已经正确加入过的数据判断为不存在，但可能把不存在的数据判断为存在，也就是存在一定误判率。误判的原因是 hash 冲突，不同 key 可能把相同的 bit 位都置成 1。实际使用中要根据数据量和可接受误判率提前设置 bit 数组大小和 hash 函数数量；如果数据变化很大，或者有删除需求，普通布隆过滤器就不太适合直接用，需要考虑定期重建、计数布隆过滤器，或者配合缓存空值兜底。', '布隆过滤器为什么会误判？
 普通布隆过滤器为什么不擅长删除？
 缓存穿透场景中布隆过滤器放在哪一层？', '布隆过滤器用于快速判断元素可能存在或一定不存在，适合拦截缓存穿透。
 它用多个 hash 函数映射到位图，查询时检查多个位置是否都为 1。
 布隆过滤器可能误判存在，但不会把真实存在判断为不存在。
 容易踩坑的是以为布隆过滤器可以删除任意元素或完全准确。
 容量和误判率需要提前估算，数据变化大时要考虑重建或计数布隆过滤器。', 'MEDIUM', 'Redis,Redis缓存,缓存穿透,缓存击穿,缓存雪崩,布隆过滤器', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 313, NOW(), NOW()),
-('REDIS', '缓存预热和降级怎么设计', '请结合后端面试场景解释：缓存预热和降级怎么设计？', '缓存预热是在流量到来前提前加载热点数据，降级是在缓存或下游异常时保核心能力。
+('REDIS', '缓存预热和降级怎么设计', '缓存预热和降级怎么设计？', '缓存预热是在流量到来前提前加载热点数据，降级是在缓存或下游异常时保核心能力。
 
-具体展开时，先讲清楚核心机制：预热数据应来自真实热点、运营配置或定时任务，不应盲目全量加载。 降级可以返回默认值、静态数据、限流提示或关闭非核心功能。
+预热数据应来自真实热点、运营配置或定时任务，不应盲目全量加载。 降级可以返回默认值、静态数据、限流提示或关闭非核心功能。
 
-再补充使用边界和常见问题：容易出问题的地方是预热过多挤爆缓存，或降级没有恢复和告警机制。 设计时要明确触发条件、恢复条件和用户可接受体验。
-
-如果面试官继续追问“哪些数据适合做缓存预热？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到线上排查，我会把它和 Redis 慢查询、命令耗时、key 规模、过期策略、主从高可用以及降级预案联系起来，而不是只停在概念定义上。', '哪些数据适合做缓存预热？
+容易踩坑的是预热过多挤爆缓存，或降级没有恢复和告警机制。 设计时要明确触发条件、恢复条件和用户可接受体验。', '哪些数据适合做缓存预热？
 缓存异常时接口应该直接失败还是降级？
 降级开关如何避免长期忘记恢复？', '缓存预热是在流量到来前提前加载热点数据，降级是在缓存或下游异常时保核心能力。
 预热数据应来自真实热点、运营配置或定时任务，不应盲目全量加载。
 降级可以返回默认值、静态数据、限流提示或关闭非核心功能。
 容易踩坑的是预热过多挤爆缓存，或降级没有恢复和告警机制。
 设计时要明确触发条件、恢复条件和用户可接受体验。', 'MEDIUM', 'Redis,Redis缓存,缓存穿透,缓存击穿,缓存雪崩,布隆过滤器', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 314, NOW(), NOW()),
-('REDIS', 'Redis RDB 和 AOF 持久化', '请结合后端面试场景解释：Redis RDB 和 AOF 持久化？', 'Redis 持久化可以先分开讲：RDB 保存的是某个时间点的数据快照，AOF 保存的是写命令追加日志。一个偏恢复速度，一个偏数据安全。
+('REDIS', 'Redis RDB 和 AOF 持久化', 'Redis RDB 和 AOF 持久化怎么理解？', 'Redis 持久化可以先分开讲：RDB 保存的是某个时间点的数据快照，AOF 保存的是写命令追加日志。一个偏恢复速度，一个偏数据安全。
 
 RDB 的做法是把当前内存数据生成快照文件。它的优点是文件紧凑、恢复速度快，适合做全量备份和快速重启；缺点是两次快照之间的数据可能丢失。生成 RDB 通常会 fork 子进程，数据量大或写入压力高时，要关注 fork 耗时、写时复制带来的内存峰值，以及磁盘 IO 抖动。
 
@@ -1145,660 +875,489 @@ AOF 数据丢失窗口更小，但文件更大，恢复时需要重放命令。
 AOF fsync 策略要取舍：always 更安全但慢，everysec 常用，no 性能好但风险高。
 AOF 重写用于压缩日志，避免命令追加文件无限变大。
 混合持久化用 RDB 快照加 AOF 增量，兼顾恢复速度和数据安全。', 'MEDIUM', 'Redis,Redis持久化,RDB,AOF', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 320, NOW(), NOW()),
-('REDIS', 'AOF 重写解决什么问题', '请结合后端面试场景解释：AOF 重写解决什么问题？', 'AOF 重写用于压缩日志体积，把当前数据状态转换成更短的写命令序列。
+('REDIS', 'AOF 重写解决什么问题', 'AOF 重写解决什么问题？', 'AOF 重写用于压缩日志体积，把当前数据状态转换成更短的写命令序列。
 
-具体展开时，先讲清楚核心机制：重写不是逐行压缩旧 AOF，而是根据内存中当前数据重新生成文件。 重写期间新写入会进入缓冲，最后追加到新 AOF。
+重写不是逐行压缩旧 AOF，而是根据内存中当前数据重新生成文件。 重写期间新写入会进入缓冲，最后追加到新 AOF。
 
-再补充使用边界和常见问题：容易出问题的地方是认为重写会阻塞所有命令执行。 重写会带来 fork 和磁盘 IO 压力，需要避开高峰期。
-
-如果面试官继续追问“AOF 重写为什么不直接修改旧文件？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到线上排查，我会把它和 Redis 慢查询、命令耗时、key 规模、过期策略、主从高可用以及降级预案联系起来，而不是只停在概念定义上。', 'AOF 重写为什么不直接修改旧文件？
+容易踩坑的是认为重写会阻塞所有命令执行。 重写会带来 fork 和磁盘 IO 压力，需要避开高峰期。', 'AOF 重写为什么不直接修改旧文件？
 重写期间新写命令如何保证不丢？
 AOF 文件过大对恢复有什么影响？', 'AOF 重写用于压缩日志体积，把当前数据状态转换成更短的写命令序列。
 重写不是逐行压缩旧 AOF，而是根据内存中当前数据重新生成文件。
 重写期间新写入会进入缓冲，最后追加到新 AOF。
 容易踩坑的是认为重写会阻塞所有命令执行。
 重写会带来 fork 和磁盘 IO 压力，需要避开高峰期。', 'MEDIUM', 'Redis,Redis持久化,RDB,AOF', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 321, NOW(), NOW()),
-('REDIS', 'RDB 快照触发方式', '请结合后端面试场景解释：RDB 快照触发方式？', 'RDB 快照可以由 save、bgsave、配置规则、主从复制和 shutdown 触发。
+('REDIS', 'RDB 快照触发方式', 'RDB 快照触发方式怎么理解？', 'RDB 快照可以由 save、bgsave、配置规则、主从复制和 shutdown 触发。
 
-具体展开时，先讲清楚核心机制：save 会阻塞主线程，bgsave 通过 fork 子进程生成快照。 fork 后采用写时复制，写入频繁时内存峰值会升高。
+save 会阻塞主线程，bgsave 通过 fork 子进程生成快照。 fork 后采用写时复制，写入频繁时内存峰值会升高。
 
-再补充使用边界和常见问题：容易出问题的地方是忽略 bgsave 期间磁盘 IO 和内存压力。 生产更关注 bgsave 成功率、耗时和 lastsave 时间。
-
-如果面试官继续追问“save 和 bgsave 最大区别是什么？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到线上排查，我会把它和 Redis 慢查询、命令耗时、key 规模、过期策略、主从高可用以及降级预案联系起来，而不是只停在概念定义上。', 'save 和 bgsave 最大区别是什么？
+容易踩坑的是忽略 bgsave 期间磁盘 IO 和内存压力。 生产更关注 bgsave 成功率、耗时和 lastsave 时间。', 'save 和 bgsave 最大区别是什么？
 写时复制为什么会增加内存峰值？
 主从全量同步为什么可能触发 RDB？', 'RDB 快照可以由 save、bgsave、配置规则、主从复制和 shutdown 触发。
 save 会阻塞主线程，bgsave 通过 fork 子进程生成快照。
 fork 后采用写时复制，写入频繁时内存峰值会升高。
 容易踩坑的是忽略 bgsave 期间磁盘 IO 和内存压力。
 生产更关注 bgsave 成功率、耗时和 lastsave 时间。', 'MEDIUM', 'Redis,Redis持久化,RDB,AOF', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 322, NOW(), NOW()),
-('REDIS', '混合持久化的价值', '请结合后端面试场景解释：混合持久化的价值？', '混合持久化把 RDB 快照和 AOF 增量写入结合到同一个 AOF 文件中。
+('REDIS', '混合持久化的价值', '混合持久化的价值是什么？', '混合持久化把 RDB 快照和 AOF 增量写入结合到同一个 AOF 文件中。
 
-具体展开时，先讲清楚核心机制：恢复时先加载 RDB 部分，再重放后续 AOF 增量。 它比纯 AOF 恢复更快，比纯 RDB 丢数据窗口更小。
+恢复时先加载 RDB 部分，再重放后续 AOF 增量。 它比纯 AOF 恢复更快，比纯 RDB 丢数据窗口更小。
 
-再补充使用边界和常见问题：容易出问题的地方是开启混合持久化后仍按纯 AOF 文件格式排查。 适合同时关注恢复时间和数据安全的生产场景。
-
-如果面试官继续追问“混合持久化为什么恢复更快？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '混合持久化为什么恢复更快？
+容易踩坑的是开启混合持久化后仍按纯 AOF 文件格式排查。 适合同时关注恢复时间和数据安全的生产场景。', '混合持久化为什么恢复更快？
 它相比 RDB 和 AOF 分别牺牲了什么？
 旧版本 Redis 能否读取混合持久化文件？', '混合持久化把 RDB 快照和 AOF 增量写入结合到同一个 AOF 文件中。
 恢复时先加载 RDB 部分，再重放后续 AOF 增量。
 它比纯 AOF 恢复更快，比纯 RDB 丢数据窗口更小。
 容易踩坑的是开启混合持久化后仍按纯 AOF 文件格式排查。
 适合同时关注恢复时间和数据安全的生产场景。', 'MEDIUM', 'Redis,Redis持久化,RDB,AOF', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 323, NOW(), NOW()),
-('REDIS', 'Redis 宕机恢复如何取舍', '请结合后端面试场景解释：Redis 宕机恢复如何取舍？', 'Redis 宕机恢复要在数据丢失窗口、恢复速度和业务可用性之间取舍。
+('REDIS', 'Redis 宕机恢复如何取舍', 'Redis 宕机恢复怎么取舍？', 'Redis 宕机恢复要在数据丢失窗口、恢复速度和业务可用性之间取舍。
 
-具体展开时，先讲清楚核心机制：纯 RDB 恢复快但可能丢较多数据，AOF everysec 常把丢失控制在秒级。 主从和哨兵能提升可用性，但不能替代持久化策略。
+纯 RDB 恢复快但可能丢较多数据，AOF everysec 常把丢失控制在秒级。 主从和哨兵能提升可用性，但不能替代持久化策略。
 
-再补充使用边界和常见问题：容易出问题的地方是只依赖副本，不考虑主从同步延迟和误删除同步。 关键业务要演练恢复流程，而不是只看配置是否开启。
-
-如果面试官继续追问“AOF everysec 宕机最多可能丢多久数据？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到线上排查，我会把它和 Redis 慢查询、命令耗时、key 规模、过期策略、主从高可用以及降级预案联系起来，而不是只停在概念定义上。', 'AOF everysec 宕机最多可能丢多久数据？
+容易踩坑的是只依赖副本，不考虑主从同步延迟和误删除同步。 关键业务要演练恢复流程，而不是只看配置是否开启。', 'AOF everysec 宕机最多可能丢多久数据？
 主从复制为什么不能完全替代持久化？
 恢复演练应该验证哪些指标？', 'Redis 宕机恢复要在数据丢失窗口、恢复速度和业务可用性之间取舍。
 纯 RDB 恢复快但可能丢较多数据，AOF everysec 常把丢失控制在秒级。
 主从和哨兵能提升可用性，但不能替代持久化策略。
 容易踩坑的是只依赖副本，不考虑主从同步延迟和误删除同步。
 关键业务要演练恢复流程，而不是只看配置是否开启。', 'MEDIUM', 'Redis,Redis持久化,RDB,AOF', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 324, NOW(), NOW()),
-('REDIS', 'Redis 分布式锁基本实现', '请结合后端面试场景解释：Redis 分布式锁基本实现？', 'Redis 分布式锁的基本实现是 SET key value NX EX，同时保证互斥和过期。
+('REDIS', 'Redis 分布式锁基本实现', 'Redis 分布式锁基本实现是什么？', 'Redis 分布式锁的基本实现是 SET key value NX EX，同时保证互斥和过期。
 
-具体展开时，先讲清楚核心机制：value 必须是唯一标识，释放锁时用 Lua 校验 value 后再删除。 过期时间要覆盖业务执行时间，并避免死锁。
+value 必须是唯一标识，释放锁时用 Lua 校验 value 后再删除。 过期时间要覆盖业务执行时间，并避免死锁。
 
-再补充使用边界和常见问题：容易出问题的地方是直接 DEL 锁 key，可能删掉别的线程新获得的锁。 锁只适合保护短临界区，长任务要考虑续期和幂等。
-
-如果面试官继续追问“为什么加锁要同时设置过期时间？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到线上排查，我会把它和 Redis 慢查询、命令耗时、key 规模、过期策略、主从高可用以及降级预案联系起来，而不是只停在概念定义上。', '为什么加锁要同时设置过期时间？
+容易踩坑的是直接 DEL 锁 key，可能删掉别的线程新获得的锁。 锁只适合保护短临界区，长任务要考虑续期和幂等。', '为什么加锁要同时设置过期时间？
 释放锁为什么要校验 value？
 Redis 分布式锁在主从切换时有什么风险？', 'Redis 分布式锁的基本实现是 SET key value NX EX，同时保证互斥和过期。
 value 必须是唯一标识，释放锁时用 Lua 校验 value 后再删除。
 过期时间要覆盖业务执行时间，并避免死锁。
 容易踩坑的是直接 DEL 锁 key，可能删掉别的线程新获得的锁。
 锁只适合保护短临界区，长任务要考虑续期和幂等。', 'HARD', 'Redis,Redis分布式锁,SETNX,Redisson,锁续期', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 330, NOW(), NOW()),
-('REDIS', 'SET NX EX 为什么要原子', '请结合后端面试场景解释：SET NX EX 为什么要原子？', 'SET NX EX 必须原子，是为了避免加锁成功但设置过期失败。
+('REDIS', 'SET NX EX 为什么要原子', 'SET NX EX 为什么要原子？', 'SET NX EX 必须原子，是为了避免加锁成功但设置过期失败。
 
-具体展开时，先讲清楚核心机制：如果先 SETNX 再 EXPIRE，中间进程崩溃会留下永不过期的锁。 单条 SET 命令同时完成互斥和过期，减少中间不一致窗口。
+如果先 SETNX 再 EXPIRE，中间进程崩溃会留下永不过期的锁。 单条 SET 命令同时完成互斥和过期，减少中间不一致窗口。
 
-再补充使用边界和常见问题：容易出问题的地方是用多条命令拼锁流程却没有事务或 Lua 保障。 释放锁也要用 Lua 保证比较 value 和删除 key 的原子性。
-
-如果面试官继续追问“SETNX 后还没 EXPIRE 就宕机会怎样？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'SETNX 后还没 EXPIRE 就宕机会怎样？
+容易踩坑的是用多条命令拼锁流程却没有事务或 Lua 保障。 释放锁也要用 Lua 保证比较 value 和删除 key 的原子性。', 'SETNX 后还没 EXPIRE 就宕机会怎样？
 释放锁的 Lua 脚本通常做哪两步？
 Redis 事务能不能替代 Lua 释放锁？', 'SET NX EX 必须原子，是为了避免加锁成功但设置过期失败。
 如果先 SETNX 再 EXPIRE，中间进程崩溃会留下永不过期的锁。
 单条 SET 命令同时完成互斥和过期，减少中间不一致窗口。
 容易踩坑的是用多条命令拼锁流程却没有事务或 Lua 保障。
 释放锁也要用 Lua 保证比较 value 和删除 key 的原子性。', 'HARD', 'Redis,Redis分布式锁,SETNX,Redisson,锁续期', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 331, NOW(), NOW()),
-('REDIS', '锁续期和看门狗机制', '请结合后端面试场景解释：锁续期和看门狗机制？', '锁续期用于业务执行超过初始过期时间时延长锁存活时间。
+('REDIS', '锁续期和看门狗机制', '锁续期和看门狗机制是什么？', '锁续期用于业务执行超过初始过期时间时延长锁存活时间。
 
-具体展开时，先讲清楚核心机制：Redisson 看门狗会在持锁线程仍存活时定期续期。 续期依赖客户端进程和续期线程正常运行。
+Redisson 看门狗会在持锁线程仍存活时定期续期。 续期依赖客户端进程和续期线程正常运行。
 
-再补充使用边界和常见问题：容易出问题的地方是无限续期掩盖业务卡死，导致其他请求长期等待。 需要配合业务超时、监控和幂等，不能只依赖自动续期。
-
-如果面试官继续追问“看门狗默认解决的是哪类锁过期问题？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', '看门狗默认解决的是哪类锁过期问题？
+容易踩坑的是无限续期掩盖业务卡死，导致其他请求长期等待。 需要配合业务超时、监控和幂等，不能只依赖自动续期。', '看门狗默认解决的是哪类锁过期问题？
 客户端宕机后看门狗还能续期吗？
 为什么锁续期也需要业务超时保护？', '锁续期用于业务执行超过初始过期时间时延长锁存活时间。
 Redisson 看门狗会在持锁线程仍存活时定期续期。
 续期依赖客户端进程和续期线程正常运行。
 容易踩坑的是无限续期掩盖业务卡死，导致其他请求长期等待。
 需要配合业务超时、监控和幂等，不能只依赖自动续期。', 'HARD', 'Redis,Redis分布式锁,SETNX,Redisson,锁续期', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 332, NOW(), NOW()),
-('REDIS', 'Redisson 分布式锁原理', '请结合后端面试场景解释：Redisson 分布式锁原理？', 'Redisson 封装了 Redis Lua 加锁、可重入计数、释放校验和看门狗续期。
+('REDIS', 'Redisson 分布式锁原理', 'Redisson 分布式锁原理是什么？', 'Redisson 封装了 Redis Lua 加锁、可重入计数、释放校验和看门狗续期。
 
-具体展开时，先讲清楚核心机制：同一线程重复加锁会增加可重入计数，释放时逐步递减。 底层通过 Lua 保证复杂操作的原子性。
+同一线程重复加锁会增加可重入计数，释放时逐步递减。 底层通过 Lua 保证复杂操作的原子性。
 
-再补充使用边界和常见问题：容易出问题的地方是以为用了 Redisson 就没有主从切换和网络分区风险。 Redisson 降低手写锁错误，但业务仍要保证幂等和超时。
-
-如果面试官继续追问“Redisson 如何实现可重入？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到线上排查，我会把它和 Redis 慢查询、命令耗时、key 规模、过期策略、主从高可用以及降级预案联系起来，而不是只停在概念定义上。', 'Redisson 如何实现可重入？
+容易踩坑的是以为用了 Redisson 就没有主从切换和网络分区风险。 Redisson 降低手写锁错误，但业务仍要保证幂等和超时。', 'Redisson 如何实现可重入？
 看门狗续期什么时候停止？
 Redisson 锁和数据库事务边界如何配合？', 'Redisson 封装了 Redis Lua 加锁、可重入计数、释放校验和看门狗续期。
 同一线程重复加锁会增加可重入计数，释放时逐步递减。
 底层通过 Lua 保证复杂操作的原子性。
 容易踩坑的是以为用了 Redisson 就没有主从切换和网络分区风险。
 Redisson 降低手写锁错误，但业务仍要保证幂等和超时。', 'HARD', 'Redis,Redis分布式锁,SETNX,Redisson,锁续期', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 333, NOW(), NOW()),
-('REDIS', 'Redis 锁误删如何避免', '请结合后端面试场景解释：Redis 锁误删如何避免？', '避免误删锁的核心是锁 value 使用唯一标识，释放时先比较再删除。
+('REDIS', 'Redis 锁误删如何避免', 'Redis 锁误删如何避免？', '避免误删锁的核心是锁 value 使用唯一标识，释放时先比较再删除。
 
-具体展开时，先讲清楚核心机制：比较和删除必须放在同一个 Lua 脚本里原子执行。 业务执行超时后，旧线程不能删除新线程获得的同名锁。
+比较和删除必须放在同一个 Lua 脚本里原子执行。 业务执行超时后，旧线程不能删除新线程获得的同名锁。
 
-再补充使用边界和常见问题：容易出问题的地方是 finally 里无条件 DEL key。 锁释放失败或超时要有日志，方便排查并发安全问题。
-
-如果面试官继续追问“为什么每个加锁请求都要生成唯一 value？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到线上排查，我会把它和 Redis 慢查询、命令耗时、key 规模、过期策略、主从高可用以及降级预案联系起来，而不是只停在概念定义上。', '为什么每个加锁请求都要生成唯一 value？
+容易踩坑的是 finally 里无条件 DEL key。 锁释放失败或超时要有日志，方便排查并发安全问题。', '为什么每个加锁请求都要生成唯一 value？
 比较 value 和删除 key 分两条命令有什么风险？
 业务执行超过锁过期时间后 finally 删除锁会怎样？', '避免误删锁的核心是锁 value 使用唯一标识，释放时先比较再删除。
 比较和删除必须放在同一个 Lua 脚本里原子执行。
 业务执行超时后，旧线程不能删除新线程获得的同名锁。
 容易踩坑的是 finally 里无条件 DEL key。
 锁释放失败或超时要有日志，方便排查并发安全问题。', 'HARD', 'Redis,Redis分布式锁,SETNX,Redisson,锁续期', '小林 coding, JavaGuide', 'https://xiaolincoding.com/redis/', 1, 334, NOW(), NOW()),
-('SPRING', 'Spring Bean 生命周期', '请结合后端面试场景解释：Spring Bean 生命周期？', 'Spring Bean 生命周期包括实例化、属性填充、Aware 回调、后置处理器、初始化、使用和销毁。
+('SPRING', 'Spring Bean 生命周期', 'Spring Bean 生命周期怎么理解？', 'Spring Bean 的生命周期大致可以分为：实例化、属性填充、Aware 回调、初始化前置处理、初始化方法、初始化后置处理、使用和销毁。
 
-具体展开时，先讲清楚核心机制：BeanPostProcessor 会在初始化前后插入扩展逻辑，AOP 代理也依赖它。 InitializingBean、init-method 和 @PostConstruct 都属于初始化阶段相关扩展。
+首先，Spring 会根据 BeanDefinition 创建 Bean 对象，这一步叫实例化。对象创建完成后，会进行属性填充，也就是依赖注入，比如给 @Autowired、@Value 标注的属性赋值。接着，如果 Bean 实现了 BeanNameAware、BeanFactoryAware、ApplicationContextAware 这些 Aware 接口，Spring 会回调这些方法，让 Bean 获取容器相关的信息。
 
-再补充使用边界和常见问题：容易出问题的地方是把实例化和初始化混为一谈。 单例 Bean 销毁由容器管理，prototype Bean 销毁通常不由容器完整托管。
+然后会进入初始化阶段。在真正执行初始化方法之前，Spring 会先调用 BeanPostProcessor 的 postProcessBeforeInitialization 方法。之后执行 Bean 自己定义的初始化逻辑，常见方式有 @PostConstruct、InitializingBean#afterPropertiesSet 和 init-method。初始化方法执行完成后，还会调用 BeanPostProcessor 的 postProcessAfterInitialization 方法。这个阶段很重要，AOP 代理通常就是在这个阶段通过后置处理器创建出来的。
 
-如果面试官继续追问“BeanPostProcessor 在生命周期中什么时候执行？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到 Spring 项目，我会把它落到容器生命周期、代理调用链、Controller 到 Service 的分层边界以及异常处理位置上。', 'BeanPostProcessor 在生命周期中什么时候执行？
+初始化完成后，Bean 就可以被业务代码正常使用了。最后在容器关闭时，单例 Bean 会进入销毁流程，比如执行 @PreDestroy、DisposableBean#destroy 或 destroy-method。不过 prototype 类型的 Bean，Spring 一般只负责创建和依赖注入，不会完整管理它的销毁。这里容易混淆的是：实例化、属性填充和初始化不是一回事。实例化只是创建对象，属性填充是注入依赖，初始化才是执行自定义初始化逻辑。', 'BeanPostProcessor 在生命周期中什么时候执行？
 AOP 代理通常在哪个阶段生成？
 prototype Bean 的销毁为什么要特别注意？', 'Spring Bean 生命周期包括实例化、属性填充、Aware 回调、后置处理器、初始化、使用和销毁。
 BeanPostProcessor 会在初始化前后插入扩展逻辑，AOP 代理也依赖它。
 InitializingBean、init-method 和 @PostConstruct 都属于初始化阶段相关扩展。
 容易踩坑的是把实例化和初始化混为一谈。
 单例 Bean 销毁由容器管理，prototype Bean 销毁通常不由容器完整托管。', 'MEDIUM', 'Spring,Spring,IOC,Bean,依赖注入', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 400, NOW(), NOW()),
-('SPRING', 'IOC 和依赖注入的关系', '请结合后端面试场景解释：IOC 和依赖注入的关系？', 'IOC 是控制反转思想，依赖注入是 Spring 实现 IOC 的主要方式。
+('SPRING', 'IOC 和依赖注入的关系', 'IOC 和依赖注入的关系是什么？', 'IOC 是控制反转思想，依赖注入是 Spring 实现 IOC 的主要方式。
 
-具体展开时，先讲清楚核心机制：对象不再自己 new 依赖，而是由容器创建并注入依赖。 依赖注入可以通过构造器、setter 或字段注入完成。
+对象不再自己 new 依赖，而是由容器创建并注入依赖。 依赖注入可以通过构造器、setter 或字段注入完成。
 
-再补充使用边界和常见问题：容易出问题的地方是把 IOC 等同于一个 Map 存对象，忽略生命周期和扩展点。 构造器注入更利于不可变依赖和单元测试。
-
-如果面试官继续追问“为什么构造器注入通常优于字段注入？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到 Spring 项目，我会把它落到容器生命周期、代理调用链、Controller 到 Service 的分层边界以及异常处理位置上。', '为什么构造器注入通常优于字段注入？
+容易踩坑的是把 IOC 等同于一个 Map 存对象，忽略生命周期和扩展点。 构造器注入更利于不可变依赖和单元测试。', '为什么构造器注入通常优于字段注入？
 IOC 容器除了创建对象还负责什么？
 依赖倒置和 IOC 有什么关系？', 'IOC 是控制反转思想，依赖注入是 Spring 实现 IOC 的主要方式。
 对象不再自己 new 依赖，而是由容器创建并注入依赖。
 依赖注入可以通过构造器、setter 或字段注入完成。
 容易踩坑的是把 IOC 等同于一个 Map 存对象，忽略生命周期和扩展点。
 构造器注入更利于不可变依赖和单元测试。', 'MEDIUM', 'Spring,Spring,IOC,Bean,依赖注入', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 401, NOW(), NOW()),
-('SPRING', 'BeanFactory 和 ApplicationContext 区别', '请结合后端面试场景解释：BeanFactory 和 ApplicationContext 区别？', 'BeanFactory 是基础 IOC 容器，ApplicationContext 在其上提供更多企业级能力。
+('SPRING', 'BeanFactory 和 ApplicationContext 区别', 'BeanFactory 和 ApplicationContext 有什么区别？', 'BeanFactory 是基础 IOC 容器，ApplicationContext 在其上提供更多企业级能力。
 
-具体展开时，先讲清楚核心机制：ApplicationContext 支持事件、国际化、资源加载和自动注册后置处理器。 大多数 Spring Boot 应用使用 ApplicationContext。
+ApplicationContext 支持事件、国际化、资源加载和自动注册后置处理器。 大多数 Spring Boot 应用使用 ApplicationContext。
 
-再补充使用边界和常见问题：容易出问题的地方是只说 ApplicationContext 功能更多，不说明扩展能力。 BeanFactory 更底层，适合理解容器核心机制。
-
-如果面试官继续追问“ApplicationContext 比 BeanFactory 多哪些能力？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到 Spring 项目，我会把它落到容器生命周期、代理调用链、Controller 到 Service 的分层边界以及异常处理位置上。', 'ApplicationContext 比 BeanFactory 多哪些能力？
+容易踩坑的是只说 ApplicationContext 功能更多，不说明扩展能力。 BeanFactory 更底层，适合理解容器核心机制。', 'ApplicationContext 比 BeanFactory 多哪些能力？
 BeanPostProcessor 是如何被注册和调用的？
 Spring Boot 启动后拿到的容器通常是什么类型？', 'BeanFactory 是基础 IOC 容器，ApplicationContext 在其上提供更多企业级能力。
 ApplicationContext 支持事件、国际化、资源加载和自动注册后置处理器。
 大多数 Spring Boot 应用使用 ApplicationContext。
 容易踩坑的是只说 ApplicationContext 功能更多，不说明扩展能力。
 BeanFactory 更底层，适合理解容器核心机制。', 'MEDIUM', 'Spring,Spring,IOC,Bean,依赖注入', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 402, NOW(), NOW()),
-('SPRING', '循环依赖三级缓存', '请结合后端面试场景解释：循环依赖三级缓存？', 'Spring 三级缓存用于解决部分单例 Bean 的 setter 循环依赖，并处理提前暴露代理对象。
+('SPRING', '循环依赖三级缓存', '循环依赖三级缓存怎么理解？', 'Spring 三级缓存用于解决部分单例 Bean 的 setter 循环依赖，并处理提前暴露代理对象。
 
-具体展开时，先讲清楚核心机制：一级缓存放完整单例，二级缓存放早期对象，三级缓存放对象工厂。 构造器循环依赖无法通过三级缓存解决。
+一级缓存放完整单例，二级缓存放早期对象，三级缓存放对象工厂。 构造器循环依赖无法通过三级缓存解决。
 
-再补充使用边界和常见问题：容易出问题的地方是认为三级缓存能解决所有循环依赖。 AOP 场景需要三级缓存提前暴露代理，而不是原始对象。
-
-如果面试官继续追问“为什么构造器循环依赖解决不了？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到线上排查，我会把它和 Redis 慢查询、命令耗时、key 规模、过期策略、主从高可用以及降级预案联系起来，而不是只停在概念定义上。', '为什么构造器循环依赖解决不了？
+容易踩坑的是认为三级缓存能解决所有循环依赖。 AOP 场景需要三级缓存提前暴露代理，而不是原始对象。', '为什么构造器循环依赖解决不了？
 三级缓存比二级缓存多解决了什么问题？
 循环依赖遇到 AOP 代理时为什么更复杂？', 'Spring 三级缓存用于解决部分单例 Bean 的 setter 循环依赖，并处理提前暴露代理对象。
 一级缓存放完整单例，二级缓存放早期对象，三级缓存放对象工厂。
 构造器循环依赖无法通过三级缓存解决。
 容易踩坑的是认为三级缓存能解决所有循环依赖。
 AOP 场景需要三级缓存提前暴露代理，而不是原始对象。', 'MEDIUM', 'Spring,Spring,IOC,Bean,依赖注入', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 403, NOW(), NOW()),
-('SPRING', 'BeanPostProcessor 扩展点', '请结合后端面试场景解释：BeanPostProcessor 扩展点？', 'BeanPostProcessor 是 Spring 在 Bean 初始化前后开放的核心扩展点。
+('SPRING', 'BeanPostProcessor 扩展点', 'BeanPostProcessor 扩展点怎么理解？', 'BeanPostProcessor 是 Spring 在 Bean 初始化前后开放的核心扩展点。
 
-具体展开时，先讲清楚核心机制：AOP、注解处理、自动代理等能力都可能通过后置处理器介入。 它作用于多个 Bean，而不是某一个 Bean 自己的 init 方法。
+AOP、注解处理、自动代理等能力都可能通过后置处理器介入。 它作用于多个 Bean，而不是某一个 Bean 自己的 init 方法。
 
-再补充使用边界和常见问题：容易出问题的地方是在后置处理器里做过重逻辑影响容器启动。 多个处理器有顺序问题，可通过 Ordered 控制。
-
-如果面试官继续追问“BeanPostProcessor 和 InitializingBean 有什么区别？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到 Spring 项目，我会把它落到容器生命周期、代理调用链、Controller 到 Service 的分层边界以及异常处理位置上。', 'BeanPostProcessor 和 InitializingBean 有什么区别？
+容易踩坑的是在后置处理器里做过重逻辑影响容器启动。 多个处理器有顺序问题，可通过 Ordered 控制。', 'BeanPostProcessor 和 InitializingBean 有什么区别？
 AOP 自动代理和 BeanPostProcessor 有什么关系？
 多个后置处理器顺序如何控制？', 'BeanPostProcessor 是 Spring 在 Bean 初始化前后开放的核心扩展点。
 AOP、注解处理、自动代理等能力都可能通过后置处理器介入。
 它作用于多个 Bean，而不是某一个 Bean 自己的 init 方法。
 容易踩坑的是在后置处理器里做过重逻辑影响容器启动。
 多个处理器有顺序问题，可通过 Ordered 控制。', 'MEDIUM', 'Spring,Spring,IOC,Bean,依赖注入', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 404, NOW(), NOW()),
-('SPRING', 'Spring AOP 实现原理', '请结合后端面试场景解释：Spring AOP 实现原理？', 'Spring AOP 本质是代理模式，外部调用先进入代理对象再执行通知链和目标方法。
+('SPRING', 'Spring AOP 实现原理', 'Spring AOP 实现原理是什么？', 'Spring AOP 本质是代理模式，外部调用先进入代理对象再执行通知链和目标方法。
 
-具体展开时，先讲清楚核心机制：有接口时常用 JDK 动态代理，没有接口时可用 CGLIB 生成子类代理。 通知逻辑围绕连接点执行，例如前置、后置、异常和环绕通知。
+有接口时常用 JDK 动态代理，没有接口时可用 CGLIB 生成子类代理。 通知逻辑围绕连接点执行，例如前置、后置、异常和环绕通知。
 
-再补充使用边界和常见问题：容易出问题的地方是同类内部调用不会经过代理对象。 Spring AOP 主要作用于方法级别，区别于编译期或类加载期织入。
-
-如果面试官继续追问“Spring AOP 为什么同类内部调用会失效？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到 Spring 项目，我会把它落到容器生命周期、代理调用链、Controller 到 Service 的分层边界以及异常处理位置上。', 'Spring AOP 为什么同类内部调用会失效？
+容易踩坑的是同类内部调用不会经过代理对象。 Spring AOP 主要作用于方法级别，区别于编译期或类加载期织入。', 'Spring AOP 为什么同类内部调用会失效？
 环绕通知和前置通知有什么区别？
 Spring AOP 和 AspectJ 有什么差别？', 'Spring AOP 本质是代理模式，外部调用先进入代理对象再执行通知链和目标方法。
 有接口时常用 JDK 动态代理，没有接口时可用 CGLIB 生成子类代理。
 通知逻辑围绕连接点执行，例如前置、后置、异常和环绕通知。
 容易踩坑的是同类内部调用不会经过代理对象。
 Spring AOP 主要作用于方法级别，区别于编译期或类加载期织入。', 'MEDIUM', 'Spring,Spring,AOP,动态代理,切面', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 410, NOW(), NOW()),
-('SPRING', 'JDK 动态代理和 CGLIB 区别', '请结合后端面试场景解释：JDK 动态代理和 CGLIB 区别？', 'JDK 动态代理基于接口生成代理对象，CGLIB 基于继承生成目标类子类。
+('SPRING', 'JDK 动态代理和 CGLIB 区别', 'JDK 动态代理和 CGLIB 有什么区别？', 'JDK 动态代理基于接口生成代理对象，CGLIB 基于继承生成目标类子类。
 
-具体展开时，先讲清楚核心机制：JDK 代理要求目标类实现接口，CGLIB 不要求接口但不能增强 final 类和 final 方法。 Spring 会根据目标类型和配置选择代理方式。
+JDK 代理要求目标类实现接口，CGLIB 不要求接口但不能增强 final 类和 final 方法。 Spring 会根据目标类型和配置选择代理方式。
 
-再补充使用边界和常见问题：容易出问题的地方是注入具体类时代理类型不匹配。 两者都是让调用先进入代理，再转发到目标方法和通知链。
-
-如果面试官继续追问“为什么 CGLIB 不能代理 final 方法？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '为什么 CGLIB 不能代理 final 方法？
+容易踩坑的是注入具体类时代理类型不匹配。 两者都是让调用先进入代理，再转发到目标方法和通知链。', '为什么 CGLIB 不能代理 final 方法？
 Spring Boot 默认什么时候使用 CGLIB？
 代理对象类型对依赖注入有什么影响？', 'JDK 动态代理基于接口生成代理对象，CGLIB 基于继承生成目标类子类。
 JDK 代理要求目标类实现接口，CGLIB 不要求接口但不能增强 final 类和 final 方法。
 Spring 会根据目标类型和配置选择代理方式。
 容易踩坑的是注入具体类时代理类型不匹配。
 两者都是让调用先进入代理，再转发到目标方法和通知链。', 'MEDIUM', 'Spring,Spring,AOP,动态代理,切面', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 411, NOW(), NOW()),
-('SPRING', '同类内部调用为什么绕过 AOP', '请结合后端面试场景解释：同类内部调用为什么绕过 AOP？', '同类内部调用是 this.method()，没有经过 Spring 容器中的代理对象。
+('SPRING', '同类内部调用为什么绕过 AOP', '同类内部调用为什么绕过 AOP？', '同类内部调用是 this.method()，没有经过 Spring 容器中的代理对象。
 
-具体展开时，先讲清楚核心机制：AOP 增强只发生在外部通过代理对象调用目标方法时。 事务、缓存、权限切面都可能因此不生效。
+AOP 增强只发生在外部通过代理对象调用目标方法时。 事务、缓存、权限切面都可能因此不生效。
 
-再补充使用边界和常见问题：容易出问题的地方是在同一个 service 内部调用带 @Transactional 的方法。 解决方式包括拆分到另一个 Bean、通过代理调用或调整事务边界。
-
-如果面试官继续追问“为什么 this 调用不会进入代理？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到 Spring 项目，我会把它落到容器生命周期、代理调用链、Controller 到 Service 的分层边界以及异常处理位置上。', '为什么 this 调用不会进入代理？
+容易踩坑的是在同一个 service 内部调用带 @Transactional 的方法。 解决方式包括拆分到另一个 Bean、通过代理调用或调整事务边界。', '为什么 this 调用不会进入代理？
 事务注解内部调用失效怎么修？
 AopContext.currentProxy 有什么使用限制？', '同类内部调用是 this.method()，没有经过 Spring 容器中的代理对象。
 AOP 增强只发生在外部通过代理对象调用目标方法时。
 事务、缓存、权限切面都可能因此不生效。
 容易踩坑的是在同一个 service 内部调用带 @Transactional 的方法。
 解决方式包括拆分到另一个 Bean、通过代理调用或调整事务边界。', 'MEDIUM', 'Spring,Spring,AOP,动态代理,切面', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 412, NOW(), NOW()),
-('SPRING', '切点和通知如何组织', '请结合后端面试场景解释：切点和通知如何组织？', '切点定义哪些连接点需要增强，通知定义在这些连接点执行什么逻辑。
+('SPRING', '切点和通知如何组织', '切点和通知如何组织？', '切点定义哪些连接点需要增强，通知定义在这些连接点执行什么逻辑。
 
-具体展开时，先讲清楚核心机制：切点表达式应尽量精确，避免误伤无关方法。 通知逻辑要保持轻量、通用，不应承载核心业务分支。
+切点表达式应尽量精确，避免误伤无关方法。 通知逻辑要保持轻量、通用，不应承载核心业务分支。
 
-再补充使用边界和常见问题：容易出问题的地方是切点范围过宽导致性能下降或行为意外变化。 日志、鉴权、事务和监控适合用切面组织。
-
-如果面试官继续追问“execution 表达式通常由哪些部分组成？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'execution 表达式通常由哪些部分组成？
+容易踩坑的是切点范围过宽导致性能下降或行为意外变化。 日志、鉴权、事务和监控适合用切面组织。', 'execution 表达式通常由哪些部分组成？
 环绕通知为什么要调用 proceed？
 切面顺序如何影响多个通知执行？', '切点定义哪些连接点需要增强，通知定义在这些连接点执行什么逻辑。
 切点表达式应尽量精确，避免误伤无关方法。
 通知逻辑要保持轻量、通用，不应承载核心业务分支。
 容易踩坑的是切点范围过宽导致性能下降或行为意外变化。
 日志、鉴权、事务和监控适合用切面组织。', 'MEDIUM', 'Spring,Spring,AOP,动态代理,切面', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 413, NOW(), NOW()),
-('SPRING', 'AOP 适合哪些横切逻辑', '请结合后端面试场景解释：AOP 适合哪些横切逻辑？', 'AOP 适合日志、监控、权限、事务、审计这类横切多个业务点的逻辑。
+('SPRING', 'AOP 适合哪些横切逻辑', 'AOP 适合哪些横切逻辑？', 'AOP 适合日志、监控、权限、事务、审计这类横切多个业务点的逻辑。
 
-具体展开时，先讲清楚核心机制：这些逻辑具有通用性，放进切面能减少业务代码重复。 核心业务决策不适合藏在切面里，否则可读性和调试性下降。
+这些逻辑具有通用性，放进切面能减少业务代码重复。 核心业务决策不适合藏在切面里，否则可读性和调试性下降。
 
-再补充使用边界和常见问题：容易出问题的地方是为了减少代码把业务分支也放进 AOP。 切面要保证失败边界清楚，异常处理不能破坏业务语义。
-
-如果面试官继续追问“为什么核心业务逻辑不建议放进切面？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到 Spring 项目，我会把它落到容器生命周期、代理调用链、Controller 到 Service 的分层边界以及异常处理位置上。', '为什么核心业务逻辑不建议放进切面？
+容易踩坑的是为了减少代码把业务分支也放进 AOP。 切面要保证失败边界清楚，异常处理不能破坏业务语义。', '为什么核心业务逻辑不建议放进切面？
 日志切面应该记录哪些信息？
 权限切面和拦截器边界怎么划分？', 'AOP 适合日志、监控、权限、事务、审计这类横切多个业务点的逻辑。
 这些逻辑具有通用性，放进切面能减少业务代码重复。
 核心业务决策不适合藏在切面里，否则可读性和调试性下降。
 容易踩坑的是为了减少代码把业务分支也放进 AOP。
 切面要保证失败边界清楚，异常处理不能破坏业务语义。', 'MEDIUM', 'Spring,Spring,AOP,动态代理,切面', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 414, NOW(), NOW()),
-('SPRING', 'Spring 事务失效场景', '请结合后端面试场景解释：Spring 事务失效场景？', 'Spring 事务失效通常是代理没生效或回滚规则不匹配。
+('SPRING', 'Spring 事务失效场景', 'Spring 事务失效场景是什么？', 'Spring 事务失效通常不是数据库事务突然不可用，而是 @Transactional 没有被代理拦截到，或者异常没有触发回滚规则。最常见的几类是同类内部调用、方法不是 public、对象不是 Spring Bean、异常被 catch 掉、checked exception 没有配置 rollbackFor。
 
-具体展开时，先讲清楚核心机制：常见场景包括同类内部调用、非 public 方法、异常被 catch、checked exception 未配置 rollbackFor。 方法不在 Spring Bean 中或数据库引擎不支持事务也会失效。
+声明式事务依赖 AOP 代理。外部调用进入代理对象时，代理才会在目标方法前后开启、提交或回滚事务；如果在同一个类里 this.xxx() 调用事务方法，请求没有经过代理，事务增强就不会执行。异常被 catch 后没有继续抛出也类似，代理层看到方法正常返回，就会按提交处理。
 
-再补充使用边界和常见问题：容易出问题的地方是看到 @Transactional 就认为一定会回滚。 排查要看调用是否经过代理、异常是否抛出到代理层、事务管理器是否配置正确。
+还要区分事务失效和事务行为不符合预期。传播行为决定当前方法是加入已有事务、开启新事务还是拒绝事务，隔离级别决定并发读写时能看到什么数据；它们配错会导致结果和预期不同，但不等于代理完全没生效。
 
-如果面试官继续追问“同类内部调用为什么会让事务失效？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', '同类内部调用为什么会让事务失效？
+排查时先看调用链是否经过代理，再看异常类型和 rollbackFor 配置，最后确认事务管理器、数据源和数据库引擎是否支持事务。比如 IOException 默认不会触发回滚，需要配置 rollbackFor；业务里捕获异常做日志后如果希望回滚，要继续抛出或显式标记 rollbackOnly。', '同类内部调用为什么会让事务失效？
 异常被 catch 后事务为什么可能提交？
 checked exception 如何配置回滚？', 'Spring 事务失效通常是代理没生效或回滚规则不匹配。
 常见场景包括同类内部调用、非 public 方法、异常被 catch、checked exception 未配置 rollbackFor。
 方法不在 Spring Bean 中或数据库引擎不支持事务也会失效。
+传播行为影响加入事务还是新开事务，隔离级别影响并发读写可见性。
 容易踩坑的是看到 @Transactional 就认为一定会回滚。
 排查要看调用是否经过代理、异常是否抛出到代理层、事务管理器是否配置正确。', 'HARD', 'Spring,Spring事务,AOP,传播行为', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 420, NOW(), NOW()),
-('SPRING', '事务传播行为怎么理解', '请结合后端面试场景解释：事务传播行为怎么理解？', '事务传播行为定义一个事务方法调用另一个事务方法时如何加入、创建、挂起或拒绝事务。
+('SPRING', '事务传播行为怎么理解', '事务传播行为怎么理解？', '事务传播行为定义一个事务方法调用另一个事务方法时如何加入、创建、挂起或拒绝事务。
 
-具体展开时，先讲清楚核心机制：REQUIRED 表示有事务就加入，没有就新建，是最常用传播行为。 REQUIRES_NEW 会挂起当前事务并开启新事务。
+REQUIRED 表示有事务就加入，没有就新建，是最常用传播行为。 REQUIRES_NEW 会挂起当前事务并开启新事务。
 
-再补充使用边界和常见问题：容易出问题的地方是不理解内外事务提交回滚边界，导致审计日志或补偿记录丢失。 传播行为只有调用经过代理时才会生效。
-
-如果面试官继续追问“REQUIRED 和 REQUIRES_NEW 最大区别是什么？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', 'REQUIRED 和 REQUIRES_NEW 最大区别是什么？
+容易踩坑的是不理解内外事务提交回滚边界，导致审计日志或补偿记录丢失。 传播行为只有调用经过代理时才会生效。', 'REQUIRED 和 REQUIRES_NEW 最大区别是什么？
 NESTED 和 REQUIRES_NEW 有什么差别？
 传播行为为什么也受同类内部调用影响？', '事务传播行为定义一个事务方法调用另一个事务方法时如何加入、创建、挂起或拒绝事务。
 REQUIRED 表示有事务就加入，没有就新建，是最常用传播行为。
 REQUIRES_NEW 会挂起当前事务并开启新事务。
 容易踩坑的是不理解内外事务提交回滚边界，导致审计日志或补偿记录丢失。
 传播行为只有调用经过代理时才会生效。', 'HARD', 'Spring,Spring事务,AOP,传播行为', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 421, NOW(), NOW()),
-('SPRING', 'rollbackFor 什么时候需要配置', '请结合后端面试场景解释：rollbackFor 什么时候需要配置？', 'rollbackFor 用于指定哪些异常类型需要触发事务回滚。
+('SPRING', 'rollbackFor 什么时候需要配置', 'rollbackFor 什么时候需要配置？', 'rollbackFor 用于指定哪些异常类型需要触发事务回滚。
 
-具体展开时，先讲清楚核心机制：Spring 默认对 RuntimeException 和 Error 回滚，对 checked exception 不默认回滚。 业务方法可能抛 checked exception 且希望回滚时，需要配置 rollbackFor。
+Spring 默认对 RuntimeException 和 Error 回滚，对 checked exception 不默认回滚。 业务方法可能抛 checked exception 且希望回滚时，需要配置 rollbackFor。
 
-再补充使用边界和常见问题：容易出问题的地方是抛出自定义受检异常后事务仍然提交。 配置 rollbackFor 后异常仍要抛出到事务代理层。
-
-如果面试官继续追问“默认情况下 IOException 会触发事务回滚吗？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '默认情况下 IOException 会触发事务回滚吗？
+容易踩坑的是抛出自定义受检异常后事务仍然提交。 配置 rollbackFor 后异常仍要抛出到事务代理层。', '默认情况下 IOException 会触发事务回滚吗？
 rollbackFor 配了但异常被 catch 会怎样？
 noRollbackFor 适合什么场景？', 'rollbackFor 用于指定哪些异常类型需要触发事务回滚。
 Spring 默认对 RuntimeException 和 Error 回滚，对 checked exception 不默认回滚。
 业务方法可能抛 checked exception 且希望回滚时，需要配置 rollbackFor。
 容易踩坑的是抛出自定义受检异常后事务仍然提交。
 配置 rollbackFor 后异常仍要抛出到事务代理层。', 'HARD', 'Spring,Spring事务,AOP,传播行为', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 422, NOW(), NOW()),
-('SPRING', '声明式事务和编程式事务区别', '请结合后端面试场景解释：声明式事务和编程式事务区别？', '声明式事务通过注解和 AOP 管理边界，编程式事务通过 TransactionTemplate 或事务管理器手动控制。
+('SPRING', '声明式事务和编程式事务区别', '声明式事务和编程式事务有什么区别？', '声明式事务通过注解和 AOP 管理边界，编程式事务通过 TransactionTemplate 或事务管理器手动控制。
 
-具体展开时，先讲清楚核心机制：声明式事务代码简洁，适合 service 方法级边界清晰的场景。 编程式事务适合局部事务、复杂分支和需要精确控制提交范围的场景。
+声明式事务代码简洁，适合 service 方法级边界清晰的场景。 编程式事务适合局部事务、复杂分支和需要精确控制提交范围的场景。
 
-再补充使用边界和常见问题：容易出问题的地方是声明式事务包住太多非数据库逻辑。 选择方式要看事务边界是否能自然落在一个方法上。
-
-如果面试官继续追问“TransactionTemplate 适合解决什么问题？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', 'TransactionTemplate 适合解决什么问题？
+容易踩坑的是声明式事务包住太多非数据库逻辑。 选择方式要看事务边界是否能自然落在一个方法上。', 'TransactionTemplate 适合解决什么问题？
 声明式事务为什么依赖 AOP 代理？
 复杂流程里怎样缩小事务范围？', '声明式事务通过注解和 AOP 管理边界，编程式事务通过 TransactionTemplate 或事务管理器手动控制。
 声明式事务代码简洁，适合 service 方法级边界清晰的场景。
 编程式事务适合局部事务、复杂分支和需要精确控制提交范围的场景。
 容易踩坑的是声明式事务包住太多非数据库逻辑。
 选择方式要看事务边界是否能自然落在一个方法上。', 'HARD', 'Spring,Spring事务,AOP,传播行为', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 423, NOW(), NOW()),
-('SPRING', '事务边界如何设计', '请结合后端面试场景解释：事务边界如何设计？', '事务边界应覆盖必须同时成功或失败的最小业务一致性范围。
+('SPRING', '事务边界如何设计', '事务边界如何设计？', '事务边界应覆盖必须同时成功或失败的最小业务一致性范围。
 
-具体展开时，先讲清楚核心机制：数据库状态变更放在事务内，远程调用和耗时任务尽量放在事务外。 事务越长，连接、锁和版本链压力越大。
+数据库状态变更放在事务内，远程调用和耗时任务尽量放在事务外。 事务越长，连接、锁和版本链压力越大。
 
-再补充使用边界和常见问题：容易出问题的地方是一个 service 方法包办所有流程，导致事务过长。 需要跨系统一致性时，优先考虑消息、补偿和幂等，而不是单库事务硬包。
-
-如果面试官继续追问“订单创建为什么不建议把支付远程调用放进数据库事务？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', '订单创建为什么不建议把支付远程调用放进数据库事务？
+容易踩坑的是一个 service 方法包办所有流程，导致事务过长。 需要跨系统一致性时，优先考虑消息、补偿和幂等，而不是单库事务硬包。', '订单创建为什么不建议把支付远程调用放进数据库事务？
 事务边界过小会有什么问题？
 本地事务和最终一致如何配合？', '事务边界应覆盖必须同时成功或失败的最小业务一致性范围。
 数据库状态变更放在事务内，远程调用和耗时任务尽量放在事务外。
 事务越长，连接、锁和版本链压力越大。
 容易踩坑的是一个 service 方法包办所有流程，导致事务过长。
 需要跨系统一致性时，优先考虑消息、补偿和幂等，而不是单库事务硬包。', 'HARD', 'Spring,Spring事务,AOP,传播行为', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 424, NOW(), NOW()),
-('SPRING', 'Spring MVC 请求处理流程', '请结合后端面试场景解释：Spring MVC 请求处理流程？', 'Spring MVC 请求先进入 DispatcherServlet，再通过 HandlerMapping 找到处理器。
+('SPRING', 'Spring MVC 请求处理流程', 'Spring MVC 请求处理流程是什么？', 'Spring MVC 请求先进入 DispatcherServlet，再通过 HandlerMapping 找到处理器。
 
-具体展开时，先讲清楚核心机制：HandlerAdapter 负责以统一方式调用 Controller 方法。 参数解析器绑定请求参数，返回值处理器把结果写成 JSON 或视图。
+HandlerAdapter 负责以统一方式调用 Controller 方法。 参数解析器绑定请求参数，返回值处理器把结果写成 JSON 或视图。
 
-再补充使用边界和常见问题：容易出问题的地方是把过滤器、拦截器和 Controller 调用时机混在一起。 异常会交给异常解析器或全局异常处理转换为响应。
-
-如果面试官继续追问“HandlerMapping 和 HandlerAdapter 分别做什么？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到 Spring 项目，我会把它落到容器生命周期、代理调用链、Controller 到 Service 的分层边界以及异常处理位置上。', 'HandlerMapping 和 HandlerAdapter 分别做什么？
+容易踩坑的是把过滤器、拦截器和 Controller 调用时机混在一起。 异常会交给异常解析器或全局异常处理转换为响应。', 'HandlerMapping 和 HandlerAdapter 分别做什么？
 参数解析器在什么时候工作？
 Controller 返回对象如何变成 JSON？', 'Spring MVC 请求先进入 DispatcherServlet，再通过 HandlerMapping 找到处理器。
 HandlerAdapter 负责以统一方式调用 Controller 方法。
 参数解析器绑定请求参数，返回值处理器把结果写成 JSON 或视图。
 容易踩坑的是把过滤器、拦截器和 Controller 调用时机混在一起。
 异常会交给异常解析器或全局异常处理转换为响应。', 'MEDIUM', 'Spring,Spring MVC,DispatcherServlet,HandlerMapping,HandlerAdapter', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 430, NOW(), NOW()),
-('SPRING', 'DispatcherServlet 的职责', '请结合后端面试场景解释：DispatcherServlet 的职责？', 'DispatcherServlet 是 Spring MVC 前端控制器，负责统一调度请求处理流程。
+('SPRING', 'DispatcherServlet 的职责', 'DispatcherServlet 的职责是什么？', 'DispatcherServlet 是 Spring MVC 前端控制器，负责统一调度请求处理流程。
 
-具体展开时，先讲清楚核心机制：它不承载业务逻辑，而是协调映射、适配、参数解析、返回值处理和异常处理。 所有匹配到 Spring MVC 的请求都会经过它。
+它不承载业务逻辑，而是协调映射、适配、参数解析、返回值处理和异常处理。 所有匹配到 Spring MVC 的请求都会经过它。
 
-再补充使用边界和常见问题：容易出问题的地方是把 DispatcherServlet 和普通业务 Controller 混为一谈。 理解它能帮助定位请求为何没有进入目标 Controller。
-
-如果面试官继续追问“DispatcherServlet 初始化时会加载哪些 MVC 组件？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到 Spring 项目，我会把它落到容器生命周期、代理调用链、Controller 到 Service 的分层边界以及异常处理位置上。', 'DispatcherServlet 初始化时会加载哪些 MVC 组件？
+容易踩坑的是把 DispatcherServlet 和普通业务 Controller 混为一谈。 理解它能帮助定位请求为何没有进入目标 Controller。', 'DispatcherServlet 初始化时会加载哪些 MVC 组件？
 请求没有进入 Controller 可能卡在哪些环节？
 DispatcherServlet 和 Servlet Filter 的关系是什么？', 'DispatcherServlet 是 Spring MVC 前端控制器，负责统一调度请求处理流程。
 它不承载业务逻辑，而是协调映射、适配、参数解析、返回值处理和异常处理。
 所有匹配到 Spring MVC 的请求都会经过它。
 容易踩坑的是把 DispatcherServlet 和普通业务 Controller 混为一谈。
 理解它能帮助定位请求为何没有进入目标 Controller。', 'MEDIUM', 'Spring,Spring MVC,DispatcherServlet,HandlerMapping,HandlerAdapter', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 431, NOW(), NOW()),
-('SPRING', 'HandlerMapping 和 HandlerAdapter 区别', '请结合后端面试场景解释：HandlerMapping 和 HandlerAdapter 区别？', 'HandlerMapping 负责根据请求找到 handler，HandlerAdapter 负责调用这个 handler。
+('SPRING', 'HandlerMapping 和 HandlerAdapter 区别', 'HandlerMapping 和 HandlerAdapter 有什么区别？', 'HandlerMapping 负责根据请求找到 handler，HandlerAdapter 负责调用这个 handler。
 
-具体展开时，先讲清楚核心机制：Mapping 回答找谁处理，Adapter 回答怎么调用。 不同 handler 形态可以通过不同 Adapter 统一执行。
+Mapping 回答找谁处理，Adapter 回答怎么调用。 不同 handler 形态可以通过不同 Adapter 统一执行。
 
-再补充使用边界和常见问题：容易出问题的地方是只记组件名，不说明为什么需要适配器。 Controller 方法参数和返回值处理发生在 Adapter 调用链中。
-
-如果面试官继续追问“为什么找到 handler 后还需要 HandlerAdapter？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到 Spring 项目，我会把它落到容器生命周期、代理调用链、Controller 到 Service 的分层边界以及异常处理位置上。', '为什么找到 handler 后还需要 HandlerAdapter？
+容易踩坑的是只记组件名，不说明为什么需要适配器。 Controller 方法参数和返回值处理发生在 Adapter 调用链中。', '为什么找到 handler 后还需要 HandlerAdapter？
 RequestMappingHandlerMapping 主要处理什么？
 HandlerExecutionChain 里除了 handler 还有什么？', 'HandlerMapping 负责根据请求找到 handler，HandlerAdapter 负责调用这个 handler。
 Mapping 回答找谁处理，Adapter 回答怎么调用。
 不同 handler 形态可以通过不同 Adapter 统一执行。
 容易踩坑的是只记组件名，不说明为什么需要适配器。
 Controller 方法参数和返回值处理发生在 Adapter 调用链中。', 'MEDIUM', 'Spring,Spring MVC,DispatcherServlet,HandlerMapping,HandlerAdapter', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 432, NOW(), NOW()),
-('SPRING', '参数解析和返回值处理', '请结合后端面试场景解释：参数解析和返回值处理？', '参数解析器把 HTTP 请求中的路径、查询、请求体和上下文对象绑定到方法参数。
+('SPRING', '参数解析和返回值处理', '参数解析和返回值处理怎么理解？', '参数解析器把 HTTP 请求中的路径、查询、请求体和上下文对象绑定到方法参数。
 
-具体展开时，先讲清楚核心机制：返回值处理器把 Controller 返回结果转换为响应体、视图或状态。 @RequestBody 通常依赖 HttpMessageConverter 读取 JSON。
+返回值处理器把 Controller 返回结果转换为响应体、视图或状态。 @RequestBody 通常依赖 HttpMessageConverter 读取 JSON。
 
-再补充使用边界和常见问题：容易出问题的地方是参数注解缺失或 Content-Type 不匹配导致绑定失败。 自定义解析器可以支持统一用户上下文等框架能力。
-
-如果面试官继续追问“@RequestParam 和 @RequestBody 解析来源有什么不同？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', '@RequestParam 和 @RequestBody 解析来源有什么不同？
+容易踩坑的是参数注解缺失或 Content-Type 不匹配导致绑定失败。 自定义解析器可以支持统一用户上下文等框架能力。', '@RequestParam 和 @RequestBody 解析来源有什么不同？
 HttpMessageConverter 在请求和响应里各做什么？
 如何实现一个当前登录用户参数注入？', '参数解析器把 HTTP 请求中的路径、查询、请求体和上下文对象绑定到方法参数。
 返回值处理器把 Controller 返回结果转换为响应体、视图或状态。
 @RequestBody 通常依赖 HttpMessageConverter 读取 JSON。
 容易踩坑的是参数注解缺失或 Content-Type 不匹配导致绑定失败。
 自定义解析器可以支持统一用户上下文等框架能力。', 'MEDIUM', 'Spring,Spring MVC,DispatcherServlet,HandlerMapping,HandlerAdapter', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 433, NOW(), NOW()),
-('SPRING', '拦截器和过滤器区别', '请结合后端面试场景解释：拦截器和过滤器区别？', '过滤器属于 Servlet 规范，拦截器属于 Spring MVC 体系。
+('SPRING', '拦截器和过滤器区别', '拦截器和过滤器有什么区别？', '过滤器属于 Servlet 规范，拦截器属于 Spring MVC 体系。
 
-具体展开时，先讲清楚核心机制：过滤器更靠前，作用于进入 Servlet 前后的请求；拦截器围绕 Handler 执行。 拦截器能拿到 handler 信息，更适合 MVC 层权限、日志和上下文处理。
+过滤器更靠前，作用于进入 Servlet 前后的请求；拦截器围绕 Handler 执行。 拦截器能拿到 handler 信息，更适合 MVC 层权限、日志和上下文处理。
 
-再补充使用边界和常见问题：容易出问题的地方是在过滤器里依赖 Controller 方法信息。 全局跨框架请求处理用 Filter，Controller 相关处理用 Interceptor。
-
-如果面试官继续追问“Filter 和 Interceptor 执行顺序谁更靠前？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到 Spring 项目，我会把它落到容器生命周期、代理调用链、Controller 到 Service 的分层边界以及异常处理位置上。', 'Filter 和 Interceptor 执行顺序谁更靠前？
+容易踩坑的是在过滤器里依赖 Controller 方法信息。 全局跨框架请求处理用 Filter，Controller 相关处理用 Interceptor。', 'Filter 和 Interceptor 执行顺序谁更靠前？
 拦截器的 preHandle、postHandle、afterCompletion 分别何时执行？
 为什么网关鉴权和 MVC 鉴权位置可能不同？', '过滤器属于 Servlet 规范，拦截器属于 Spring MVC 体系。
 过滤器更靠前，作用于进入 Servlet 前后的请求；拦截器围绕 Handler 执行。
 拦截器能拿到 handler 信息，更适合 MVC 层权限、日志和上下文处理。
 容易踩坑的是在过滤器里依赖 Controller 方法信息。
 全局跨框架请求处理用 Filter，Controller 相关处理用 Interceptor。', 'MEDIUM', 'Spring,Spring MVC,DispatcherServlet,HandlerMapping,HandlerAdapter', 'JavaGuide', 'https://javaguide.cn/system-design/framework/spring/', 1, 434, NOW(), NOW()),
-('AI', 'Agent 工作流为什么要拆成 Planner、Tool 和 Observation', '请结合后端面试场景解释：Agent 工作流为什么要拆成 Planner、Tool 和 Observation？', 'Agent 工作流拆成 Planner、Tool 和 Observation，是为了让诊断过程可解释、可记录、可降级。
+('AI', 'Agent 工作流为什么要拆成 Planner、Tool 和 Observation', 'Agent 工作流为什么要拆成 Planner、Tool 和 Observation？', 'Agent 工作流拆成 Planner、Tool 和 Observation，是为了让诊断过程可解释、可记录、可降级。
 
-具体展开时，先讲清楚核心机制：Planner 决定步骤，Tool 调用代码执行和检索等能力，Observation 把工具输出变成诊断事实。 代码执行结果必须先于 AI 判断，避免模型凭空猜测。
+Planner 决定步骤，Tool 调用代码执行和检索等能力，Observation 把工具输出变成诊断事实。 代码执行结果必须先于 AI 判断，避免模型凭空猜测。
 
-再补充使用边界和常见问题：容易出问题的地方是把所有逻辑塞进一次 prompt，无法说明失败发生在哪一步。 本项目用 Agent Step 记录每个工具输入摘要、输出摘要、状态和耗时。
-
-如果面试官继续追问“为什么 CodeExecutionTool 必须在 ErrorClassifierTool 之前？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目实现，我会对应到 AI 面试教练里的代码执行、Agent Step、RAG 证据、用户记忆和降级策略，说明这不是一次简单 prompt 调用。', '为什么 CodeExecutionTool 必须在 ErrorClassifierTool 之前？
+容易踩坑的是把所有逻辑塞进一次 prompt，无法说明失败发生在哪一步。 本项目用 Agent Step 记录每个工具输入摘要、输出摘要、状态和耗时。', '为什么 CodeExecutionTool 必须在 ErrorClassifierTool 之前？
 Observation 和普通日志有什么区别？
 Agent Step 失败时如何向前端展示？', 'Agent 工作流拆成 Planner、Tool 和 Observation，是为了让诊断过程可解释、可记录、可降级。
 Planner 决定步骤，Tool 调用代码执行和检索等能力，Observation 把工具输出变成诊断事实。
 代码执行结果必须先于 AI 判断，避免模型凭空猜测。
 容易踩坑的是把所有逻辑塞进一次 prompt，无法说明失败发生在哪一步。
 本项目用 Agent Step 记录每个工具输入摘要、输出摘要、状态和耗时。', 'MEDIUM', 'AI 工程,AI 工程,Agent,Planner,Tool Calling,Observation,Memory', '项目原创整理', NULL, 1, 500, NOW(), NOW()),
-('AI', 'Tool Calling 的工程边界', '请结合后端面试场景解释：Tool Calling 的工程边界？', 'Tool Calling 的边界应是稳定的服务能力，而不是让模型直接操作数据库或控制器。
+('AI', 'Tool Calling 的工程边界', 'Tool Calling 的工程边界是什么？', 'Tool Calling 的边界应是稳定的服务能力，而不是让模型直接操作数据库或控制器。
 
-具体展开时，先讲清楚核心机制：工具负责调用 service 层能力，并把输入输出整理成结构化结果。 Piston、RAG、错误分类和代码点评都应通过清晰工具封装。
+工具负责调用 service 层能力，并把输入输出整理成结构化结果。 Piston、RAG、错误分类和代码点评都应通过清晰工具封装。
 
-再补充使用边界和常见问题：容易出问题的地方是工具绕过业务层直接查 mapper，破坏分层和权限边界。 工具失败要返回可记录状态，不能让整个 Agent 流程失控。
-
-如果面试官继续追问“为什么 Tool 不应该直接操作 Controller？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目实现，我会对应到 AI 面试教练里的代码执行、Agent Step、RAG 证据、用户记忆和降级策略，说明这不是一次简单 prompt 调用。', '为什么 Tool 不应该直接操作 Controller？
+容易踩坑的是工具绕过业务层直接查 mapper，破坏分层和权限边界。 工具失败要返回可记录状态，不能让整个 Agent 流程失控。', '为什么 Tool 不应该直接操作 Controller？
 CodeExecutionTool 应该依赖 JudgeService 还是 PistonClient？
 Tool 输出为什么要结构化？', 'Tool Calling 的边界应是稳定的服务能力，而不是让模型直接操作数据库或控制器。
 工具负责调用 service 层能力，并把输入输出整理成结构化结果。
 Piston、RAG、错误分类和代码点评都应通过清晰工具封装。
 容易踩坑的是工具绕过业务层直接查 mapper，破坏分层和权限边界。
 工具失败要返回可记录状态，不能让整个 Agent 流程失控。', 'MEDIUM', 'AI 工程,AI 工程,Agent,Planner,Tool Calling,Observation,Memory', '项目原创整理', NULL, 1, 501, NOW(), NOW()),
-('AI', 'Agent Step Trace 如何帮助排查', '请结合后端面试场景解释：Agent Step Trace 如何帮助排查？', 'Agent Step Trace 记录每一步名称、工具、状态、输入摘要、输出摘要、耗时和错误。
+('AI', 'Agent Step Trace 如何帮助排查', 'Agent Step Trace 如何帮助排查？', 'Agent Step Trace 记录每一步名称、工具、状态、输入摘要、输出摘要、耗时和错误。
 
-具体展开时，先讲清楚核心机制：它能说明诊断结果来自代码执行、RAG 证据还是 AI 分类。 当 SSE 中断或 RAG 失败时，Trace 可以定位失败环节。
+它能说明诊断结果来自代码执行、RAG 证据还是 AI 分类。 当 SSE 中断或 RAG 失败时，Trace 可以定位失败环节。
 
-再补充使用边界和常见问题：容易出问题的地方是只保存最终诊断，不保存中间过程，演示时说不清 Agent 做了什么。 Trace 也能帮助面试官理解项目不是单次 prompt 包装。
-
-如果面试官继续追问“Agent Step 中 inputSummary 和 outputSummary 应该记录多细？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目实现，我会对应到 AI 面试教练里的代码执行、Agent Step、RAG 证据、用户记忆和降级策略，说明这不是一次简单 prompt 调用。', 'Agent Step 中 inputSummary 和 outputSummary 应该记录多细？
+容易踩坑的是只保存最终诊断，不保存中间过程，演示时说不清 Agent 做了什么。 Trace 也能帮助说明项目不是单次 prompt 包装。', 'Agent Step 中 inputSummary 和 outputSummary 应该记录多细？
 RAG 失败时 Trace 应该显示什么状态？
 Trace 如何帮助复盘一次错误诊断？', 'Agent Step Trace 记录每一步名称、工具、状态、输入摘要、输出摘要、耗时和错误。
 它能说明诊断结果来自代码执行、RAG 证据还是 AI 分类。
 当 SSE 中断或 RAG 失败时，Trace 可以定位失败环节。
 容易踩坑的是只保存最终诊断，不保存中间过程，演示时说不清 Agent 做了什么。
-Trace 也能帮助面试官理解项目不是单次 prompt 包装。', 'MEDIUM', 'AI 工程,AI 工程,Agent,Planner,Tool Calling,Observation,Memory', '项目原创整理', NULL, 1, 502, NOW(), NOW()),
-('AI', 'Agent 失败降级怎么设计', '请结合后端面试场景解释：Agent 失败降级怎么设计？', 'Agent 失败降级要区分核心步骤和可选步骤，代码执行失败与 RAG 失败不能同等处理。
+Trace 也能帮助说明项目不是单次 prompt 包装。', 'MEDIUM', 'AI 工程,AI 工程,Agent,Planner,Tool Calling,Observation,Memory', '项目原创整理', NULL, 1, 502, NOW(), NOW()),
+('AI', 'Agent 失败降级怎么设计', 'Agent 失败降级怎么设计？', 'Agent 失败降级要区分核心步骤和可选步骤，代码执行失败与 RAG 失败不能同等处理。
 
-具体展开时，先讲清楚核心机制：代码执行是诊断事实来源，失败会影响主流程；RAG 和 AC 代码点评可以非阻塞降级。 可选工具失败应记录 Agent Step warning，并继续输出可用诊断。
+代码执行是诊断事实来源，失败会影响主流程；RAG 和 AC 代码点评可以非阻塞降级。 可选工具失败应记录 Agent Step warning，并继续输出可用诊断。
 
-再补充使用边界和常见问题：容易出问题的地方是让 RAG 或代码点评失败阻塞判题结果。 前端应显示具体失败步骤和本地排查建议。
-
-如果面试官继续追问“哪些 Agent Tool 失败不能继续？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目实现，我会对应到 AI 面试教练里的代码执行、Agent Step、RAG 证据、用户记忆和降级策略，说明这不是一次简单 prompt 调用。', '哪些 Agent Tool 失败不能继续？
+容易踩坑的是让 RAG 或代码点评失败阻塞判题结果。 前端应显示具体失败步骤和本地排查建议。', '哪些 Agent Tool 失败不能继续？
 RAG_RETRIEVAL 失败为什么不该阻塞诊断？
 SSE 中途断开时前端如何 fallback？', 'Agent 失败降级要区分核心步骤和可选步骤，代码执行失败与 RAG 失败不能同等处理。
 代码执行是诊断事实来源，失败会影响主流程；RAG 和 AC 代码点评可以非阻塞降级。
 可选工具失败应记录 Agent Step warning，并继续输出可用诊断。
 容易踩坑的是让 RAG 或代码点评失败阻塞判题结果。
 前端应显示具体失败步骤和本地排查建议。', 'MEDIUM', 'AI 工程,AI 工程,Agent,Planner,Tool Calling,Observation,Memory', '项目原创整理', NULL, 1, 503, NOW(), NOW()),
-('AI', 'Memory 在面试训练中的作用', '请结合后端面试场景解释：Memory 在面试训练中的作用？', 'Memory 用来保存用户弱点、错题和诊断历史，让训练计划能延续。
+('AI', 'Memory 在面试训练中的作用', 'Memory 在面试训练中的作用怎么理解？', 'Memory 用来保存用户弱点、错题和诊断历史，让训练计划能延续。
 
-具体展开时，先讲清楚核心机制：失败提交会写入弱点事件、错题卡和 RAG 用户记忆。 Memory 应按 user_id 隔离，不能跨用户召回。
+失败提交会写入弱点事件、错题卡和 RAG 用户记忆。 Memory 应按 user_id 隔离，不能跨用户召回。
 
-再补充使用边界和常见问题：容易出问题的地方是把 Memory 理解成让模型无限记住聊天内容。 本项目 Memory 服务于训练闭环，而不是通用聊天长期记忆。
-
-如果面试官继续追问“一次失败提交会写入哪些学习记忆？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目实现，我会对应到 AI 面试教练里的代码执行、Agent Step、RAG 证据、用户记忆和降级策略，说明这不是一次简单 prompt 调用。', '一次失败提交会写入哪些学习记忆？
+容易踩坑的是把 Memory 理解成让模型无限记住聊天内容。 本项目 Memory 服务于训练闭环，而不是通用聊天长期记忆。', '一次失败提交会写入哪些学习记忆？
 为什么用户记忆必须按 user_id 隔离？
 Memory 如何影响后续训练计划？', 'Memory 用来保存用户弱点、错题和诊断历史，让训练计划能延续。
 失败提交会写入弱点事件、错题卡和 RAG 用户记忆。
 Memory 应按 user_id 隔离，不能跨用户召回。
 容易踩坑的是把 Memory 理解成让模型无限记住聊天内容。
 本项目 Memory 服务于训练闭环，而不是通用聊天长期记忆。', 'MEDIUM', 'AI 工程,AI 工程,Agent,Planner,Tool Calling,Observation,Memory', '项目原创整理', NULL, 1, 504, NOW(), NOW()),
-('AI', 'RAG 在当前项目中为什么作为 Agent 内部 Tool', '请结合后端面试场景解释：RAG 在当前项目中为什么作为 Agent 内部 Tool？', 'RAG 在当前项目中作为 Agent 内部 Tool，是因为它服务于代码诊断证据，而不是独立聊天。
+('AI', 'RAG 在当前项目中为什么作为 Agent 内部 Tool', 'RAG 在当前项目中为什么作为 Agent 内部 Tool？', 'RAG 在当前项目中作为 Agent 内部 Tool，是因为它服务于代码诊断证据，而不是独立聊天。
 
-具体展开时，先讲清楚核心机制：它在 Observation 之后检索题目知识、知识卡和当前用户历史错题。 检索结果只辅助 ErrorClassifierTool 或 CodeReviewTool。
+它在 Observation 之后检索题目知识、知识卡和当前用户历史错题。 检索结果只辅助 ErrorClassifierTool 或 CodeReviewTool。
 
-再补充使用边界和常见问题：容易出问题的地方是把 RAG 做成公开问答入口，偏离面试训练闭环。 RAG 失败只记录步骤，不阻塞代码执行和最终诊断。
-
-如果面试官继续追问“为什么 RAG_RETRIEVAL 要放在 OBSERVATION 之后？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目实现，我会对应到 AI 面试教练里的代码执行、Agent Step、RAG 证据、用户记忆和降级策略，说明这不是一次简单 prompt 调用。', '为什么 RAG_RETRIEVAL 要放在 OBSERVATION 之后？
+容易踩坑的是把 RAG 做成公开问答入口，偏离面试训练闭环。 RAG 失败只记录步骤，不阻塞代码执行和最终诊断。', '为什么 RAG_RETRIEVAL 要放在 OBSERVATION 之后？
 RAG Tool 返回哪些类型的证据？
 为什么当前 MVP 不做独立 RAG Chat？', 'RAG 在当前项目中作为 Agent 内部 Tool，是因为它服务于代码诊断证据，而不是独立聊天。
 它在 Observation 之后检索题目知识、知识卡和当前用户历史错题。
 检索结果只辅助 ErrorClassifierTool 或 CodeReviewTool。
 容易踩坑的是把 RAG 做成公开问答入口，偏离面试训练闭环。
 RAG 失败只记录步骤，不阻塞代码执行和最终诊断。', 'MEDIUM', 'AI 工程,AI 工程,RAG,检索,证据,用户记忆,MySQL 检索', '项目原创整理', NULL, 1, 510, NOW(), NOW()),
-('AI', 'RAG 检索结果为什么只是证据', '请结合后端面试场景解释：RAG 检索结果为什么只是证据？', 'RAG 检索结果只是辅助证据，不能覆盖 Piston 执行结果和测试用例事实。
+('AI', 'RAG 检索结果为什么只是证据', 'RAG 检索结果为什么只是证据？', 'RAG 检索结果只是辅助证据，不能覆盖 Piston 执行结果和测试用例事实。
 
-具体展开时，先讲清楚核心机制：执行结果决定代码是否通过，RAG 只帮助解释错误和补充知识点。 证据可能过期、召回不准或与当前错误不完全相关。
+执行结果决定代码是否通过，RAG 只帮助解释错误和补充知识点。 证据可能过期、召回不准或与当前错误不完全相关。
 
-再补充使用边界和常见问题：容易出问题的地方是让模型优先相信检索文本，反而误判真实失败原因。 提示词应明确执行结果优先级高于 RAG 证据。
-
-如果面试官继续追问“RAG 证据和 Piston 结果冲突时应该相信谁？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目实现，我会对应到 AI 面试教练里的代码执行、Agent Step、RAG 证据、用户记忆和降级策略，说明这不是一次简单 prompt 调用。', 'RAG 证据和 Piston 结果冲突时应该相信谁？
+容易踩坑的是让模型优先相信检索文本，反而误判真实失败原因。 提示词应明确执行结果优先级高于 RAG 证据。', 'RAG 证据和 Piston 结果冲突时应该相信谁？
 ErrorClassifierTool 如何使用 RAG evidence？
 检索为空时诊断流程应该怎么走？', 'RAG 检索结果只是辅助证据，不能覆盖 Piston 执行结果和测试用例事实。
 执行结果决定代码是否通过，RAG 只帮助解释错误和补充知识点。
 证据可能过期、召回不准或与当前错误不完全相关。
 容易踩坑的是让模型优先相信检索文本，反而误判真实失败原因。
 提示词应明确执行结果优先级高于 RAG 证据。', 'MEDIUM', 'AI 工程,AI 工程,RAG,检索,证据,用户记忆,MySQL 检索', '项目原创整理', NULL, 1, 511, NOW(), NOW()),
-('AI', '用户记忆检索为什么必须隔离', '请结合后端面试场景解释：用户记忆检索为什么必须隔离？', '用户记忆检索必须按 user_id 隔离，避免一个用户的诊断和错题泄漏给另一个用户。
+('AI', '用户记忆检索为什么必须隔离', '用户记忆检索为什么必须隔离？', '用户记忆检索必须按 user_id 隔离，避免一个用户的诊断和错题泄漏给另一个用户。
 
-具体展开时，先讲清楚核心机制：系统知识可以 user_id 为空共享，用户记忆必须带当前 user_id。 RagService 查询和服务层过滤都要执行隔离条件。
+系统知识可以 user_id 为空共享，用户记忆必须带当前 user_id。 RagService 查询和服务层过滤都要执行隔离条件。
 
-再补充使用边界和常见问题：容易出问题的地方是只在前端区分用户，后端检索 SQL 没有限制 user_id。 这是数据安全边界，不是简单的展示过滤。
-
-如果面试官继续追问“RAG 查询条件里 user_id 应该怎么写？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目场景，我会结合集合源码、并发边界、异常表现或业务扩展点来说明，让回答能落到真实代码和排查过程。', 'RAG 查询条件里 user_id 应该怎么写？
+容易踩坑的是只在前端区分用户，后端检索 SQL 没有限制 user_id。 这是数据安全边界，不是简单的展示过滤。', 'RAG 查询条件里 user_id 应该怎么写？
 系统 chunk 和用户 chunk 如何区分？
 如果误召回别人的 mistake_card 会有什么风险？', '用户记忆检索必须按 user_id 隔离，避免一个用户的诊断和错题泄漏给另一个用户。
 系统知识可以 user_id 为空共享，用户记忆必须带当前 user_id。
 RagService 查询和服务层过滤都要执行隔离条件。
 容易踩坑的是只在前端区分用户，后端检索 SQL 没有限制 user_id。
 这是数据安全边界，不是简单的展示过滤。', 'MEDIUM', 'AI 工程,AI 工程,RAG,检索,证据,用户记忆,MySQL 检索', '项目原创整理', NULL, 1, 512, NOW(), NOW()),
-('AI', 'MySQL 结构化 RAG 的取舍', '请结合后端面试场景解释：MySQL 结构化 RAG 的取舍？', 'MySQL 结构化 RAG 适合 MVP，因为可解释、易落库、易演示且不引入向量数据库。
+('AI', 'MySQL 结构化 RAG 的取舍', 'MySQL 结构化 RAG 的取舍是什么？', 'MySQL 结构化 RAG 适合 MVP，因为可解释、易落库、易演示且不引入向量数据库。
 
-具体展开时，先讲清楚核心机制：它通过 problem、knowledge_card、ai_diagnosis、mistake_card 等结构化字段检索。 缺点是语义召回能力弱于 embedding 和向量检索。
+它通过 problem、knowledge_card、ai_diagnosis、mistake_card 等结构化字段检索。 缺点是语义召回能力弱于 embedding 和向量检索。
 
-再补充使用边界和常见问题：容易出问题的地方是把 MySQL RAG 包装成强语义搜索能力。 当前设计保留 RagService 边界，未来可替换为向量检索实现。
-
-如果面试官继续追问“MySQL RAG 适合 MVP 的原因是什么？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到数据库场景，我会结合 Explain、事务边界、锁范围、日志机制和慢 SQL 表现来说明，不把它讲成孤立的数据库名词。', 'MySQL RAG 适合 MVP 的原因是什么？
+容易踩坑的是把 MySQL RAG 包装成强语义搜索能力。 当前设计保留 RagService 边界，未来可替换为向量检索实现。', 'MySQL RAG 适合 MVP 的原因是什么？
 结构化检索相比向量检索弱在哪里？
 未来升级向量库时哪些接口可以复用？', 'MySQL 结构化 RAG 适合 MVP，因为可解释、易落库、易演示且不引入向量数据库。
 它通过 problem、knowledge_card、ai_diagnosis、mistake_card 等结构化字段检索。
 缺点是语义召回能力弱于 embedding 和向量检索。
 容易踩坑的是把 MySQL RAG 包装成强语义搜索能力。
 当前设计保留 RagService 边界，未来可替换为向量检索实现。', 'MEDIUM', 'AI 工程,AI 工程,RAG,检索,证据,用户记忆,MySQL 检索', '项目原创整理', NULL, 1, 513, NOW(), NOW()),
-('AI', 'RAG 失败为什么不能阻塞诊断', '请结合后端面试场景解释：RAG 失败为什么不能阻塞诊断？', 'RAG 失败不能阻塞诊断，因为核心事实来自代码执行结果和测试用例。
+('AI', 'RAG 失败为什么不能阻塞诊断', 'RAG 失败为什么不能阻塞诊断？', 'RAG 失败不能阻塞诊断，因为核心事实来自代码执行结果和测试用例。
 
-具体展开时，先讲清楚核心机制：RAG 是增强证据，失败时最多让诊断少一些上下文。 Agent 应记录 RAG_RETRIEVAL failed 或 warning，然后继续错误分类或代码点评。
+RAG 是增强证据，失败时最多让诊断少一些上下文。 Agent 应记录 RAG_RETRIEVAL failed 或 warning，然后继续错误分类或代码点评。
 
-再补充使用边界和常见问题：容易出问题的地方是辅助检索故障导致用户无法看到判题诊断。 前端时间线应显示 RAG 失败但最终仍有诊断结果。
-
-如果面试官继续追问“RAG 失败时 Agent Step 应该是什么状态？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目实现，我会对应到 AI 面试教练里的代码执行、Agent Step、RAG 证据、用户记忆和降级策略，说明这不是一次简单 prompt 调用。', 'RAG 失败时 Agent Step 应该是什么状态？
+容易踩坑的是辅助检索故障导致用户无法看到判题诊断。 前端时间线应显示 RAG 失败但最终仍有诊断结果。', 'RAG 失败时 Agent Step 应该是什么状态？
 没有 RAG evidence 时 ErrorClassifierTool 如何继续？
 为什么代码执行失败和 RAG 失败降级策略不同？', 'RAG 失败不能阻塞诊断，因为核心事实来自代码执行结果和测试用例。
 RAG 是增强证据，失败时最多让诊断少一些上下文。
 Agent 应记录 RAG_RETRIEVAL failed 或 warning，然后继续错误分类或代码点评。
 容易踩坑的是辅助检索故障导致用户无法看到判题诊断。
 前端时间线应显示 RAG 失败但最终仍有诊断结果。', 'MEDIUM', 'AI 工程,AI 工程,RAG,检索,证据,用户记忆,MySQL 检索', '项目原创整理', NULL, 1, 514, NOW(), NOW()),
-('AI', 'LangChain 和本项目自定义 Agent 编排有什么区别', '请结合后端面试场景解释：LangChain 和本项目自定义 Agent 编排有什么区别？', 'LangChain 是通用 LLM 编排框架，本项目自定义 Agent 更贴合 Spring Boot 业务分层。
+('AI', 'LangChain 和本项目自定义 Agent 编排有什么区别', 'LangChain 和本项目自定义 Agent 编排有什么区别？', 'LangChain 是通用 LLM 编排框架，本项目自定义 Agent 更贴合 Spring Boot 业务分层。
 
-具体展开时，先讲清楚核心机制：自定义编排能清楚表达代码执行、Observation、RAG、诊断、记忆和训练计划。 每个 Tool 直接复用现有 Service，输入输出和降级边界更容易解释。
+自定义编排能清楚表达代码执行、Observation、RAG、诊断、记忆和训练计划。 每个 Tool 直接复用现有 Service，输入输出和降级边界更容易解释。
 
-再补充使用边界和常见问题：容易出问题的地方是为了显得复杂引入框架，反而降低简历项目可控性。 未来可在保持 Tool 边界的前提下替换部分编排实现。
-
-如果面试官继续追问“为什么 MVP 阶段选择自定义 Agent 而不是 LangChain？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目实现，我会对应到 AI 面试教练里的代码执行、Agent Step、RAG 证据、用户记忆和降级策略，说明这不是一次简单 prompt 调用。', '为什么 MVP 阶段选择自定义 Agent 而不是 LangChain？
+容易踩坑的是为了显得复杂引入框架，反而降低简历项目可控性。 未来可在保持 Tool 边界的前提下替换部分编排实现。', '为什么 MVP 阶段选择自定义 Agent 而不是 LangChain？
 哪些 Tool 边界未来可以迁移到 LangChain？
-自定义编排在面试表达上有什么优势？', 'LangChain 是通用 LLM 编排框架，本项目自定义 Agent 更贴合 Spring Boot 业务分层。
+自定义编排在项目讲解上有什么优势？', 'LangChain 是通用 LLM 编排框架，本项目自定义 Agent 更贴合 Spring Boot 业务分层。
 自定义编排能清楚表达代码执行、Observation、RAG、诊断、记忆和训练计划。
 每个 Tool 直接复用现有 Service，输入输出和降级边界更容易解释。
 容易踩坑的是为了显得复杂引入框架，反而降低简历项目可控性。
 未来可在保持 Tool 边界的前提下替换部分编排实现。', 'HARD', 'AI 工程,AI 工程,LangChain,Chain,Tool,Memory,LCEL', '项目原创整理', NULL, 1, 520, NOW(), NOW()),
-('AI', 'Chain、Tool、Memory 分别解决什么问题', '请结合后端面试场景解释：Chain、Tool、Memory 分别解决什么问题？', 'Chain 解决流程组合，Tool 解决外部能力调用，Memory 解决上下文和历史延续。
+('AI', 'Chain、Tool、Memory 分别解决什么问题', 'Chain、Tool、Memory 分别解决什么问题？', 'Chain 解决流程组合，Tool 解决外部能力调用，Memory 解决上下文和历史延续。
 
-具体展开时，先讲清楚核心机制：在本项目里 Tool 对应代码执行、RAG 检索、错误分类和训练规划。 Memory 对应用户弱点、错题卡和诊断历史，而不是无限聊天上下文。
+在本项目里 Tool 对应代码执行、RAG 检索、错误分类和训练规划。 Memory 对应用户弱点、错题卡和诊断历史，而不是无限聊天上下文。
 
-再补充使用边界和常见问题：容易出问题的地方是把三个概念都讲成 prompt 拼接。 回答时要把抽象概念落到具体工程边界。
-
-如果面试官继续追问“本项目里哪个类承担 Chain 或流程编排职责？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目实现，我会对应到 AI 面试教练里的代码执行、Agent Step、RAG 证据、用户记忆和降级策略，说明这不是一次简单 prompt 调用。', '本项目里哪个类承担 Chain 或流程编排职责？
+容易踩坑的是把三个概念都讲成 prompt 拼接。 回答时要把抽象概念落到具体工程边界。', '本项目里哪个类承担 Chain 或流程编排职责？
 Tool 和普通 Service 的边界是什么？
 Memory 数据应该持久化到哪里？', 'Chain 解决流程组合，Tool 解决外部能力调用，Memory 解决上下文和历史延续。
 在本项目里 Tool 对应代码执行、RAG 检索、错误分类和训练规划。
 Memory 对应用户弱点、错题卡和诊断历史，而不是无限聊天上下文。
 容易踩坑的是把三个概念都讲成 prompt 拼接。
 回答时要把抽象概念落到具体工程边界。', 'HARD', 'AI 工程,AI 工程,LangChain,Chain,Tool,Memory,LCEL', '项目原创整理', NULL, 1, 521, NOW(), NOW()),
-('AI', '为什么 MVP 阶段不强依赖 LangChain', '请结合后端面试场景解释：为什么 MVP 阶段不强依赖 LangChain？', 'MVP 阶段不强依赖 LangChain，是为了优先保证可控、可解释和低调试成本。
+('AI', '为什么 MVP 阶段不强依赖 LangChain', '为什么 MVP 阶段不强依赖 LangChain？', 'MVP 阶段不强依赖 LangChain，是为了优先保证可控、可解释和低调试成本。
 
-具体展开时，先讲清楚核心机制：项目核心是 Spring Boot 分层、代码执行、Agent Step 和学习记忆闭环。 自定义状态机足够表达当前固定流程，不需要复杂自动规划。
+项目核心是 Spring Boot 分层、代码执行、Agent Step 和学习记忆闭环。 自定义状态机足够表达当前固定流程，不需要复杂自动规划。
 
-再补充使用边界和常见问题：容易出问题的地方是为了追热点引入框架，反而说不清业务链路。 保留 Tool 和 Service 边界后，未来仍可渐进接入框架。
-
-如果面试官继续追问“当前 Agent 流程为什么不需要复杂自动规划？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目实现，我会对应到 AI 面试教练里的代码执行、Agent Step、RAG 证据、用户记忆和降级策略，说明这不是一次简单 prompt 调用。', '当前 Agent 流程为什么不需要复杂自动规划？
+容易踩坑的是为了追热点引入框架，反而说不清业务链路。 保留 Tool 和 Service 边界后，未来仍可渐进接入框架。', '当前 Agent 流程为什么不需要复杂自动规划？
 引入 LangChain 会增加哪些调试成本？
 如何证明项目不是简单套壳 LLM？', 'MVP 阶段不强依赖 LangChain，是为了优先保证可控、可解释和低调试成本。
 项目核心是 Spring Boot 分层、代码执行、Agent Step 和学习记忆闭环。
 自定义状态机足够表达当前固定流程，不需要复杂自动规划。
 容易踩坑的是为了追热点引入框架，反而说不清业务链路。
 保留 Tool 和 Service 边界后，未来仍可渐进接入框架。', 'HARD', 'AI 工程,AI 工程,LangChain,Chain,Tool,Memory,LCEL', '项目原创整理', NULL, 1, 522, NOW(), NOW()),
-('AI', 'LangChain 接入 Spring Boot 的边界', '请结合后端面试场景解释：LangChain 接入 Spring Boot 的边界？', 'LangChain 接入 Spring Boot 时应复用已有 Service，而不是绕过 controller/service/mapper 分层。
+('AI', 'LangChain 接入 Spring Boot 的边界', 'LangChain 接入 Spring Boot 的边界是什么？', 'LangChain 接入 Spring Boot 时应复用已有 Service，而不是绕过 controller/service/mapper 分层。
 
-具体展开时，先讲清楚核心机制：LangChain 可以负责编排模型、提示和工具调用，业务状态仍由服务层管理。 持久化、用户隔离、判题和训练计划规则不应交给模型自由决定。
+LangChain 可以负责编排模型、提示和工具调用，业务状态仍由服务层管理。 持久化、用户隔离、判题和训练计划规则不应交给模型自由决定。
 
-再补充使用边界和常见问题：容易出问题的地方是让框架直接操作数据库，破坏可测试性和权限边界。 接入点应放在 Agent 编排层或 Tool 适配层。
-
-如果面试官继续追问“LangChain Tool 应该调用 Service 还是 Mapper？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到 Spring 项目，我会把它落到容器生命周期、代理调用链、Controller 到 Service 的分层边界以及异常处理位置上。', 'LangChain Tool 应该调用 Service 还是 Mapper？
+容易踩坑的是让框架直接操作数据库，破坏可测试性和权限边界。 接入点应放在 Agent 编排层或 Tool 适配层。', 'LangChain Tool 应该调用 Service 还是 Mapper？
 哪些业务规则不能交给 LLM 决定？
 接入 LangChain 后 Agent Step Trace 如何保留？', 'LangChain 接入 Spring Boot 时应复用已有 Service，而不是绕过 controller/service/mapper 分层。
 LangChain 可以负责编排模型、提示和工具调用，业务状态仍由服务层管理。
 持久化、用户隔离、判题和训练计划规则不应交给模型自由决定。
 容易踩坑的是让框架直接操作数据库，破坏可测试性和权限边界。
 接入点应放在 Agent 编排层或 Tool 适配层。', 'HARD', 'AI 工程,AI 工程,LangChain,Chain,Tool,Memory,LCEL', '项目原创整理', NULL, 1, 523, NOW(), NOW()),
-('AI', 'LCEL 表达式适合什么场景', '请结合后端面试场景解释：LCEL 表达式适合什么场景？', 'LCEL 适合声明式组合 prompt、model、parser 和简单 runnable 链路。
+('AI', 'LCEL 表达式适合什么场景', 'LCEL 表达式适合什么场景？', 'LCEL 适合声明式组合 prompt、model、parser 和简单 runnable 链路。
 
-具体展开时，先讲清楚核心机制：它能让模型调用、输出解析和流式处理组合更清晰。 复杂业务状态、数据库事务和多步骤降级仍应放在应用服务层控制。
+它能让模型调用、输出解析和流式处理组合更清晰。 复杂业务状态、数据库事务和多步骤降级仍应放在应用服务层控制。
 
-再补充使用边界和常见问题：容易出问题的地方是把业务流程全写成表达式，调试和异常处理变困难。 本项目可把 LCEL 用在 AI 工具内部，而不是替代整个 Agent 状态机。
-
-如果面试官继续追问“LCEL 适合封装哪一类模型调用？”，回答要回到前面的机制，不要另起一个无关话题。先说明发生条件，再说明运行过程，最后给出项目里可观察的现象或处理方式。
-
-如果继续追到项目实现，我会对应到 AI 面试教练里的代码执行、Agent Step、RAG 证据、用户记忆和降级策略，说明这不是一次简单 prompt 调用。', 'LCEL 适合封装哪一类模型调用？
+容易踩坑的是把业务流程全写成表达式，调试和异常处理变困难。 本项目可把 LCEL 用在 AI 工具内部，而不是替代整个 Agent 状态机。', 'LCEL 适合封装哪一类模型调用？
 为什么复杂业务状态不适合全放进 LCEL？
 如果接入 LCEL，ErrorClassifierTool 可以怎么改？', 'LCEL 适合声明式组合 prompt、model、parser 和简单 runnable 链路。
 它能让模型调用、输出解析和流式处理组合更清晰。

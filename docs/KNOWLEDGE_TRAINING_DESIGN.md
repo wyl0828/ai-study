@@ -40,9 +40,10 @@
 - 当前真实数据 120 条：侧边栏 24 个最终专题每个至少 5 张，覆盖 Java 基础、集合、JUC、JVM、MySQL、Redis、Spring 和 AI 工程。
 - 卡片未展开时展示难度、分类、tags、标题、问题描述、训练状态、最近得分或“未自测”和主要动作按钮。
 - 展开后默认只展示题目信息、模拟自测输入框、提交自测按钮和“跳过自测，直接查看解析”。
-- 提交自测后展示点评反馈、评分、命中核心记忆点、标杆回答解析、核心记忆要点、面试官高频追问和“标记已掌握”。
+- 提交自测后展示点评反馈、评分、命中核心记忆点、标杆回答解析、核心记忆要点、高频追问和“标记已掌握”。
 - 点击“跳过自测，直接查看解析”时只显示解析区，不展示虚假的模拟评分。
 - “标记已掌握”当前保存在 React state 中；自测提交会写入后端自测记录并可更新知识卡掌握度。
+- 当前知识卡内容质量整改已完成：问题改为直白短问法，答案围绕定义、机制、边界和常见坑，不再使用统一扩写模板凑字数。
 
 本次明确不做：
 
@@ -67,6 +68,10 @@ frontend/components/KnowledgeCard.tsx
 frontend/components/KnowledgeSelfTest.tsx
 frontend/components/KnowledgeFeedback.tsx
 frontend/lib/knowledgeData.ts
+frontend/lib/knowledgeSeed.ts
+scripts/knowledge_card_profiles.cjs
+scripts/generate_knowledge_cards_sql.cjs
+frontend/lib/knowledge-tree-coverage.node-test.cjs
 ```
 
 职责划分：
@@ -82,6 +87,10 @@ frontend/lib/knowledgeData.ts
 | `KnowledgeSelfTest.tsx` | 自测输入、空答案校验、提交自测、跳过自测 |
 | `KnowledgeFeedback.tsx` | 自测评分、点评、命中记忆点展示 |
 | `knowledgeData.ts` | 本地示例数据、接口数据映射、类型定义、本地评分函数 |
+| `knowledgeSeed.ts` | 由生成脚本输出的前端离线 fallback seed，保持与 SQL 种子一致 |
+| `scripts/knowledge_card_profiles.cjs` | 120 张知识卡的唯一内容维护源 |
+| `scripts/generate_knowledge_cards_sql.cjs` | 从 profile 生成 `data/knowledge_cards.sql` 和 `frontend/lib/knowledgeSeed.ts` |
+| `knowledge-tree-coverage.node-test.cjs` | 知识树覆盖、内容质量和 SQL / fallback 一致性回归测试 |
 
 ## 4. 数据结构
 
@@ -154,11 +163,32 @@ GET /api/knowledge/cards/{id}
 后续继续迭代时应保持以下边界：
 
 - 后端接口只提供结构化知识卡片，不做 RAG。
-- 当前优先增强前端反馈质量，例如补充“缺失要点”和更像面试官的低分点评。
+- 当前优先增强前端反馈质量，例如补充“缺失要点”和更自然的低分点评。
 - 自测记录和知识卡掌握度已通过 `self_test_record`、`user_knowledge_card_mastery` 和用户学习 REST 接口持久化；低分自测会写入 `user_weakness_event`。
 - 算法 Agent 诊断仍不根据算法错因强行推荐后端八股知识。
 
-## 7. 验收标准
+## 7. 知识卡内容维护规则
+
+知识卡不是“生成器产物”，而是面试训练内容产品。维护时必须从 `scripts/knowledge_card_profiles.cjs` 改起，然后重新生成 SQL 和前端 fallback：
+
+```powershell
+node scripts/generate_knowledge_cards_sql.cjs
+node frontend/lib/knowledge-tree-coverage.node-test.cjs
+```
+
+内容规则：
+
+- 问题使用真实短问法，例如“什么是封装？”“ArrayList 是怎么扩容的？”“Spring Bean 的生命周期是什么？”。
+- 禁止恢复“请结合后端面试场景解释”“你会如何结合项目说明”“你会从哪些维度说明”等套壳问题。
+- 答案不追求统一字数，基础概念题可以短，机制题和框架题可以长，但必须直接回答本题。
+- 禁止用“从三个层面说明”“真实调用链”“体现工程思维”等模板语义补字数。
+- `keyPoints` 写具体知识点，不能写“理解机制 / 结合项目 / 注意边界”这类空词。
+- `followUps` 围绕本题自然追问，不跳到无关大专题。
+- Spring Bean 生命周期、布隆过滤器、HashMap、ArrayList、Spring 事务、MySQL MVCC 等高曝光卡要保留核心关键词护栏。
+
+导入新 SQL 后，如果本地库已有 `rag_document` / `rag_chunk`，还需要通过 `RagService.rebuildSystemIndex()` 或等价维护流程重建系统 RAG 索引，避免 Agent 检索到旧知识卡 chunk。
+
+## 8. 验收标准
 
 当前 V1 验收标准：
 
@@ -172,9 +202,10 @@ GET /api/knowledge/cards/{id}
 - 提交自测后后端保存 `self_test_record`，刷新后可读取最近自测记录。
 - 不影响 `/`、`/problem/[id]`、`/dashboard`。
 - 不新增后端依赖；新增的学习记忆表通过 `data/learning_memory_continuity_migration.sql` 管理。
+- `node frontend/lib/knowledge-tree-coverage.node-test.cjs` 通过。
 - `npm run build` 通过。
 
-## 8. 后续增强
+## 9. 后续增强
 
 V1 定稿后可以小步增强：
 

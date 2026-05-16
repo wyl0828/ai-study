@@ -21,6 +21,7 @@ const repoRoot = path.resolve(frontendRoot, "..");
 const {
   buildKnowledgeOutline,
   getSelectionBreadcrumb,
+  knowledgeTopics,
   matchKnowledgeTopic,
   selectionKey,
 } = require("./knowledgeData.ts");
@@ -151,7 +152,10 @@ function parseKnowledgeCardsSql() {
 test("knowledge SQL seed gives every final outline topic at least five detailed cards", () => {
   const cards = parseKnowledgeCardsSql();
   const genericTemplatePattern =
-    /可以这样答|展开讲|需要注意的是|关键触发条件是什么|同类方案相比|规避这个坑|追问时补充|如果线上出现和 .+ 相关的问题/;
+    /可以这样答|展开讲|需要注意的是|关键触发条件是什么|同类方案相比|规避这个坑|追问时补充|如果线上出现和 .+ 相关的问题|如果面试官继续追问|回答要回到前面的机制|不要另起一个无关话题|先说明发生条件|如果继续追到项目场景|如果继续追到线上排查|如果继续追到|展开时先把核心机制讲完整|落到后端项目里|真实调用链|数据流转|从三个层面说明|先讲背景问题|体现工程思维|面试官会认可|这样回答能让面试官看到/;
+  const genericQuestionPattern =
+    /面试官问到|面试官问「|面试官追问|面试官让你|你会如何结合后端项目说明|你会从哪些维度说明|你会怎样先讲背景问题|你会按哪些阶段梳理/;
+  const genericKeyPointPattern = /理解机制|结合项目|注意边界|项目场景|工程思维/;
 
   assert.ok(cards.length >= 120, `expected at least 120 cards, got ${cards.length}`);
 
@@ -164,9 +168,24 @@ test("knowledge SQL seed gives every final outline topic at least five detailed 
   }
 
   for (const card of cards) {
-    assert.ok(card.referenceAnswer.length >= 260, `${card.title} answer is too short`);
+    assert.doesNotMatch(
+      card.question,
+      /^请结合后端面试场景解释：.+？$/,
+      `${card.title} question should read like a real interviewer prompt`
+    );
     assert.ok(
-      (card.referenceAnswer.match(/[。？！?]/g) || []).length >= 6,
+      !card.referenceAnswer.includes(card.question),
+      `${card.title} answer should not echo the whole question`
+    );
+    if (card.keyPoints[0] && card.keyPoints[0].length >= 30) {
+      assert.ok(
+        !card.question.includes(card.keyPoints[0].slice(0, 30)),
+        `${card.title} question should not quote the first answer key point`
+      );
+    }
+    assert.ok(card.referenceAnswer.length >= 120, `${card.title} answer is too short`);
+    assert.ok(
+      (card.referenceAnswer.match(/[。？！?]/g) || []).length >= 3,
       `${card.title} answer should not be only one or two compressed sentences`
     );
     assert.doesNotMatch(
@@ -184,8 +203,21 @@ test("knowledge SQL seed gives every final outline topic at least five detailed 
       genericTemplatePattern,
       `${card.title} should not contain generic generated templates`
     );
-    assert.ok(card.keyPoints.length >= 5, `${card.title} needs at least five key points`);
-    assert.ok(card.followUpQuestions.length >= 3, `${card.title} needs at least three follow-ups`);
+    assert.doesNotMatch(
+      card.question,
+      genericQuestionPattern,
+      `${card.title} question should be a direct interview question`
+    );
+    assert.doesNotMatch(
+      card.question,
+      /如何.+是什么|怎么.+是什么|如何理解怎么理解|怎么理解怎么理解|为什么.+怎么理解|什么.+是什么/,
+      `${card.title} question should not be mechanically rewritten`
+    );
+    assert.ok(card.keyPoints.length >= 3, `${card.title} needs at least three key points`);
+    assert.ok(card.followUpQuestions.length >= 2, `${card.title} needs at least two follow-ups`);
+    for (const point of card.keyPoints) {
+      assert.doesNotMatch(point, genericKeyPointPattern, `${card.title} key point is too vague`);
+    }
   }
 });
 
@@ -194,9 +226,14 @@ test("knowledge generator requires explicit card profiles for every seeded card"
 
   assert.match(generatorSource, /const cardProfiles\s*=/);
   assert.match(profileSource, /const cardProfiles\s*=/);
-  assert.match(profileSource, /function profile\(answer,\s*keyPoints,\s*followUps\)/);
+  assert.match(profileSource, /function profile\(question,\s*answer,\s*keyPoints,\s*followUps\)/);
   assert.doesNotMatch(profileSource, /function profile\(keyPoints,\s*followUps\)/);
+  assert.doesNotMatch(profileSource, /function profile\(answer,\s*keyPoints,\s*followUps\)/);
+  assert.doesNotMatch(profileSource, /function enrichAnswer/);
+  assert.doesNotMatch(profileSource, /answer:\s*enrichAnswer/);
   assert.doesNotMatch(profileSource, /profile\(\s*\[/);
+  assert.doesNotMatch(profileSource, /function detailShortAnswers|function closingFor|function cleanPoint/);
+  assert.doesNotMatch(generatorSource, /function question\s*\(/);
   assert.doesNotMatch(generatorSource, /function keyPoints\s*\(/);
   assert.doesNotMatch(generatorSource, /function followUps\s*\(/);
 
@@ -293,15 +330,92 @@ test("Redis combined-topic cards split subquestions into separate sections", () 
   assert.ok(persistence.keyPoints.length >= 7, "Redis persistence card needs separate key points");
 });
 
+test("high-risk cards keep concrete mechanisms and avoid generic guidance", () => {
+  const cards = parseKnowledgeCardsSql();
+  const byTitle = new Map(cards.map((card) => [card.title, card]));
+  const encapsulation = byTitle.get("什么是封装");
+  const hashMapPower = byTitle.get("HashMap 扩容为什么是 2 的幂");
+  const bloomFilter = byTitle.get("布隆过滤器解决什么问题");
+  const springBean = byTitle.get("Spring Bean 生命周期");
+  const springTx = byTitle.get("Spring 事务失效场景");
+  const mysqlMvcc = byTitle.get("MVCC 是什么");
+  const arrayList = byTitle.get("ArrayList 扩容机制");
+
+  assert.equal(byTitle.has("封装、继承、多态的面试表达"), false);
+  assert.ok(encapsulation, "Encapsulation card should exist as a single-topic question");
+  assert.equal(encapsulation.question, "什么是封装？");
+  assert.doesNotMatch(encapsulation.question, /继承|多态|面试表达/);
+  assert.match(encapsulation.referenceAnswer, /封装/);
+  assert.match(encapsulation.referenceAnswer, /状态/);
+  assert.match(encapsulation.referenceAnswer, /规则|约束/);
+  assert.match(encapsulation.referenceAnswer, /getter\/setter/);
+  assert.doesNotMatch(encapsulation.referenceAnswer, /封装、继承、多态/);
+  assert.notEqual(
+    encapsulation.referenceAnswer.replace(/\s/g, "").slice(0, 40),
+    encapsulation.question.replace(/\s/g, "").slice(0, 40),
+    "Encapsulation answer should not simply repeat the question"
+  );
+
+  assert.ok(hashMapPower, "HashMap power-of-two card should exist");
+  assert.match(hashMapPower.referenceAnswer, /\(n - 1\) & hash/);
+  assert.match(hashMapPower.referenceAnswer, /取模/);
+  assert.match(hashMapPower.referenceAnswer, /2 倍/);
+  assert.match(hashMapPower.referenceAnswer, /原位置/);
+  assert.match(hashMapPower.referenceAnswer, /原位置加旧容量/);
+
+  assert.ok(bloomFilter, "Bloom filter card should exist");
+  assert.match(bloomFilter.referenceAnswer, /缓存穿透/);
+  assert.match(bloomFilter.referenceAnswer, /bit 数组/);
+  assert.match(bloomFilter.referenceAnswer, /多个 hash|多 hash/);
+  assert.match(bloomFilter.referenceAnswer, /一定不存在/);
+  assert.match(bloomFilter.referenceAnswer, /可能存在/);
+  assert.match(bloomFilter.referenceAnswer, /误判/);
+  assert.match(bloomFilter.referenceAnswer, /hash 冲突/);
+  assert.match(bloomFilter.referenceAnswer, /删除/);
+
+  assert.ok(springBean, "Spring Bean lifecycle card should exist");
+  assert.match(springBean.referenceAnswer, /实例化/);
+  assert.match(springBean.referenceAnswer, /属性填充/);
+  assert.match(springBean.referenceAnswer, /Aware/);
+  assert.match(springBean.referenceAnswer, /BeanPostProcessor/);
+  assert.match(springBean.referenceAnswer, /@PostConstruct/);
+  assert.match(springBean.referenceAnswer, /InitializingBean/);
+  assert.match(springBean.referenceAnswer, /init-method/);
+  assert.match(springBean.referenceAnswer, /AOP/);
+  assert.match(springBean.referenceAnswer, /销毁/);
+  assert.match(springBean.referenceAnswer, /prototype/);
+
+  assert.ok(springTx, "Spring transaction failure card should exist");
+  assert.match(springTx.referenceAnswer, /代理/);
+  assert.match(springTx.referenceAnswer, /传播行为/);
+  assert.match(springTx.referenceAnswer, /隔离级别/);
+  assert.match(springTx.referenceAnswer, /失效/);
+  assert.match(springTx.referenceAnswer, /同类内部调用|this\./);
+  assert.match(springTx.referenceAnswer, /catch/);
+  assert.match(springTx.referenceAnswer, /rollbackFor/);
+
+  assert.ok(mysqlMvcc, "MySQL MVCC card should exist");
+  assert.match(mysqlMvcc.referenceAnswer, /undo log/);
+  assert.match(mysqlMvcc.referenceAnswer, /Read View/);
+  assert.match(mysqlMvcc.referenceAnswer, /版本链/);
+  assert.match(mysqlMvcc.referenceAnswer, /可见性|可见/);
+
+  assert.ok(arrayList, "ArrayList expansion card should exist");
+  assert.match(arrayList.referenceAnswer, /第一次 add|第一次添加/);
+  assert.match(arrayList.referenceAnswer, /默认容量 10|扩到默认容量 10/);
+  assert.match(arrayList.referenceAnswer, /1\.5 倍/);
+  assert.match(arrayList.referenceAnswer, /数组.*拷贝|拷贝.*数组/);
+});
+
 test("knowledge selection can target one concrete card", () => {
   const topics = [
     {
       id: 101,
-      title: "封装、继承、多态的面试表达",
+      title: "什么是封装",
       category: "Java",
       difficulty: "EASY",
       tags: ["Java 核心", "OOP", "面向对象"],
-      question: "请解释封装、继承、多态",
+      question: "什么是封装？",
     },
     {
       id: 102,
@@ -339,11 +453,11 @@ test("knowledge outline appends concrete card nodes under final topics", () => {
   const topics = [
     {
       id: 101,
-      title: "封装、继承、多态的面试表达",
+      title: "什么是封装",
       category: "Java",
       difficulty: "EASY",
       tags: ["Java 核心", "OOP", "面向对象"],
-      question: "请解释封装、继承、多态",
+      question: "什么是封装？",
     },
     {
       id: 102,
@@ -369,7 +483,7 @@ test("knowledge outline appends concrete card nodes under final topics", () => {
     [
       {
         cardId: 101,
-        cardTitle: "封装、继承、多态的面试表达",
+        cardTitle: "什么是封装",
         key: "Java 核心/Java 基础/面向对象/card:101",
       },
       {
@@ -379,4 +493,41 @@ test("knowledge outline appends concrete card nodes under final topics", () => {
       },
     ]
   );
+});
+
+test("local fallback knowledge topics mirror SQL seed content", () => {
+  const cards = parseKnowledgeCardsSql();
+  const fallbackByTitle = new Map(knowledgeTopics.map((topic) => [topic.title, topic]));
+
+  assert.equal(knowledgeTopics.length, cards.length);
+
+  for (const card of cards) {
+    const fallback = fallbackByTitle.get(card.title);
+    assert.ok(fallback, `${card.title} should exist in local fallback topics`);
+    assert.equal(fallback.question, card.question, `${card.title} fallback question should match SQL`);
+    assert.equal(
+      fallback.referenceAnswer,
+      card.referenceAnswer,
+      `${card.title} fallback answer should match SQL`
+    );
+    assert.deepEqual(
+      fallback.keyPoints,
+      card.keyPoints,
+      `${card.title} fallback key points should match SQL`
+    );
+  }
+});
+
+test("knowledge cards avoid artificial interview-expression wording", () => {
+  const cards = parseKnowledgeCardsSql();
+
+  for (const card of cards) {
+    assert.doesNotMatch(card.title, /面试表达/, `${card.title} title should be a real topic`);
+    assert.doesNotMatch(card.question, /面试表达/, `${card.title} question should be natural`);
+    assert.doesNotMatch(
+      card.referenceAnswer,
+      /面试表达/,
+      `${card.title} answer should not expose content-generation phrasing`
+    );
+  }
 });

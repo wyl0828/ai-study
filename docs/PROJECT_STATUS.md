@@ -24,7 +24,8 @@
 - **提示/题解/诊断边界已理顺**：题目通用 Level 1/2/3 提示和参考题解放在左侧，提示与完整 Java 参考实现默认不主动暴露且不调用 AI；右侧 AI 诊断只解释本次提交为什么错，并展示改进建议和推荐训练。
 - **Dashboard 真实数据接入**：学习中心已从 mock 数据切到后端真实接口，展示统计、薄弱点、弱点趋势、错题卡、最近提交和最新训练计划；训练计划条目可完成/跳过，也支持手动重新生成。
 - **知识训练页 V1**：已新增 `/knowledge` 前端训练页，优先读取后端知识接口和 `knowledge_card` 真实数据；接口失败时回退本地示例数据。页面已从分类卡片列表打磨为“可折叠知识体系大纲 + 专题训练内容区”，支持 Java 核心、数据库、Spring、AI 工程入口，面包屑/左侧高亮/专题标题共用同一状态，Map/List/Set 等专题按前端规则过滤，卡片展示训练状态、最近得分或未自测状态；模拟自测评分、点评反馈、标杆回答解析、高频追问和标记已掌握均可用；自测记录已持久化到后端。
-- **后端知识训练一期能力**：后端已有 `KnowledgeController`、`KnowledgeCardService` 和 `knowledge_card` 表；`data/knowledge_cards.sql` 提供 120 张原创整理的 Java 后端与 AI 工程面试知识卡，侧边栏 24 个最终专题均不少于 5 张。
+- **后端知识训练一期能力**：后端已有 `KnowledgeController`、`KnowledgeCardService` 和 `knowledge_card` 表；`data/knowledge_cards.sql` 提供 120 张原创整理的 Java 后端与 AI 工程面试知识卡，侧边栏 24 个最终专题均不少于 5 张。知识卡内容源已收口到 `scripts/knowledge_card_profiles.cjs`，由 `scripts/generate_knowledge_cards_sql.cjs` 同步生成 `data/knowledge_cards.sql` 和 `frontend/lib/knowledgeSeed.ts`。
+- **知识卡内容质量整改**：120 张卡片已从批量模板问答整改为真实面试训练卡，问题改为直白短问法，答案围绕定义、机制、边界和常见坑；停用 `enrichAnswer` 自动扩写，不再用“结合后端项目”“从几个层面说明”等套话凑字数。`frontend/lib/knowledge-tree-coverage.node-test.cjs` 已加入问题模板、答案污染、空泛 keyPoints、followUps、SQL 与前端 fallback 一致性，以及 Spring Bean 生命周期、布隆过滤器、HashMap、ArrayList、Spring 事务、MySQL MVCC 等高风险卡关键词护栏。
 - **RAG V1 内部检索层**：已新增 `rag_document` / `rag_chunk` MySQL 表、`RagService` 和 `RagRetrieveTool`，在 `OBSERVATION` 后检索题目、知识卡、AI 诊断和当前用户错题记忆；检索结果作为错误诊断和 AC 点评 prompt 证据，检索失败不阻塞核心闭环。
 - **训练计划轻接入知识卡片**：`training_plan_item` 已支持 `PROBLEM` 和 `KNOWLEDGE_CARD` 两类条目；`TrainingPlannerTool` 保留原有 3 条算法训练项，优先使用 RAG 命中的知识卡，再 fallback 到通用高优先级知识卡，不根据算法错因强行推荐八股。
 - **学习记忆连续化**：失败诊断会写入弱点事件，错题卡按 fingerprint 合并重复错误；知识卡自测写入 `self_test_record` 并更新 `user_knowledge_card_mastery`，低分自测也会进入弱点事件。
@@ -56,8 +57,8 @@
 - **本地依赖较多**：MySQL、Piston、后端、前端都要启动；Redis 当前只有配置预留，热点题目/题目详情缓存待接入，演示前需要一键化或清晰启动脚本。
 - **SSE 稳定性**：SSE 已接入前端，并补充了 `agentStreamState` 状态决策和源码级回归测试；AC 代码点评分支也已展示实时 Agent 步骤。正式演示前仍建议用连续提交、用户中断和后端不可达场景做一次手动压测。
 - **题目内容已迁移到后端**：`problem` 表存储 `hint_level1/2/3` 和 `solution_outline`，通过 `ProblemDetailVO.presetHints` 与 `solutionOutline` 返回。
-- **知识数据导入依赖**：新库可直接执行 `data/schema.sql` 和 `data/knowledge_cards.sql`；旧库需要先执行 `data/knowledge_training_migration.sql`、`data/learning_memory_continuity_migration.sql` 和 `data/rag_mysql_migration.sql`，再执行 `data/knowledge_cards.sql`，演示前可通过 `RagService.rebuildSystemIndex()` 重建系统 RAG 索引。
-- **知识卡内容边界**：当前知识卡参考小林 coding 和 JavaGuide 选题覆盖并重新整理，可作为 RAG V1 的系统知识来源，但 `/knowledge` 页面不是开放 RAG 问答入口，也不应直接复制外部文章长文本。
+- **知识数据导入依赖**：新库可直接执行 `data/schema.sql` 和 `data/knowledge_cards.sql`；旧库需要先执行 `data/knowledge_training_migration.sql`、`data/learning_memory_continuity_migration.sql` 和 `data/rag_mysql_migration.sql`，再执行 `data/knowledge_cards.sql`。导入新知识卡后要通过 `RagService.rebuildSystemIndex()` 或等价维护流程重建系统 RAG 索引，避免 Agent 检索到旧知识卡 chunk。
+- **知识卡内容边界**：当前知识卡参考小林 coding 和 JavaGuide 选题覆盖并重新整理，可作为 RAG V1 的系统知识来源，但 `/knowledge` 页面不是开放 RAG 问答入口，也不应直接复制外部文章长文本。后续维护时不要恢复自动扩写或模板化问题，问题、答案、keyPoints、followUps 都应在内容源里显式维护。
 - **文档与代码容易漂移**：提示/诊断边界已调整，后续修改接口或页面时要同步更新 `docs/API.md` 和设计文档。
 
 ## 4. 下一步大纲
@@ -134,7 +135,8 @@
 8. 已通过代码的 AC 点评实时步骤和 stale warning 回归 ✓
 9. RAG V1 内部检索层和 `RAG_RETRIEVAL` Agent 步骤 ✓
 10. `/knowledge` 最终前端打磨：知识树展开/收起、专题一致性、训练状态和 AI 工程专题入口 ✓
-11. 最终阶段：完整 demo 复盘、截图/录屏、文档细节对齐和面试 Q&A
+11. 知识卡内容质量整改、SQL / 前端 fallback 同步生成、RAG 系统索引重建提醒和质量测试护栏 ✓
+12. 最终阶段：完整 demo 复盘、截图/录屏、文档细节对齐和面试 Q&A
 ```
 
 当前最应该保护的是核心闭环边界，而不是继续堆功能。最终演示阶段再集中处理完整 demo 复盘、截图录屏、文档细节对齐和面试 Q&A。

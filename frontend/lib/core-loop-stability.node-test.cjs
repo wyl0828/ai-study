@@ -104,6 +104,8 @@ test("Knowledge page keeps selection, breadcrumb, topic filtering, and training 
   const filterBar = read("components/KnowledgeFilterBar.tsx");
   const card = read("components/KnowledgeCard.tsx");
   const data = read("lib/knowledgeData.ts");
+  const seed = read("lib/knowledgeSeed.ts");
+  const knowledgeSources = `${data}\n${seed}`;
 
   assert.match(knowledgePage, /type KnowledgeSelection/);
   assert.match(knowledgePage, /KnowledgeSidebar/);
@@ -136,9 +138,9 @@ test("Knowledge page keeps selection, breadcrumb, topic filtering, and training 
   assert.match(sidebar, /aria-label=\{expanded \? `收起 \$\{label\}` : `展开 \$\{label\}`\}/);
   assert.match(sidebar, /onClick=\{\(\) => onToggleExpand\(key\)\}/);
   assert.match(data, /"AI 工程"/);
-  assert.match(data, /Agent 工作流为什么要拆成 Planner、Tool 和 Observation/);
-  assert.match(data, /RAG 在当前项目中为什么作为 Agent 内部 Tool/);
-  assert.match(data, /LangChain 和本项目自定义 Agent 编排有什么区别/);
+  assert.match(knowledgeSources, /Agent 工作流为什么要拆成 Planner、Tool 和 Observation/);
+  assert.match(knowledgeSources, /RAG 在当前项目中为什么作为 Agent 内部 Tool/);
+  assert.match(knowledgeSources, /LangChain 和本项目自定义 Agent 编排有什么区别/);
   assert.match(filterBar, /未练/);
   assert.match(filterBar, /已掌握/);
   assert.match(filterBar, /需复习/);
@@ -147,6 +149,9 @@ test("Knowledge page keeps selection, breadcrumb, topic filtering, and training 
   assert.match(knowledgePage, /activeCardId/);
   assert.match(knowledgePage, /pendingScrollCardId/);
   assert.match(knowledgePage, /scrollIntoView/);
+  assert.match(knowledgePage, /pendingAnchorAdjustmentRef/);
+  assert.match(knowledgePage, /getBoundingClientRect\(\)\.top/);
+  assert.match(knowledgePage, /window\.scrollBy/);
   assert.match(knowledgePage, /setSelection\(inferred\)/);
   assert.match(knowledgePage, /nextSelection\.cardId/);
   assert.doesNotMatch(knowledgePage, /setSelection\(\{\s*\.\.\.inferred,\s*cardId:\s*targetTopic\.id/);

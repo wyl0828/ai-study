@@ -1,0 +1,283 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "AI 面试教练" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img [ref=e5]
+        - text: AI 面试教练
+      - navigation [ref=e7]:
+        - link "题目" [ref=e8] [cursor=pointer]:
+          - /url: /
+        - link "知识训练" [ref=e9] [cursor=pointer]:
+          - /url: /knowledge
+        - link "学习中心" [ref=e10] [cursor=pointer]:
+          - /url: /dashboard
+    - generic [ref=e11]:
+      - button [ref=e12] [cursor=pointer]:
+        - img [ref=e13]
+      - generic [ref=e16] [cursor=pointer]: D
+  - main [ref=e17]:
+    - generic [ref=e18]:
+      - complementary [ref=e19]:
+        - heading "知识体系大纲" [level=2] [ref=e20]
+        - navigation "知识体系大纲" [ref=e21]:
+          - generic [ref=e22]:
+            - generic [ref=e23]:
+              - generic [ref=e24]:
+                - generic [ref=e25]:
+                  - button "收起 Java 核心" [expanded] [ref=e26] [cursor=pointer]:
+                    - img [ref=e27]
+                  - button "Java 核心" [ref=e29] [cursor=pointer]
+                - generic "Java 核心 共 45 题" [ref=e30]: "45"
+              - generic [ref=e32]:
+                - generic [ref=e33]:
+                  - button "展开 Java 基础" [ref=e34] [cursor=pointer]:
+                    - img [ref=e35]
+                  - button "Java 基础" [ref=e37] [cursor=pointer]
+                - generic "Java 基础 共 40 题" [ref=e38]: "40"
+              - generic [ref=e39]:
+                - generic [ref=e40]:
+                  - generic [ref=e41]:
+                    - button "收起 集合框架" [expanded] [ref=e42] [cursor=pointer]:
+                      - img [ref=e43]
+                    - button "集合框架" [ref=e45] [cursor=pointer]
+                  - generic "集合框架 共 40 题" [ref=e46]: "40"
+                - generic [ref=e48]:
+                  - generic [ref=e49]:
+                    - button "展开 List" [ref=e50] [cursor=pointer]:
+                      - img [ref=e51]
+                    - button "List" [ref=e53] [cursor=pointer]
+                  - generic "List（线性表） 共 5 题" [ref=e54]: "5"
+                - generic [ref=e56]:
+                  - generic [ref=e57]:
+                    - button "展开 Map" [ref=e58] [cursor=pointer]:
+                      - img [ref=e59]
+                    - button "Map" [ref=e61] [cursor=pointer]
+                  - generic "Map（映射） 共 6 题" [ref=e62]: "6"
+                - generic [ref=e64]:
+                  - generic [ref=e65]:
+                    - button "展开 Set" [ref=e66] [cursor=pointer]:
+                      - img [ref=e67]
+                    - button "Set" [ref=e69] [cursor=pointer]
+                  - generic "Set（去重集合） 共 5 题" [ref=e70]: "5"
+              - generic [ref=e72]:
+                - generic [ref=e73]:
+                  - button "展开 并发编程（JUC）" [ref=e74] [cursor=pointer]:
+                    - img [ref=e75]
+                  - button "并发编程（JUC）" [ref=e77] [cursor=pointer]
+                - generic "并发编程（JUC） 共 6 题" [ref=e78]: "6"
+              - generic [ref=e80]:
+                - generic [ref=e81]:
+                  - button "展开 JVM 虚拟机" [ref=e82] [cursor=pointer]:
+                    - img [ref=e83]
+                  - button "JVM 虚拟机" [ref=e85] [cursor=pointer]
+                - generic "JVM 虚拟机 共 5 题" [ref=e86]: "5"
+            - generic [ref=e88]:
+              - generic [ref=e89]:
+                - button "展开 数据库" [ref=e90] [cursor=pointer]:
+                  - img [ref=e91]
+                - button "数据库" [ref=e93] [cursor=pointer]
+              - generic "数据库 共 40 题" [ref=e94]: "40"
+            - generic [ref=e96]:
+              - generic [ref=e97]:
+                - button "展开 Spring" [ref=e98] [cursor=pointer]:
+                  - img [ref=e99]
+                - button "Spring" [ref=e101] [cursor=pointer]
+              - generic "Spring 共 20 题" [ref=e102]: "20"
+            - generic [ref=e104]:
+              - generic [ref=e105]:
+                - button "展开 AI 工程" [ref=e106] [cursor=pointer]:
+                  - img [ref=e107]
+                - button "AI 工程" [ref=e109] [cursor=pointer]
+              - generic "AI 工程 共 15 题" [ref=e110]: "15"
+      - generic [ref=e111]:
+        - generic [ref=e112]:
+          - navigation "知识训练路径" [ref=e113]:
+            - generic [ref=e114]:
+              - generic [ref=e115]: 知识训练
+              - img [ref=e116]
+            - generic [ref=e118]:
+              - generic [ref=e119]: Java 核心
+              - img [ref=e120]
+            - generic [ref=e122]:
+              - generic [ref=e123]: 集合框架
+              - img [ref=e124]
+            - generic [ref=e127]: Map
+          - generic [ref=e128]:
+            - img "Map" [ref=e130]
+            - generic [ref=e133]:
+              - heading "Map（映射）" [level=1] [ref=e134]
+              - paragraph [ref=e135]: 掌握 HashMap、ConcurrentHashMap 等核心键值对数据结构的底层原理，应对大厂高频面试。
+        - generic [ref=e137]:
+          - generic [ref=e138]:
+            - generic [ref=e139]:
+              - img [ref=e140]
+              - text: 难度：
+            - generic [ref=e141]:
+              - button "全部" [ref=e142] [cursor=pointer]
+              - button "简单" [ref=e143] [cursor=pointer]
+              - button "中等" [ref=e144] [cursor=pointer]
+              - button "困难" [ref=e145] [cursor=pointer]
+            - generic [ref=e147]: 状态：
+            - generic [ref=e148]:
+              - button "全部" [ref=e149] [cursor=pointer]
+              - button "未练 (6)" [ref=e150] [cursor=pointer]
+              - button "已掌握 (0)" [ref=e151] [cursor=pointer]
+              - button "需复习 (0)" [ref=e152] [cursor=pointer]
+            - generic [ref=e153]: 共 6 题
+            - generic [ref=e154]: 加载中...
+          - generic [ref=e155]:
+            - img [ref=e156]
+            - textbox "搜索题目、解析或标签..." [ref=e159]
+        - generic [ref=e160]:
+          - article [ref=e162]:
+            - generic [ref=e163]:
+              - generic [ref=e164]:
+                - generic [ref=e165]:
+                  - generic [ref=e166]: 中等
+                  - generic [ref=e167]: Java
+                  - generic [ref=e168]: 状态：未练
+                - button "展开知识卡" [ref=e169] [cursor=pointer]:
+                  - img [ref=e170]
+              - button "HashMap 在 JDK 1.8 中的底层结构 HashMap 在 JDK 1.8 中的底层结构是什么？" [ref=e172] [cursor=pointer]:
+                - heading "HashMap 在 JDK 1.8 中的底层结构" [level=2] [ref=e173]
+                - paragraph [ref=e174]: HashMap 在 JDK 1.8 中的底层结构是什么？
+              - generic [ref=e175]:
+                - generic [ref=e176]: Java 核心
+                - generic [ref=e177]: 集合框架
+                - generic [ref=e178]: Map
+                - generic [ref=e179]: HashMap
+                - generic [ref=e180]: ConcurrentHashMap
+              - generic [ref=e181]:
+                - generic [ref=e182]:
+                  - generic [ref=e183]: 最近得分：未自测
+                  - generic [ref=e184]:
+                    - img [ref=e185]
+                    - text: 训练任务
+                - button "开始自测" [ref=e187] [cursor=pointer]
+          - article [ref=e189]:
+            - generic [ref=e190]:
+              - generic [ref=e191]:
+                - generic [ref=e192]:
+                  - generic [ref=e193]: 中等
+                  - generic [ref=e194]: Java
+                  - generic [ref=e195]: 状态：未练
+                - button "展开知识卡" [ref=e196] [cursor=pointer]:
+                  - img [ref=e197]
+              - button "HashMap put 流程 HashMap put 流程是什么？" [ref=e199] [cursor=pointer]:
+                - heading "HashMap put 流程" [level=2] [ref=e200]
+                - paragraph [ref=e201]: HashMap put 流程是什么？
+              - generic [ref=e202]:
+                - generic [ref=e203]: Java 核心
+                - generic [ref=e204]: 集合框架
+                - generic [ref=e205]: Map
+                - generic [ref=e206]: HashMap
+                - generic [ref=e207]: ConcurrentHashMap
+              - generic [ref=e208]:
+                - generic [ref=e209]:
+                  - generic [ref=e210]: 最近得分：未自测
+                  - generic [ref=e211]:
+                    - img [ref=e212]
+                    - text: 训练任务
+                - button "开始自测" [ref=e214] [cursor=pointer]
+          - article [ref=e216]:
+            - generic [ref=e217]:
+              - generic [ref=e218]:
+                - generic [ref=e219]:
+                  - generic [ref=e220]: 中等
+                  - generic [ref=e221]: Java
+                  - generic [ref=e222]: 状态：未练
+                - button "展开知识卡" [ref=e223] [cursor=pointer]:
+                  - img [ref=e224]
+              - button "HashMap 扩容为什么是 2 的幂 HashMap 扩容为什么是 2 的幂？" [ref=e226] [cursor=pointer]:
+                - heading "HashMap 扩容为什么是 2 的幂" [level=2] [ref=e227]
+                - paragraph [ref=e228]: HashMap 扩容为什么是 2 的幂？
+              - generic [ref=e229]:
+                - generic [ref=e230]: Java 核心
+                - generic [ref=e231]: 集合框架
+                - generic [ref=e232]: Map
+                - generic [ref=e233]: HashMap
+                - generic [ref=e234]: ConcurrentHashMap
+              - generic [ref=e235]:
+                - generic [ref=e236]:
+                  - generic [ref=e237]: 最近得分：未自测
+                  - generic [ref=e238]:
+                    - img [ref=e239]
+                    - text: 训练任务
+                - button "开始自测" [ref=e241] [cursor=pointer]
+          - article [ref=e243]:
+            - generic [ref=e244]:
+              - generic [ref=e245]:
+                - generic [ref=e246]:
+                  - generic [ref=e247]: 中等
+                  - generic [ref=e248]: Java
+                  - generic [ref=e249]: 状态：未练
+                - button "展开知识卡" [ref=e250] [cursor=pointer]:
+                  - img [ref=e251]
+              - button "ConcurrentHashMap 如何保证线程安全 ConcurrentHashMap 如何保证线程安全？" [ref=e253] [cursor=pointer]:
+                - heading "ConcurrentHashMap 如何保证线程安全" [level=2] [ref=e254]
+                - paragraph [ref=e255]: ConcurrentHashMap 如何保证线程安全？
+              - generic [ref=e256]:
+                - generic [ref=e257]: Java 核心
+                - generic [ref=e258]: 集合框架
+                - generic [ref=e259]: Map
+                - generic [ref=e260]: HashMap
+                - generic [ref=e261]: ConcurrentHashMap
+              - generic [ref=e262]:
+                - generic [ref=e263]:
+                  - generic [ref=e264]: 最近得分：未自测
+                  - generic [ref=e265]:
+                    - img [ref=e266]
+                    - text: 训练任务
+                - button "开始自测" [ref=e268] [cursor=pointer]
+          - article [ref=e270]:
+            - generic [ref=e271]:
+              - generic [ref=e272]:
+                - generic [ref=e273]:
+                  - generic [ref=e274]: 中等
+                  - generic [ref=e275]: Java
+                  - generic [ref=e276]: 状态：未练
+                - button "展开知识卡" [ref=e277] [cursor=pointer]:
+                  - img [ref=e278]
+              - button "LinkedHashMap 如何实现 LRU LinkedHashMap 如何实现 LRU？" [ref=e280] [cursor=pointer]:
+                - heading "LinkedHashMap 如何实现 LRU" [level=2] [ref=e281]
+                - paragraph [ref=e282]: LinkedHashMap 如何实现 LRU？
+              - generic [ref=e283]:
+                - generic [ref=e284]: Java 核心
+                - generic [ref=e285]: 集合框架
+                - generic [ref=e286]: Map
+                - generic [ref=e287]: HashMap
+                - generic [ref=e288]: ConcurrentHashMap
+              - generic [ref=e289]:
+                - generic [ref=e290]:
+                  - generic [ref=e291]: 最近得分：未自测
+                  - generic [ref=e292]:
+                    - img [ref=e293]
+                    - text: 训练任务
+                - button "开始自测" [ref=e295] [cursor=pointer]
+          - article [ref=e297]:
+            - generic [ref=e298]:
+              - generic [ref=e299]:
+                - generic [ref=e300]:
+                  - generic [ref=e301]: 简单
+                  - generic [ref=e302]: Java
+                  - generic [ref=e303]: 状态：未练
+                - button "展开知识卡" [ref=e304] [cursor=pointer]:
+                  - img [ref=e305]
+              - button "HashSet 和 ConcurrentHashMap.newKeySet 的区别 HashSet 和 ConcurrentHashMap.newKeySet 有什么区别？" [ref=e307] [cursor=pointer]:
+                - heading "HashSet 和 ConcurrentHashMap.newKeySet 的区别" [level=2] [ref=e308]
+                - paragraph [ref=e309]: HashSet 和 ConcurrentHashMap.newKeySet 有什么区别？
+              - generic [ref=e310]:
+                - generic [ref=e311]: Java 核心
+                - generic [ref=e312]: 集合框架
+                - generic [ref=e313]: Set
+                - generic [ref=e314]: HashSet
+                - generic [ref=e315]: TreeSet
+              - generic [ref=e316]:
+                - generic [ref=e317]:
+                  - generic [ref=e318]: 最近得分：未自测
+                  - generic [ref=e319]:
+                    - img [ref=e320]
+                    - text: 训练任务
+                - button "开始自测" [ref=e322] [cursor=pointer]
+  - alert [ref=e323]

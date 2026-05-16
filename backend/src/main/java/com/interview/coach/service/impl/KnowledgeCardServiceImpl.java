@@ -51,7 +51,7 @@ public class KnowledgeCardServiceImpl implements KnowledgeCardService {
             query.eq(KnowledgeCard::getCategory, normalizedCategory);
         }
         return knowledgeCardMapper.selectList(query).stream()
-                .map(card -> toVO(card, false))
+                .map(card -> toVO(card, true))
                 .toList();
     }
 

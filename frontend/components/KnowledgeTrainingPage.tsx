@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, SearchX } from "lucide-react";
 import KnowledgeCard from "./KnowledgeCard";
@@ -85,6 +85,7 @@ export default function KnowledgeTrainingPage() {
     () => new Set(knowledgeTopics.filter((topic) => topic.mastered).map((topic) => topic.id))
   );
   const topicRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const pendingAnchorAdjustmentRef = useRef<{ cardId: number; top: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -215,6 +216,21 @@ export default function KnowledgeTrainingPage() {
     return () => window.clearTimeout(timer);
   }, [filteredTopics.length, pendingScrollCardId]);
 
+  useLayoutEffect(() => {
+    const pending = pendingAnchorAdjustmentRef.current;
+    if (!pending) return;
+
+    pendingAnchorAdjustmentRef.current = null;
+    const target = topicRefs.current[pending.cardId];
+    if (!target) return;
+
+    const nextTop = target.getBoundingClientRect().top;
+    const topDelta = nextTop - pending.top;
+    if (Math.abs(topDelta) > 1) {
+      window.scrollBy({ top: topDelta, behavior: "auto" });
+    }
+  }, [expandedId, filteredTopics.length]);
+
   const markMastered = (id: number) => {
     setMasteredIds((current) => {
       const next = new Set(current);
@@ -280,6 +296,13 @@ export default function KnowledgeTrainingPage() {
   const toggleTopic = (topic: KnowledgeTopic) => {
     const opening = expandedId !== topic.id;
     if (opening) {
+      const target = topicRefs.current[topic.id];
+      if (target) {
+        pendingAnchorAdjustmentRef.current = {
+          cardId: topic.id,
+          top: target.getBoundingClientRect().top,
+        };
+      }
       setActiveCardId(topic.id);
     }
     setExpandedId((current) => (current === topic.id ? null : topic.id));

@@ -3,6 +3,7 @@ const path = require("node:path");
 
 const repoRoot = path.resolve(__dirname, "..");
 const outputPath = path.join(repoRoot, "data", "knowledge_cards.sql");
+const seedOutputPath = path.join(repoRoot, "frontend", "lib", "knowledgeSeed.ts");
 const cardProfiles = require("./knowledge_card_profiles.cjs");
 
 const sources = {
@@ -20,7 +21,7 @@ const leaves = [
     baseOrder: 10,
     tag: "面向对象",
     difficulty: "EASY",
-    titles: ["封装、继承、多态的面试表达", "接口和抽象类如何取舍", "重载与重写的区别", "Java 对象创建过程", "组合优于继承的原因"],
+    titles: ["什么是封装", "接口和抽象类如何取舍", "重载与重写的区别", "Java 对象创建过程", "组合优于继承的原因"],
   },
   {
     category: "JAVA",
@@ -190,11 +191,7 @@ function sql(value) {
   return `'${String(value).replace(/'/g, "''")}'`;
 }
 
-function question(title) {
-  return `请结合后端面试场景解释：${title}？`;
-}
-
-function tags(leaf) {
+function tags(leaf, title) {
   const common = {
     JAVA: "Java 核心",
     JVM: "JVM",
@@ -203,7 +200,10 @@ function tags(leaf) {
     SPRING: "Spring",
     AI: "AI 工程",
   }[leaf.category];
-  const extras = {
+  const titleExtras = {
+    "什么是封装": "OOP,封装",
+  }[title];
+  const extras = titleExtras || {
     面向对象: "OOP,封装,继承,多态",
     数据类型: "数据类型,包装类型,String",
     异常处理: "异常处理,RuntimeException,全局异常",
@@ -231,6 +231,58 @@ function tags(leaf) {
   return `${common},${extras}`;
 }
 
+function toKeywordGroup(point) {
+  const fragments = point
+    .split(/[：:，,、+（）()\/\s]+/)
+    .map((fragment) => fragment.trim())
+    .filter((fragment) => fragment.length >= 2);
+
+  return Array.from(new Set([point, ...fragments]));
+}
+
+function writeFrontendSeed(cards) {
+  const categoryMap = {
+    JAVA: "Java",
+    JVM: "JVM",
+    MYSQL: "MySQL",
+    REDIS: "Redis",
+    SPRING: "Spring",
+    AI: "AI",
+  };
+  const difficultyMap = {
+    EASY: "简单",
+    MEDIUM: "中等",
+    HARD: "困难",
+  };
+  const seedCards = cards.map((card, index) => {
+    const keyPoints = card.keyPoints.split(/\r?\n/).filter(Boolean);
+    return {
+      id: index + 1,
+      title: card.title,
+      category: categoryMap[card.category],
+      difficulty: difficultyMap[card.difficulty],
+      tags: card.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
+      question: card.question,
+      answerKeywords: keyPoints.map(toKeywordGroup),
+      referenceAnswer: card.answer,
+      keyPoints,
+      followUpQuestions: card.followUp.split(/\r?\n/).filter(Boolean),
+      sourceName: card.sourceName,
+      sourceUrl: card.sourceUrl || null,
+      mastered: false,
+    };
+  });
+  const source = [
+    'import type { KnowledgeTopic } from "./knowledgeData";',
+    "",
+    "// Generated from scripts/generate_knowledge_cards_sql.cjs so the offline fallback matches backend seed content.",
+    `export const knowledgeSeedTopics: KnowledgeTopic[] = ${JSON.stringify(seedCards, null, 2)};`,
+    "",
+  ].join("\n");
+
+  fs.writeFileSync(seedOutputPath, source, "utf8");
+}
+
 const cards = leaves.flatMap((leaf) =>
   leaf.titles.map((title, index) => {
     const [sourceName, sourceUrl] = sources[leaf.category];
@@ -241,12 +293,12 @@ const cards = leaves.flatMap((leaf) =>
     return {
       category: leaf.category,
       title,
-      question: question(title),
+      question: cardProfile.question,
       answer: cardProfile.answer,
       followUp: cardProfile.followUps.join("\n"),
       keyPoints: cardProfile.keyPoints.join("\n"),
       difficulty: leaf.difficulty,
-      tags: tags(leaf),
+      tags: tags(leaf, title),
       sourceName,
       sourceUrl,
       sortOrder: leaf.baseOrder + index,
@@ -282,4 +334,6 @@ const rows = cards.map((card) => `(${[
 ].join(", ")})`);
 
 fs.writeFileSync(outputPath, `${header}${rows.join(",\n")};\n`, "utf8");
+writeFrontendSeed(cards);
 console.log(`Wrote ${cards.length} knowledge cards to ${path.relative(repoRoot, outputPath)}`);
+console.log(`Wrote ${cards.length} fallback topics to ${path.relative(repoRoot, seedOutputPath)}`);

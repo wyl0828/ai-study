@@ -21,7 +21,7 @@ icon = "tool"
 command = ".\\start-backend.ps1"
 
 [[actions]]
-name = "停止所有 Java 进程"
+name = "停止后端"
 icon = "tool"
 command = "taskkill /F /IM java.exe"
 
@@ -29,3 +29,11 @@ command = "taskkill /F /IM java.exe"
 name = "关闭Dockerwsl"
 icon = "tool"
 command = "docker compose down + wsl --shutdown"
+
+[[actions]]
+name = "停止前端"
+icon = "tool"
+command = '''
+$portPid = (Get-NetTCPConnection -LocalPort 4000 -State Listen | Select-Object -First 1).OwningProcess
+Stop-Process -Id $portPid -Force
+'''

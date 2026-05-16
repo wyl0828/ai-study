@@ -28,7 +28,7 @@ class KnowledgeCardServiceImplTest {
     private KnowledgeCardServiceImpl knowledgeCardService;
 
     @Test
-    void listCardsReturnsEnabledCardsWithoutAnswers() {
+    void listCardsReturnsEnabledCardsWithAnswersForTrainingPage() {
         when(knowledgeCardMapper.selectList(any())).thenReturn(List.of(card(1L, "JAVA", true)));
 
         List<KnowledgeCardVO> cards = knowledgeCardService.listCards("JAVA");
@@ -38,7 +38,8 @@ class KnowledgeCardServiceImplTest {
         assertThat(cards.get(0).getTitle()).isEqualTo("HashMap 底层结构");
         assertThat(cards.get(0).getTags()).containsExactly("基础", "集合");
         assertThat(cards.get(0).getKeyPoints()).containsExactly("数组定位桶", "链表处理冲突");
-        assertThat(cards.get(0).getAnswer()).isNull();
+        assertThat(cards.get(0).getAnswer()).contains("数组、链表和红黑树");
+        assertThat(cards.get(0).getFollowUp()).contains("为什么链表");
     }
 
     @Test
