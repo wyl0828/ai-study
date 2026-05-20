@@ -517,7 +517,7 @@ export function evaluateSelfTest(
     return {
       score: 85,
       level: "high",
-      comment: "回答较完整，基本覆盖面试核心点",
+      comment: buildInterviewFeedback("high", matchedKeyPoints, missingKeyPoints),
       matchedKeyPoints,
       missingKeyPoints,
     };
@@ -527,7 +527,7 @@ export function evaluateSelfTest(
     return {
       score: 70,
       level: "medium",
-      comment: "覆盖了部分要点，但缺少触发条件或优化目的",
+      comment: buildInterviewFeedback("medium", matchedKeyPoints, missingKeyPoints),
       matchedKeyPoints,
       missingKeyPoints,
     };
@@ -536,9 +536,36 @@ export function evaluateSelfTest(
   return {
     score: 45,
     level: "low",
-    comment:
-      "回答过短，面试官会继续追问机制/触发条件/优化目的，建议先把核心概念和为什么这样优化说清楚。",
+    comment: buildInterviewFeedback("low", matchedKeyPoints, missingKeyPoints),
     matchedKeyPoints,
     missingKeyPoints,
   };
+}
+
+function buildInterviewFeedback(
+  level: SelfTestFeedback["level"],
+  matchedKeyPoints: string[],
+  missingKeyPoints: string[]
+): string {
+  if (level === "high") {
+    const smallGap = missingKeyPoints.slice(0, 2).join("；");
+    return smallGap
+      ? `回答较完整，已经覆盖主要面试核心点。建议再补充：${smallGap}。`
+      : "回答较完整，基本覆盖面试核心点，可以继续练习追问表达。";
+  }
+
+  const matchedText =
+    matchedKeyPoints.length > 0
+      ? `你已经提到了${matchedKeyPoints.slice(0, 2).join("、")}。`
+      : "你还没有稳定说出本题的核心机制。";
+  const missingText =
+    missingKeyPoints.length > 0
+      ? `建议补充：${missingKeyPoints.slice(0, 3).join("；")}。`
+      : "建议补充触发条件、底层机制和常见坑。";
+
+  if (level === "medium") {
+    return `${matchedText}但面试中如果只停留在这些点，回答会显得不够完整。${missingText}`;
+  }
+
+  return `${matchedText}面试中如果只停留在这些点，会显得理解偏浅，面试官通常会继续追问机制、边界和常见坑。${missingText}`;
 }

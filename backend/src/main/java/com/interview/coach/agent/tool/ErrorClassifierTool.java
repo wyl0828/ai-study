@@ -35,7 +35,9 @@ public class ErrorClassifierTool implements Tool<AgentContext, AiDiagnosisResult
         return """
                 You are an interview coach diagnosing Java backend interview submissions.
                 Think briefly, then return only one compact JSON object with keys:
-                errorType, knowledgePoint, specificError, diagnosis, suggestion, confidence, weaknessScoreDelta.
+                errorType, knowledgePoint, specificError, diagnosis, suggestion,
+                failurePhenomenon, rootCause, repairDirection, interviewReminder,
+                confidence, weaknessScoreDelta.
                 errorType must be one of SYNTAX_ERROR, LOGIC_ERROR, BOUNDARY_ERROR, ALGORITHM_ERROR,
                 TIMEOUT, RUNTIME_ERROR, SYSTEM_ERROR, ACCEPTED_REVIEW.
                 All user-facing text fields must be natural Simplified Chinese.
@@ -43,6 +45,10 @@ public class ErrorClassifierTool implements Tool<AgentContext, AiDiagnosisResult
                 diagnosis must locate the code problem and explain why tests fail.
                 specificError must be a concrete next-step improvement suggestion, not another diagnosis.
                 suggestion must describe the correct high-level repair direction for learning records.
+                failurePhenomenon should summarize the observed compile/runtime/test failure only if clear.
+                rootCause should explain the real coding mistake behind the failure.
+                repairDirection should describe the next repair step without full Java code.
+                interviewReminder should state what to proactively mention in an interview.
                 Do not write interview-evaluation phrases like "候选人可能不了解".
                 Use product-style wording based on the current problem, category, submitted code, and failed cases.
                 If the submitted code only prints a default value, put that fact in diagnosis.

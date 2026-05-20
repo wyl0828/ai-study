@@ -45,6 +45,8 @@ export function formatApiError(
     /failed to fetch|fetch failed|networkerror|load failed|econnrefused|后端服务不可达/i.test(
       raw
     );
+  const pistonFailure = /piston|code execution|代码执行|execute/i.test(raw);
+  const aiFailure = /ai request|anthropic|api[_ -]?key|ai_base|ai_model|模型|AI 调用/i.test(raw);
 
   if (backendUnreachable) {
     return "后端服务不可达，请检查 Spring Boot 是否已启动并监听 localhost:8080。";
@@ -59,11 +61,17 @@ export function formatApiError(
   }
 
   if (context === "sse") {
-    return `AI 诊断 SSE/AI 调用失败，可稍后重试；同步 fallback 会尝试补救。${detail}`;
+    if (aiFailure) {
+      return `AI 诊断调用失败，请检查 AI_BASE_URL、AI_API_KEY 和 AI_MODEL；同步 fallback 会尝试补救，并可查看后端 Agent 日志。${detail}`;
+    }
+    return `AI 诊断 SSE/AI 调用失败，可稍后重试；同步 fallback 会尝试补救，请查看后端 Agent 日志定位失败步骤。${detail}`;
   }
 
   if (context === "submit") {
-    return `提交接口请求失败，请检查后端服务和代码执行服务是否正常。${detail}`;
+    if (pistonFailure) {
+      return `提交接口请求失败，请检查 Piston 服务地址、端口和 PISTON_BASE_URL 配置是否正常。${detail}`;
+    }
+    return `提交接口请求失败，请检查后端服务和 Piston 代码执行服务是否正常。${detail}`;
   }
 
   if (context === "dashboard") {

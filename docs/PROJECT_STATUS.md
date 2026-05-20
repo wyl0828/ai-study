@@ -18,11 +18,11 @@
 - **Hot100 Solution 模式统一**：当前题库升级为 Hot100 精选 12 题，全部使用 LeetCode 风格 `class Solution`；后端通过 `CodeWrapper` 注册表只包装送入 Piston 的代码，数据库仍保存用户原始代码。
 - **题面与题解内容补齐**：12 题均已使用“任务说明 / 返回要求 / 约束与边界”的面试式题面，并补齐三层预设提示、solution outline 和完整 Java 参考实现。
 - **Agent Workflow 后端**：已实现 `InterviewCoachAgent`、`AgentContext`、`AgentStep` 和核心 Tool 链，支持同步分析接口和 SSE 流式诊断接口。`RAG_RETRIEVAL`、`MEMORY_UPDATE` 和 `TRAINING_PLAN` 为非核心步骤，失败不阻塞后续流程。
-- **AI 诊断与学习数据**：失败提交后可生成结构化错误类型、知识点、具体错误、改进建议和训练计划，并持久化 `ai_diagnosis`、`user_weakness`、`user_weakness_event`、`mistake_card`、`training_plan` 等数据；`hint_record` 保留为历史兼容表，当前 Agent 流程不写入新 AI hint。
+- **AI 诊断与学习数据**：失败提交后可生成结构化错误类型、知识点、具体错误、失败现象、根本原因、修改方向、面试提醒、改进建议和训练计划；失败现象优先来自 Piston failed case / 编译运行错误摘要，避免把原始 JVM 堆栈直接放进教练报告。诊断后会持久化 `ai_diagnosis`、`user_weakness`、`user_weakness_event`、`mistake_card`、`training_plan` 等数据；`hint_record` 保留为历史兼容表，当前 Agent 流程不写入新 AI hint。
 - **AC 代码点评**：提交通过后 Agent 可进入 `CodeReviewTool` 分支，返回复杂度、代码风格、面试表达建议和可优化点，不生成完整答案；前端会在代码通过但点评仍在生成时实时展示 Agent 步骤。
 - **前端做题页**：已实现三栏布局：左侧题目、题目预设分层提示和可主动查看的参考题解，中间 Monaco Editor，右侧测试结果和 AI 诊断。提交后通过 SSE 实时展示 Agent 执行步骤，失败时展示诊断结果，AC 时展示轻量代码点评；若用户在未重新提交的情况下修改代码，旧诊断或旧点评继续保留，并显示“基于上次提交，仅供参考”的 stale warning。
-- **提示/题解/诊断边界已理顺**：题目通用 Level 1/2/3 提示和参考题解放在左侧，提示与完整 Java 参考实现默认不主动暴露且不调用 AI；右侧 AI 诊断只解释本次提交为什么错，并展示改进建议和推荐训练。
-- **Dashboard 真实数据接入**：学习中心已从 mock 数据切到后端真实接口，展示统计、薄弱点、弱点趋势、错题卡、最近提交和最新训练计划；训练计划条目可完成/跳过，也支持手动重新生成。
+- **提示/题解/诊断边界已理顺**：题目通用 Level 1/2/3 提示和参考题解放在左侧，提示与完整 Java 参考实现默认不主动暴露且不调用 AI；右侧 AI 诊断只解释本次提交为什么错，并以教练报告展示失败现象、根本原因、修改方向、面试提醒和推荐训练。
+- **Dashboard 真实数据接入**：学习中心已从 mock 数据切到后端真实接口，并从“数据看板”重排为“下一步学习指挥台”：统计卡片之后优先展示今日训练项和完整训练计划，再展示薄弱排行、错误类型分布、最近提交、合并错题卡和确定性 AI 教练建议；训练计划条目可完成/跳过，也支持手动重新生成。
 - **知识训练页 V1**：已新增 `/knowledge` 前端训练页，优先读取后端知识接口和 `knowledge_card` 真实数据；接口失败时回退本地示例数据。页面已从分类卡片列表打磨为“可折叠知识体系大纲 + 专题训练内容区”，支持 Java 核心、数据库、Spring、AI 工程入口，面包屑/左侧高亮/专题标题共用同一状态，Map/List/Set 等专题按前端规则过滤，卡片展示训练状态、最近得分或未自测状态；模拟自测评分、点评反馈、标杆回答解析、高频追问和标记已掌握均可用；自测记录已持久化到后端。
 - **后端知识训练一期能力**：后端已有 `KnowledgeController`、`KnowledgeCardService` 和 `knowledge_card` 表；`data/knowledge_cards.sql` 提供 120 张原创整理的 Java 后端与 AI 工程面试知识卡，侧边栏 24 个最终专题均不少于 5 张。知识卡内容源已收口到 `scripts/knowledge_card_profiles.cjs`，由 `scripts/generate_knowledge_cards_sql.cjs` 同步生成 `data/knowledge_cards.sql` 和 `frontend/lib/knowledgeSeed.ts`。
 - **知识卡内容质量整改**：120 张卡片已从批量模板问答整改为真实面试训练卡，问题改为直白短问法，答案围绕定义、机制、边界和常见坑；停用 `enrichAnswer` 自动扩写，不再用“结合后端项目”“从几个层面说明”等套话凑字数。`frontend/lib/knowledge-tree-coverage.node-test.cjs` 已加入问题模板、答案污染、空泛 keyPoints、followUps、SQL 与前端 fallback 一致性，以及 Spring Bean 生命周期、布隆过滤器、HashMap、ArrayList、Spring 事务、MySQL MVCC 等高风险卡关键词护栏。
@@ -42,7 +42,7 @@
 - Piston 执行服务封装：Controller 不直接调用外部判题服务，代码执行通过 `JudgeService` 抽象。
 - Agent 工程化：代码执行和 RAG 检索都是 Tool，判题结果是 Observation，错误诊断、学习更新和训练计划由 Agent Workflow 串联。
 - SSE 能力：前端已通过 `fetch + ReadableStream` 接入 SSE，实时展示 Agent 每一步执行过程。
-- 学习闭环：一次失败提交能影响弱点趋势、错题卡和训练计划，不是一次性 AI 文本回答。
+- 学习闭环：一次失败提交能影响弱点趋势、合并错题卡、今日训练项和完整训练计划，不是一次性 AI 文本回答。
 - 训练计划统一管理：算法题训练和后端知识卡片复习能在同一个计划中展示，但算法诊断和八股知识保持来源边界。
 
 当前还不适合继续扩大的方向：
@@ -89,12 +89,13 @@
 - Dashboard 数据继续收口：
   - 统计、薄弱点、错题卡、错误分布、训练计划继续来自 MySQL。
   - 无数据时显示空状态，不回退 mock 数据。
+  - 当前前端已把训练计划前置为“今日优先训练 + 完整训练计划”，错误统计只保留错误类型分布，错题卡按同类错误聚合展示“出现 N 次 / 反复出现”，AI 教练建议由现有弱点、训练计划和错题数据确定性生成，不新增后端接口。
 
 当前落地状态：
 
 - `ProblemWorkspace` 继续以 `agentApi.streamDiagnosis()` 为主路径；同步 `POST /api/agent/analyze` 只在 SSE error、SSE 正常结束但无 done、或 done 数据无效时作为 fallback。
 - `frontend/lib/agentStreamState.ts` 收口 streamId 新鲜度判断和 fallback 触发条件；再次提交和组件卸载会中断当前流，旧流的 step / done / error / end 不覆盖新提交状态。
-- `frontend/lib/core-loop-stability.node-test.cjs` 覆盖右侧 tab 边界、左侧题目预设提示、SSE fallback 条件、旧流拦截、abort 行为、Dashboard 不导入 mock 和空状态文案。
+- `frontend/lib/core-loop-stability.node-test.cjs` 覆盖右侧 tab 边界、左侧题目预设提示、SSE fallback 条件、旧流拦截、abort 行为、Dashboard 不导入 mock、训练计划跳转、今日优先训练前置和空状态文案。
 
 ### 4.3 第三优先级：暂不做但保留
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Lightbulb } from "lucide-react";
 import { formatApiError, userApi } from "@/lib/api";
 import type {
@@ -15,10 +15,14 @@ import WeaknessList from "@/components/WeaknessList";
 import SubmissionHistory from "@/components/SubmissionHistory";
 import MistakeCards from "@/components/MistakeCards";
 import TrainingPlan from "@/components/TrainingPlan";
+import TodayTrainingFocus from "@/components/TodayTrainingFocus";
 import ErrorStats from "@/components/ErrorStats";
 import KnowledgeTrainingEntry from "@/components/KnowledgeTrainingEntry";
-import { trainingPlanText } from "@/lib/i18n";
-import { aggregateWeaknesses } from "@/lib/learningView";
+import {
+  buildDashboardCoachAdvice,
+  groupMistakeCards,
+  groupWeaknesses,
+} from "@/lib/learningView";
 
 const DEMO_USER_ID = 1;
 
@@ -92,8 +96,15 @@ export default function DashboardPage() {
     };
   }, []);
 
+  const aggregatedWeaknesses = useMemo(() => groupWeaknesses(weaknesses), [weaknesses]);
+  const aggregatedMistakeCards = useMemo(() => groupMistakeCards(mistakes), [mistakes]);
   const statValue = (value: number) => (loading ? "--" : value);
-  const weakPointCount = aggregateWeaknesses(weaknesses).length;
+  const weakPointCount = aggregatedWeaknesses.length;
+  const coachAdvice = buildDashboardCoachAdvice({
+    weaknesses: aggregatedWeaknesses,
+    mistakes: aggregatedMistakeCards,
+    trainingPlan,
+  });
 
   const refreshPlan = async () => {
     const response = await userApi.latestPlan(DEMO_USER_ID);
@@ -173,43 +184,45 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 两栏布局 */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* 左栏 */}
-        <div className="lg:col-span-7 space-y-8">
-          <WeaknessList weaknesses={weaknesses} />
+      {/* 今日学习指挥台：主线内容 + sticky 辅助侧栏 */}
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.95fr)]">
+        <div className="space-y-6">
+          <TodayTrainingFocus
+            plan={trainingPlan}
+            updatingItemId={updatingItemId}
+            onItemStatusChange={updatePlanItemStatus}
+          />
+          <WeaknessList weaknesses={aggregatedWeaknesses} />
           <SubmissionHistory submissions={submissions} />
-          <MistakeCards mistakes={mistakes} />
         </div>
 
-        {/* 右栏 */}
-        <aside className="lg:col-span-5">
-          <div className="space-y-6">
-            <ErrorStats stats={errorStats} loading={loading} />
-            <KnowledgeTrainingEntry />
-            <TrainingPlan
-              plan={trainingPlan}
-              updatingItemId={updatingItemId}
-              regenerating={regeneratingPlan}
-              onItemStatusChange={updatePlanItemStatus}
-              onRegenerate={regeneratePlan}
-            />
+        <aside className="space-y-6 lg:sticky lg:top-24 xl:sticky xl:top-24 self-start">
+          <TrainingPlan
+            plan={trainingPlan}
+            updatingItemId={updatingItemId}
+            regenerating={regeneratingPlan}
+            onItemStatusChange={updatePlanItemStatus}
+            onRegenerate={regeneratePlan}
+          />
+          <ErrorStats stats={errorStats} loading={loading} />
+          <KnowledgeTrainingEntry />
 
-            {/* AI 教练建议 */}
-            <div className="bg-primary/5 border border-primary/20 rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Lightbulb className="w-5 h-5 text-primary" />
-                <h3 className="text-sm font-semibold text-on-surface">AI 教练建议</h3>
-              </div>
-              <p className="text-xs text-on-surface-variant leading-relaxed">
-                {trainingPlan
-                  ? trainingPlanText(trainingPlan.summary)
-                  : "还没有学习数据，去做第一道题并触发 AI 诊断吧。"}
-              </p>
+          {/* AI 教练建议 */}
+          <div className="bg-primary/5 border border-primary/20 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Lightbulb className="w-5 h-5 text-primary" />
+              <h3 className="text-sm font-semibold text-on-surface">AI 教练建议</h3>
             </div>
+            <p className="text-xs text-on-surface-variant leading-relaxed">
+              {coachAdvice}
+            </p>
           </div>
         </aside>
-      </div>
+      </section>
+
+      <section className="mt-8">
+        <MistakeCards mistakes={aggregatedMistakeCards} />
+      </section>
     </div>
   );
 }

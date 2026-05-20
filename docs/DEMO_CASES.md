@@ -18,10 +18,11 @@
 3. 先展示左侧完整题面、预设提示和题解区域，说明题目内容与 AI 诊断边界。
 4. 将 bug 代码复制到 Monaco Editor。
 5. 点击“提交代码”，观察测试失败和失败用例。
-6. 等待右侧“AI 诊断”展示错误类型、知识点、错误原因、改进建议和推荐训练。
-7. 打开 `/dashboard`，观察弱点、错题卡、最近提交和训练计划变化。
-8. 回到题目页，将 fixed 代码复制到 Monaco Editor。
-9. 再次提交，确认修正后代码通过测试，并查看 AC 代码点评。
+6. 观察右侧“AI 诊断”中的 SSE Agent 时间线：失败提交应出现 `PLANNING -> CODE_EXECUTION -> OBSERVATION -> RAG_RETRIEVAL -> ERROR_CLASSIFICATION -> MEMORY_UPDATE -> TRAINING_PLAN -> COMPLETED`。
+7. 等待诊断完成，确认右侧展示错误类型、知识点和教练报告：失败现象、根本原因、修改方向、面试提醒和推荐训练。
+8. 打开 `/dashboard`，观察今日优先训练、完整训练计划、弱点排行、错误类型分布、合并错题卡和最近提交变化。
+9. 回到题目页，将 fixed 代码复制到 Monaco Editor。
+10. 再次提交，确认修正后代码通过测试，并查看 AC 代码点评；AC 分支应出现 `PLANNING -> CODE_EXECUTION -> OBSERVATION -> RAG_RETRIEVAL -> CODE_REVIEW -> COMPLETED`。
 
 ### Windows 前端端口注意
 
@@ -201,6 +202,7 @@ class Solution {
 
 ```text
 复制 bug 代码 -> 提交失败 -> 观察 failedCases
--> 展示 AI 诊断 -> 展示 Dashboard 更新
+-> 展示 SSE Agent 步骤和 RAG_RETRIEVAL -> 展示 AI 诊断 -> 展示 Dashboard 更新
+-> 学习中心优先展示今日该练什么，并把重复错题合并为可复盘资产
 -> 复制 fixed 代码 -> 重新提交通过
 ```

@@ -1,8 +1,8 @@
 "use client";
 
-import { BarChart3, TrendingDown } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import type { ErrorStatsVO } from "@/lib/types";
-import { errorTypeName, knowledgePoint } from "@/lib/i18n";
+import { errorTypeName } from "@/lib/i18n";
 
 interface ErrorStatsProps {
   stats: ErrorStatsVO | null;
@@ -31,9 +31,8 @@ export default function ErrorStats({ stats, loading }: ErrorStatsProps) {
   }
 
   const hasDistribution = stats.errorTypeDistribution.length > 0;
-  const hasWeakPoints = stats.topWeakPoints.length > 0;
 
-  if (!hasDistribution && !hasWeakPoints) {
+  if (!hasDistribution) {
     return (
       <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5">
         <div className="flex items-center gap-2 mb-4">
@@ -76,42 +75,6 @@ export default function ErrorStats({ stats, loading }: ErrorStatsProps) {
                     className="h-full bg-primary/60 rounded-full transition-all"
                     style={{ width: `${(item.count / maxCount) * 100}%` }}
                   />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 最薄弱知识点 */}
-      {hasWeakPoints && (
-        <div className="space-y-2">
-          <h4 className="text-xs font-medium text-on-surface-variant uppercase tracking-wide flex items-center gap-1">
-            <TrendingDown className="w-3.5 h-3.5" />
-            最薄弱知识点
-          </h4>
-          <div className="space-y-2">
-            {stats.topWeakPoints.map((point, i) => (
-              <div
-                key={`${point.knowledgePoint}-${point.errorType}`}
-                className="flex items-center gap-3 bg-surface-container rounded-lg p-3"
-              >
-                <span className="text-xs font-semibold text-primary bg-primary/10 rounded-full w-5 h-5 flex items-center justify-center shrink-0">
-                  {i + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium text-on-surface truncate">
-                    {knowledgePoint(point.knowledgePoint)}
-                  </div>
-                  <div className="text-[10px] text-on-surface-variant">
-                    {errorTypeName(point.errorType)} · {point.wrongCount} 次错误
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs font-semibold text-amber-600">
-                    {point.weaknessScore.toFixed(1)}
-                  </div>
-                  <div className="text-[10px] text-on-surface-variant">弱点分</div>
                 </div>
               </div>
             ))}

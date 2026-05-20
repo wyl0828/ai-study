@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.interview.coach.agent.AgentContext;
 import com.interview.coach.agent.AgentStep;
 import com.interview.coach.agent.InterviewCoachAgent;
+import com.interview.coach.dto.AgentExecutionObservation;
 import com.interview.coach.dto.AiDiagnosisResult;
+import com.interview.coach.dto.FailedCaseResult;
 import com.interview.coach.dto.HintGenerationResult;
 import com.interview.coach.dto.TrainingPlanResult;
 import com.interview.coach.entity.AgentRun;
@@ -24,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -97,6 +100,17 @@ public class AgentServiceImpl implements AgentService {
             vo.setKnowledgePoint(diagnosis.getKnowledgePoint());
             vo.setSpecificError(diagnosis.getSpecificError());
             vo.setDiagnosis(diagnosis.getDiagnosis());
+            vo.setSuggestion(diagnosis.getSuggestion());
+            vo.setFailurePhenomenon(firstText(
+                    failurePhenomenonFromObservation(context.getObservation()),
+                    diagnosis.getFailurePhenomenon(),
+                    diagnosis.getSpecificError(),
+                    errorMessage(context.getObservation())));
+            vo.setRootCause(firstText(diagnosis.getRootCause(), diagnosis.getDiagnosis(), diagnosis.getSpecificError()));
+            vo.setRepairDirection(firstText(diagnosis.getRepairDirection(), diagnosis.getSuggestion(), diagnosis.getDiagnosis()));
+            vo.setInterviewReminder(firstText(
+                    diagnosis.getInterviewReminder(),
+                    interviewReminderFallback(diagnosis.getKnowledgePoint())));
         }
         if (context.getCodeReview() != null) {
             vo.setCodeReview(context.getCodeReview());
@@ -133,5 +147,66 @@ public class AgentServiceImpl implements AgentService {
         } catch (JsonProcessingException ex) {
             throw new BusinessException(500, "failed to serialize agent step");
         }
+    }
+
+    private String failurePhenomenonFromObservation(AgentExecutionObservation observation) {
+        if (observation == null) {
+            return null;
+        }
+        if (observation.getFailedCases() != null && !observation.getFailedCases().isEmpty()) {
+            FailedCaseResult failedCase = observation.getFailedCases().get(0);
+            return "在用例 %s 中，期望输出 %s，实际输出 %s。".formatted(
+                    compact(failedCase.getInput()),
+                    compact(failedCase.getExpectedOutput()),
+                    compact(failedCase.getActualOutput()));
+        }
+        return errorMessage(observation);
+    }
+
+    private String errorMessage(AgentExecutionObservation observation) {
+        return observation == null ? null : summarizeExecutionError(observation.getErrorMessage());
+    }
+
+    private String interviewReminderFallback(String knowledgePoint) {
+        if (StringUtils.hasText(knowledgePoint)) {
+            return "面试中要主动说明「%s」的关键边界和容易出错的用例。".formatted(knowledgePoint.trim());
+        }
+        return "面试中要主动说明失败用例暴露的边界条件和修正思路。";
+    }
+
+    private String firstText(String... values) {
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    private String compact(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "空输出";
+        }
+        return value.trim().replaceAll("\\s+", " ");
+    }
+
+    private String summarizeExecutionError(String errorMessage) {
+        if (!StringUtils.hasText(errorMessage)) {
+            return null;
+        }
+        String firstLine = errorMessage.lines()
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .findFirst()
+                .orElse(errorMessage.trim());
+        String compactLine = compact(firstLine)
+                .replaceFirst("^Exception in thread \"[^\"]+\"\\s+", "");
+        if (compactLine.contains("OutOfMemoryError")) {
+            return "运行时异常：%s。程序在遍历或输出时没有正常终止，常见原因是链表成环、递归未收敛或循环条件错误。".formatted(compactLine);
+        }
+        if (compactLine.matches(".*(Exception|Error)(:.*)?")) {
+            return "运行时异常：%s。请结合测试结果中的堆栈定位触发位置。".formatted(compactLine);
+        }
+        return compactLine;
     }
 }

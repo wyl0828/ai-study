@@ -94,6 +94,11 @@ export interface AgentAnalyzeVO {
   knowledgePoint: string;
   specificError: string;
   diagnosis: string;
+  suggestion?: string | null;
+  failurePhenomenon?: string | null;
+  rootCause?: string | null;
+  repairDirection?: string | null;
+  interviewReminder?: string | null;
   codeReview?: CodeReviewResult;
   hintLevel1: string;
   hintLevel2: string;

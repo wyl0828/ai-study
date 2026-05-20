@@ -14,8 +14,8 @@ import {
   Target,
 } from "lucide-react";
 import type { AgentAnalyzeVO, AgentStepVO, CodeReviewResult } from "@/lib/types";
+import type { ReactNode } from "react";
 import {
-  diagnosisDisplay,
   errorTypeName,
   knowledgePoint,
   trainingPlanTitle,
@@ -110,7 +110,15 @@ export default function AiDiagnosis({
     );
   }
 
-  const display = diagnosisDisplay(d.diagnosis, d.specificError);
+  const report = {
+    failurePhenomenon:
+      formatFailurePhenomenon(d.failurePhenomenon ?? d.specificError) ??
+      "本次提交未返回明确失败现象，请结合左侧测试结果复盘。",
+    rootCause: d.rootCause ?? d.diagnosis ?? d.specificError ?? "暂未定位到明确根因，请先复盘失败用例和核心分支。",
+    repairDirection: d.repairDirection ?? d.suggestion ?? d.diagnosis ?? "先根据失败用例修正核心逻辑，再补充边界测试。",
+    interviewReminder:
+      d.interviewReminder ?? interviewReminderFallback(d.knowledgePoint),
+  };
 
   return (
     <div className="p-5 space-y-4">
@@ -137,33 +145,33 @@ export default function AiDiagnosis({
         </div>
       )}
 
-      {/* 诊断内容 */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-on-surface flex items-center gap-1.5">
           <Brain className="w-[18px] h-[18px] text-primary" />
-          错误诊断
+          教练报告
         </h3>
-        <div className="bg-surface-container rounded-lg border border-outline-variant/40 p-4">
-          <p className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-wrap">
-            {display.diagnosisText}
-          </p>
-        </div>
+        <CoachReportSection
+          title="失败现象"
+          icon={<Stethoscope className="w-[18px] h-[18px] text-primary" />}
+          text={report.failurePhenomenon}
+        />
+        <CoachReportSection
+          title="根本原因"
+          icon={<Brain className="w-[18px] h-[18px] text-primary" />}
+          text={report.rootCause}
+        />
+        <CoachReportSection
+          title="修改方向"
+          icon={<Lightbulb className="w-[18px] h-[18px] text-primary" />}
+          text={report.repairDirection}
+          accent
+        />
+        <CoachReportSection
+          title="面试提醒"
+          icon={<MessageSquare className="w-[18px] h-[18px] text-primary" />}
+          text={report.interviewReminder}
+        />
       </div>
-
-      {/* 具体错误 */}
-      {display.suggestionText && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-on-surface flex items-center gap-1.5">
-            <Lightbulb className="w-[18px] h-[18px] text-primary" />
-            改进建议
-          </h3>
-          <div className="bg-primary/5 rounded-lg border border-primary/20 p-4">
-            <p className="text-sm text-on-surface-variant leading-relaxed">
-              {display.suggestionText}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* 训练计划标题 */}
       {d.trainingPlanTitle && (
@@ -192,6 +200,36 @@ export default function AiDiagnosis({
           </div>
         </details>
       )}
+    </div>
+  );
+}
+
+function CoachReportSection({
+  title,
+  icon,
+  text,
+  accent = false,
+}: {
+  title: string;
+  icon: ReactNode;
+  text: string;
+  accent?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-lg border p-4 ${
+        accent
+          ? "border-primary/20 bg-primary/5"
+          : "border-outline-variant/40 bg-surface-container"
+      }`}
+    >
+      <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-on-surface">
+        {icon}
+        {title}
+      </h4>
+      <p className="whitespace-pre-wrap text-sm leading-relaxed text-on-surface-variant">
+        {text}
+      </p>
     </div>
   );
 }
@@ -335,4 +373,34 @@ function CodeReviewPanel({
 function formatReviewField(value: string | null | undefined, fallback: string) {
   const text = value?.trim();
   return text || fallback;
+}
+
+function interviewReminderFallback(rawKnowledgePoint: string | null | undefined) {
+  const point = rawKnowledgePoint?.trim();
+  if (point) {
+    return `面试中要主动说明「${knowledgePoint(point)}」的关键边界、失败用例和修正思路。`;
+  }
+  return "面试中要主动说明失败用例暴露的边界条件，以及你如何一步步修正。";
+}
+
+function formatFailurePhenomenon(value: string | null | undefined) {
+  const text = value?.trim();
+  if (!text) {
+    return null;
+  }
+  const firstLine = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find(Boolean);
+  if (!firstLine) {
+    return null;
+  }
+  const compactLine = firstLine.replace(/^Exception in thread "[^"]+"\s+/, "");
+  if (compactLine.includes("OutOfMemoryError")) {
+    return `运行时异常：${compactLine}。程序在遍历或输出时没有正常终止，常见原因是链表成环、递归未收敛或循环条件错误。`;
+  }
+  if (/(Exception|Error)(:|$)/.test(compactLine)) {
+    return `运行时异常：${compactLine}。请结合测试结果中的堆栈定位触发位置。`;
+  }
+  return text;
 }

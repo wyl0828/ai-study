@@ -48,7 +48,11 @@ class ErrorClassifierToolTest {
         verify(aiClient).askJson(systemPrompt.capture(), userPrompt.capture(), eq(AiDiagnosisResult.class));
         assertThat(systemPrompt.getValue())
                 .contains("Use retrieved evidence only as supporting context")
-                .contains("Do not provide a full accepted Java solution");
+                .contains("Do not provide a full accepted Java solution")
+                .contains("failurePhenomenon")
+                .contains("rootCause")
+                .contains("repairDirection")
+                .contains("interviewReminder");
         assertThat(userPrompt.getValue())
                 .contains("Retrieved evidence:")
                 .contains("HashMap 需要先查找 complement 再写入当前元素");

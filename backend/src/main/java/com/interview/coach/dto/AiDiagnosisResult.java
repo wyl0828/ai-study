@@ -16,6 +16,14 @@ public class AiDiagnosisResult {
 
     private String suggestion;
 
+    private String failurePhenomenon;
+
+    private String rootCause;
+
+    private String repairDirection;
+
+    private String interviewReminder;
+
     private BigDecimal confidence;
 
     private BigDecimal weaknessScoreDelta;

@@ -20,6 +20,16 @@ public class AgentAnalyzeVO {
 
     private String diagnosis;
 
+    private String suggestion;
+
+    private String failurePhenomenon;
+
+    private String rootCause;
+
+    private String repairDirection;
+
+    private String interviewReminder;
+
     private CodeReviewResult codeReview;
 
     private String hintLevel1;

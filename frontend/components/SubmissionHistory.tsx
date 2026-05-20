@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { History, CheckCircle, XCircle } from "lucide-react";
 import type { SubmissionHistoryVO } from "@/lib/types";
@@ -28,6 +29,10 @@ function formatCreatedAt(createdAt: string | null) {
 export default function SubmissionHistory({
   submissions,
 }: SubmissionHistoryProps) {
+  const [showAll, setShowAll] = useState(false);
+  const visibleSubmissions = showAll ? submissions : submissions.slice(0, 8);
+  const hiddenCount = Math.max(submissions.length - visibleSubmissions.length, 0);
+
   const statusView = (status: string) => {
     if (status === "ACCEPTED") {
       return {
@@ -57,9 +62,15 @@ export default function SubmissionHistory({
           <History className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-semibold text-on-surface">最近提交记录</h2>
         </div>
-        <button className="text-xs text-primary font-medium hover:underline">
-          查看全部
-        </button>
+        {submissions.length > 8 && (
+          <button
+            type="button"
+            onClick={() => setShowAll((current) => !current)}
+            className="text-xs text-primary font-medium hover:underline"
+          >
+            {showAll ? "收起提交记录" : `查看全部提交记录 ${hiddenCount} 条`}
+          </button>
+        )}
       </div>
       <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl overflow-hidden">
         <table className="w-full text-sm">
@@ -90,13 +101,13 @@ export default function SubmissionHistory({
                 </td>
               </tr>
             )}
-            {submissions.map((s, i) => {
+            {visibleSubmissions.map((s, i) => {
               const status = statusView(s.status);
               return (
                 <tr
                   key={i}
                   className={`hover:bg-surface-container-low transition-colors ${
-                    i < submissions.length - 1
+                    i < visibleSubmissions.length - 1
                       ? "border-b border-outline-variant/15"
                       : ""
                   }`}

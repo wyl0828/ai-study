@@ -80,10 +80,14 @@ mysql -u root -p ai_interview_coach < data/knowledge_cards.sql
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\hot100_solution_mode_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\problems.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\knowledge_training_migration.sql"
+cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\learning_memory_continuity_migration.sql"
+cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\rag_mysql_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\knowledge_cards.sql"
 ```
 
 PowerShell 不支持直接使用 Bash 风格的 `<` 输入重定向，所以 Windows 下建议使用上面的 `cmd /c` 写法。
+
+导入或重新生成 `data/knowledge_cards.sql` 后，如果本地库已经存在 `rag_document` / `rag_chunk`，需要通过 `RagService.rebuildSystemIndex()` 或等价维护流程刷新系统题目和知识卡 chunk；这个重建只应处理 `user_id IS NULL` 的系统索引，不删除用户历史诊断和错题记忆。
 
 ### 2. 配置环境变量
 
@@ -163,17 +167,20 @@ netsh interface ipv6 show excludedportrange protocol=tcp
 | PLANNING | - | 准备 Agent 上下文 |
 | CODE_EXECUTION | CodeExecutionTool | 重新执行代码 |
 | OBSERVATION | - | 观察判题结果 |
+| RAG_RETRIEVAL | RagRetrieveTool | 检索题目知识、知识卡和当前用户历史学习记忆，失败不阻塞 |
 | ERROR_CLASSIFICATION | ErrorClassifierTool | AI 分类错误类型 |
 | CODE_REVIEW | CodeReviewTool | AC 提交的复杂度、风格和面试表达点评 |
 | MEMORY_UPDATE | WeaknessTrackerTool | 更新弱点记忆和错题卡（非核心，失败不阻塞） |
 | TRAINING_PLAN | TrainingPlannerTool | 生成 3 天训练计划（非核心，失败不阻塞） |
+
+失败提交路径为 `PLANNING -> CODE_EXECUTION -> OBSERVATION -> RAG_RETRIEVAL -> ERROR_CLASSIFICATION -> MEMORY_UPDATE -> TRAINING_PLAN -> COMPLETED`；AC 提交路径为 `PLANNING -> CODE_EXECUTION -> OBSERVATION -> RAG_RETRIEVAL -> CODE_REVIEW -> COMPLETED`。`RAG_RETRIEVAL`、`MEMORY_UPDATE`、`TRAINING_PLAN` 和 AC 分支的 `CODE_REVIEW` 都是可降级步骤，核心判题和最终结果不因这些辅助步骤失败而中断。
 
 ### 3. 学习数据持久化
 
 - **弱点记忆**：按知识点统计错误次数、薄弱分数和最近变化事件
 - **错题卡片**：记录错误原因和正确思路，并按 fingerprint 合并重复错误
 - **训练计划**：根据弱点生成 3 天针对性训练，可轻量混入 1-2 条后端知识卡复习任务，支持完成、跳过和重新生成
-- **Dashboard**：展示统计、薄弱点、错误类型分布、错题卡、最近提交和训练计划
+- **Dashboard / 学习中心**：按“统计 -> 今日优先训练 -> 完整训练计划 -> 薄弱点与错误分布 -> 最近提交 -> 合并错题卡 -> AI 教练建议”组织真实学习数据，优先回答“今天该练什么”
 
 ### 4. 后端知识训练
 
@@ -189,7 +196,7 @@ netsh interface ipv6 show excludedportrange protocol=tcp
 ### 5. 分层提示机制
 
 - **题目预设提示**：存储在后端 `problem` 表，通过 API 返回，Level 1/2/3 展示在左侧题目区，不调用 AI
-- **AI 诊断**：针对本次提交解释错误原因，展示在右侧结果区，通过 SSE 实时展示 Agent 步骤
+- **AI 诊断**：针对本次提交展示教练报告，包括失败现象、根本原因、修改方向、面试提醒和推荐训练；运行时异常会摘要化展示，完整堆栈保留在测试结果中
 
 ## 演示流程
 
@@ -205,7 +212,7 @@ netsh interface ipv6 show excludedportrange protocol=tcp
 
 ```text
 复制 bug 代码 → 提交失败 → 观察 failedCases
-→ 展示 AI 诊断 → 展示 Dashboard 更新
+→ 展示 AI 诊断教练报告 → 展示学习中心中的今日优先训练和错题聚合更新
 → 复制 fixed 代码 → 重新提交通过
 ```
 

@@ -54,6 +54,34 @@ test("AI diagnosis copy no longer says it generates hints", () => {
   assert.doesNotMatch(diagnosis, /hintLevel1|hintLevel2|hintLevel3/);
 });
 
+test("AI diagnosis renders coach report sections with legacy fallbacks", () => {
+  const diagnosis = read("components/AiDiagnosis.tsx");
+  const types = read("lib/types.ts");
+
+  assert.match(types, /failurePhenomenon\?: string \| null/);
+  assert.match(types, /rootCause\?: string \| null/);
+  assert.match(types, /repairDirection\?: string \| null/);
+  assert.match(types, /interviewReminder\?: string \| null/);
+  assert.match(types, /suggestion\?: string \| null/);
+  assert.match(diagnosis, /失败现象/);
+  assert.match(diagnosis, /根本原因/);
+  assert.match(diagnosis, /修改方向/);
+  assert.match(diagnosis, /面试提醒/);
+  assert.match(diagnosis, /d\.failurePhenomenon \?\? d\.specificError/);
+  assert.match(diagnosis, /d\.rootCause \?\? d\.diagnosis \?\? d\.specificError/);
+  assert.match(diagnosis, /d\.repairDirection \?\? d\.suggestion \?\? d\.diagnosis/);
+  assert.match(diagnosis, /interviewReminderFallback/);
+});
+
+test("AI diagnosis summarizes stack traces before rendering failure phenomenon", () => {
+  const diagnosis = read("components/AiDiagnosis.tsx");
+
+  assert.match(diagnosis, /formatFailurePhenomenon/);
+  assert.match(diagnosis, /OutOfMemoryError/);
+  assert.match(diagnosis, /运行时异常/);
+  assert.doesNotMatch(diagnosis, /failurePhenomenon:\s*d\.failurePhenomenon \?\? d\.specificError/);
+});
+
 test("accepted code review stays visible when current editor code is stale", () => {
   const diagnosis = read("components/AiDiagnosis.tsx");
 

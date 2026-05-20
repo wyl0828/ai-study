@@ -65,6 +65,7 @@ test("Dashboard uses MySQL-backed userApi only and keeps empty states instead of
   const submissions = read("components/SubmissionHistory.tsx");
   const plan = read("components/TrainingPlan.tsx");
   const stats = read("components/ErrorStats.tsx");
+  const aggregation = read("lib/dashboardAggregation.ts");
 
   assert.doesNotMatch(dashboard, /mock|lib\/mock|@\/lib\/mock/);
   assert.match(dashboard, /userApi\.stats/);
@@ -73,6 +74,10 @@ test("Dashboard uses MySQL-backed userApi only and keeps empty states instead of
   assert.match(dashboard, /userApi\.latestPlan/);
   assert.match(dashboard, /userApi\.recentSubmissions/);
   assert.match(dashboard, /userApi\.errorStats/);
+  assert.match(dashboard, /groupWeaknesses\(weaknesses\)/);
+  assert.match(dashboard, /groupMistakeCards\(mistakes\)/);
+  assert.match(aggregation, /export function groupWeaknesses/);
+  assert.match(aggregation, /export function groupMistakeCards/);
   for (const source of [weakness, mistakes, submissions, plan, stats]) {
     assert.match(source, /还没有|暂无/);
   }
@@ -81,20 +86,64 @@ test("Dashboard uses MySQL-backed userApi only and keeps empty states instead of
 test("Dashboard keeps one page scroll and training plan items link to their tasks", () => {
   const dashboard = read("app/dashboard/page.tsx");
   const plan = read("components/TrainingPlan.tsx");
+  const learning = read("lib/learningView.ts");
   const types = read("lib/types.ts");
   const knowledgePage = read("components/KnowledgeTrainingPage.tsx");
+  const todayFocusIndex = dashboard.indexOf("<TodayTrainingFocus");
+  const weaknessIndex = dashboard.indexOf("<WeaknessList");
+  const submissionsIndex = dashboard.indexOf("<SubmissionHistory submissions");
+  const mistakesIndex = dashboard.indexOf("<MistakeCards");
+  const trainingPlanIndex = dashboard.indexOf("<TrainingPlan\n");
+  const errorStatsIndex = dashboard.indexOf("<ErrorStats stats");
 
-  assert.doesNotMatch(dashboard, /overflow-y-auto|h-screen|max-h-screen|sticky\s+top-/);
+  assert.doesNotMatch(dashboard, /overflow-y-auto|h-screen|max-h-screen/);
+  assert.match(dashboard, /xl:grid-cols-\[minmax\(0,1\.35fr\)_minmax\(360px,0\.95fr\)\]/);
+  assert.match(dashboard, /lg:sticky lg:top-24 xl:sticky xl:top-24 self-start/);
+  assert.ok(todayFocusIndex >= 0, "Dashboard should render today's priority training");
+  assert.ok(weaknessIndex >= 0, "Dashboard should still render weakness ranking");
+  assert.ok(submissionsIndex >= 0, "Dashboard should render recent submissions");
+  assert.ok(mistakesIndex >= 0, "Dashboard should render mistake review");
+  assert.ok(trainingPlanIndex >= 0, "Dashboard should render the full training plan");
+  assert.ok(errorStatsIndex >= 0, "Dashboard should render error pattern analysis");
+  assert.ok(
+    todayFocusIndex < weaknessIndex,
+    "today's priority training should appear before weakness ranking"
+  );
+  assert.ok(
+    weaknessIndex < submissionsIndex,
+    "recent submissions should stay in the main command area after weakness ranking"
+  );
+  assert.ok(
+    trainingPlanIndex < errorStatsIndex,
+    "training plan should lead the auxiliary sidebar before error analysis"
+  );
+  assert.ok(
+    errorStatsIndex < mistakesIndex,
+    "mistake cards should render after the command grid as a full-width review area"
+  );
   assert.match(types, /problemId\?: number \| null/);
-  assert.match(plan, /item\.itemType === "PROBLEM"/);
-  assert.match(plan, /problemHref\(item\)/);
-  assert.match(plan, /`\/problem\/\$\{problemId\}`/);
-  assert.match(plan, /`\/knowledge\?cardId=\$\{item\.knowledgeCardId\}`/);
+  assert.match(`${plan}\n${learning}`, /item\.itemType === "PROBLEM"/);
+  assert.match(learning, /trainingPlanItemHref/);
+  assert.match(learning, /`\/problem\/\$\{item\.problemId \|\| inferredProblemId\(item\)\}`/);
+  assert.match(learning, /`\/knowledge\?cardId=\$\{item\.knowledgeCardId\}`/);
   assert.doesNotMatch(plan, /action\.href \?/);
-  assert.match(plan, /去做题/);
-  assert.match(plan, /去复习/);
+  assert.match(`${plan}\n${learning}`, /去做题/);
+  assert.match(`${plan}\n${learning}`, /去复习/);
   assert.match(knowledgePage, /useSearchParams/);
   assert.match(knowledgePage, /cardId/);
+});
+
+test("Dashboard coach view avoids duplicate weak-point panels", () => {
+  const dashboard = read("app/dashboard/page.tsx");
+  const stats = read("components/ErrorStats.tsx");
+  const plan = read("components/TrainingPlan.tsx");
+  const focus = read("components/TodayTrainingFocus.tsx");
+
+  assert.match(dashboard, /buildDashboardCoachAdvice/);
+  assert.match(focus, /今日优先训练/);
+  assert.match(plan, /完整训练计划/);
+  assert.doesNotMatch(stats, /最薄弱知识点/);
+  assert.doesNotMatch(stats, /TrendingDown/);
 });
 
 test("Knowledge page keeps selection, breadcrumb, topic filtering, and training state centralized", () => {

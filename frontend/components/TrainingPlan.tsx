@@ -1,11 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import { BookOpen, Check, Code2, RefreshCw, Sparkles, X } from "lucide-react";
 import Link from "next/link";
 import type { TrainingPlan as TrainingPlanType } from "@/lib/types";
 import {
+  selectTodayTrainingItem,
+  trainingPlanItemAction,
+  trainingPlanItemPrefix,
+  trainingPlanItemTitle,
+} from "@/lib/learningView";
+import {
   knowledgePoint,
-  problemTitle,
   trainingPlanText,
   trainingPlanTitle,
 } from "@/lib/i18n";
@@ -28,12 +34,14 @@ export default function TrainingPlan({
   onItemStatusChange,
   onRegenerate,
 }: TrainingPlanProps) {
+  const [expanded, setExpanded] = useState(false);
+
   if (!plan) {
     return (
       <section>
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-on-surface">训练计划</h2>
+          <h2 className="text-lg font-semibold text-on-surface">完整训练计划</h2>
         </div>
         <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-5 py-8 text-sm text-on-surface-variant">
           还没有学习数据，去做第一道题并触发 AI 诊断吧。
@@ -62,63 +70,38 @@ export default function TrainingPlan({
     if (normalized === "RETRY" || normalized === "NEEDS_REVIEW") {
       return { label: "需要重做", className: "text-amber-600" };
     }
-    return { label: "待完成", className: "text-primary" };
+      return { label: "待完成", className: "text-primary" };
   };
 
-  const itemTitle = (item: TrainingPlanType["items"][number]) => {
-    if (item.itemType === "KNOWLEDGE_CARD") {
-      return item.knowledgeCardTitle || "后端知识卡片";
-    }
-    return problemTitle(item.problemTitle);
-  };
-
-  const itemPrefix = (item: TrainingPlanType["items"][number]) =>
-    item.itemType === "KNOWLEDGE_CARD" ? "知识卡片" : "算法题";
-
-  const inferredProblemId = (item: TrainingPlanType["items"][number]) => {
-    const text = [
-      item.problemTitle,
-      item.knowledgePoint,
-      item.reason,
-      item.reviewFocus,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    if (/two sum|两数之和|hashmap|哈希|hash map/.test(text)) return 1;
-    if (/reverse|linked|链表|反转链表/.test(text)) return 206;
-    if (/stock|股票|买卖股票|贪心/.test(text)) return 121;
-    return 1;
-  };
-
-  const problemHref = (item: TrainingPlanType["items"][number]) => {
-    const problemId = item.problemId || inferredProblemId(item);
-    return `/problem/${problemId}`;
-  };
-
-  const itemAction = (item: TrainingPlanType["items"][number]) => {
-    if (item.itemType === "PROBLEM") {
-      return {
-        href: problemHref(item),
-        label: "去做题",
-        Icon: Code2,
-      };
-    }
-
-    return {
-      href: item.knowledgeCardId ? `/knowledge?cardId=${item.knowledgeCardId}` : "/knowledge",
-      label: "去复习",
-      Icon: BookOpen,
-    };
-  };
+  const todayItem = selectTodayTrainingItem(plan);
+  const dayIndexes = Object.keys(grouped).map(Number);
+  const firstDay = dayIndexes.length > 0 ? Math.min(...dayIndexes) : 1;
+  const collapsedGrouped = plan.items.reduce<Record<number, typeof plan.items>>(
+    (acc, item) => {
+      const isFirstDay = item.dayIndex === firstDay;
+      const isTodayItem = todayItem && item.id === todayItem.id;
+      if (!isFirstDay && !isTodayItem) {
+        return acc;
+      }
+      if (!acc[item.dayIndex]) acc[item.dayIndex] = [];
+      acc[item.dayIndex].push(item);
+      return acc;
+    },
+    {}
+  );
+  const visibleGrouped = expanded ? grouped : collapsedGrouped;
+  const hiddenItemCount = Math.max(
+    plan.items.length -
+      Object.values(collapsedGrouped).reduce((total, items) => total + items.length, 0),
+    0
+  );
 
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-on-surface">训练计划</h2>
+          <h2 className="text-lg font-semibold text-on-surface">完整训练计划</h2>
         </div>
         <button
           type="button"
@@ -139,7 +122,7 @@ export default function TrainingPlan({
           {trainingPlanText(plan.summary)}
         </p>
 
-        {Object.entries(grouped).map(([day, items]) => {
+        {Object.entries(visibleGrouped).map(([day, items]) => {
           const title = items[0]?.knowledgePoint
             ? `${knowledgePoint(items[0].knowledgePoint)}专项`
             : `第 ${day} 天训练`;
@@ -157,8 +140,8 @@ export default function TrainingPlan({
               </div>
               <div className="ml-8 space-y-3">
                 {items.map((item, i) => {
-                  const action = itemAction(item);
-                  const ActionIcon = action.Icon;
+                  const action = trainingPlanItemAction(item);
+                  const ActionIcon = item.itemType === "KNOWLEDGE_CARD" ? BookOpen : Code2;
 
                   return (
                     <div
@@ -173,7 +156,7 @@ export default function TrainingPlan({
                             <Code2 className="w-4 h-4 text-primary shrink-0" />
                           )}
                           <span className="text-sm font-medium text-on-surface truncate">
-                            {itemPrefix(item)}：{itemTitle(item)}
+                            {trainingPlanItemPrefix(item)}：{trainingPlanItemTitle(item)}
                           </span>
                         </div>
                         <span
@@ -233,6 +216,18 @@ export default function TrainingPlan({
             </div>
           );
         })}
+
+        {hiddenItemCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setExpanded((current) => !current)}
+            className="mt-4 w-full rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-medium text-primary transition hover:bg-primary/10"
+          >
+            {expanded
+              ? "收起完整 3 天计划"
+              : `展开完整 3 天计划（还有 ${hiddenItemCount} 项）`}
+          </button>
+        )}
       </div>
     </section>
   );
