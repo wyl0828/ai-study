@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResult> {
 
-    private static final int KNOWLEDGE_CARD_LIMIT = 2;
+    private static final int KNOWLEDGE_CARD_LIMIT = 3;
 
     private final TrainingPlanService trainingPlanService;
 

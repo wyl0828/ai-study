@@ -11,7 +11,9 @@ import com.interview.coach.entity.TrainingPlanItem;
 import com.interview.coach.mapper.TrainingPlanItemMapper;
 import com.interview.coach.mapper.TrainingPlanMapper;
 import com.interview.coach.mapper.UserWeaknessMapper;
+import com.interview.coach.service.KnowledgeCardService;
 import com.interview.coach.service.TrainingPlanService;
+import com.interview.coach.vo.KnowledgeCardVO;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,11 +26,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TrainingPlanServiceImpl implements TrainingPlanService {
 
+    private static final int PLAN_DAYS = 3;
+
     private final TrainingPlanMapper trainingPlanMapper;
 
     private final TrainingPlanItemMapper trainingPlanItemMapper;
 
     private final UserWeaknessMapper userWeaknessMapper;
+
+    private final KnowledgeCardService knowledgeCardService;
 
     @Override
     @Transactional
@@ -99,14 +105,11 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         List<UserWeakness> weaknesses = userWeaknessMapper.selectList(new LambdaQueryWrapper<UserWeakness>()
                 .eq(UserWeakness::getUserId, userId)
                 .orderByDesc(UserWeakness::getWeaknessScore)
-                .last("LIMIT 3"));
+                .last("LIMIT " + PLAN_DAYS));
         TrainingPlanResult result = new TrainingPlanResult();
-        result.setTitle("当前弱点专项训练");
-        result.setSummary((reason == null || reason.isBlank()) ? "根据当前薄弱点重新生成训练计划。" : reason);
-        List<TrainingPlanItemResult> items = weaknesses.isEmpty()
-                ? List.of(defaultItem())
-                : weaknesses.stream().map(this::toPlanItem).toList();
-        result.setItems(items);
+        result.setTitle("3 天当前弱点专项训练");
+        result.setSummary(regenerateSummary(reason));
+        result.setItems(buildRegeneratedItems(weaknesses));
         AgentContext context = new AgentContext();
         context.setUserId(userId);
         savePlan(context, result, false);
@@ -138,26 +141,128 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         return Set.of("COMPLETED", "SKIPPED").contains(normalizeStatus(item.getStatus()));
     }
 
-    private TrainingPlanItemResult toPlanItem(UserWeakness weakness) {
+    private List<TrainingPlanItemResult> buildRegeneratedItems(List<UserWeakness> weaknesses) {
+        List<KnowledgeCardVO> reviewCards = reviewCardsForPlan();
+        if (weaknesses == null || weaknesses.isEmpty()) {
+            return java.util.stream.IntStream.rangeClosed(1, PLAN_DAYS)
+                    .boxed()
+                    .flatMap(dayIndex -> defaultItems(dayIndex, reviewCards).stream())
+                    .toList();
+        }
+        return java.util.stream.IntStream.rangeClosed(1, PLAN_DAYS)
+                .boxed()
+                .flatMap(dayIndex -> toPlanItems(
+                        pickWeaknessForDay(weaknesses, dayIndex),
+                        knowledgeCardForDay(reviewCards, dayIndex),
+                        dayIndex).stream())
+                .toList();
+    }
+
+    private UserWeakness pickWeaknessForDay(List<UserWeakness> weaknesses, int dayIndex) {
+        if (weaknesses.size() >= dayIndex) {
+            return weaknesses.get(dayIndex - 1);
+        }
+        return weaknesses.get((dayIndex - 1) % weaknesses.size());
+    }
+
+    private List<TrainingPlanItemResult> toPlanItems(
+            UserWeakness weakness, KnowledgeCardVO knowledgeCard, int dayIndex) {
+        return List.of(
+                planItem(weakness.getKnowledgePoint(), weakness.getKnowledgePoint() + "专项复盘", dayIndex,
+                        primaryReasonForDay(dayIndex), primaryReviewFocusForDay(dayIndex)),
+                knowledgeCardItem(knowledgeCard, weakness.getKnowledgePoint(), dayIndex));
+    }
+
+    private TrainingPlanItemResult planItem(String knowledgePoint, String problemTitle, int dayIndex,
+            String reason, String reviewFocus) {
         TrainingPlanItemResult item = new TrainingPlanItemResult();
         item.setItemType("PROBLEM");
-        item.setDayIndex(1);
-        item.setKnowledgePoint(weakness.getKnowledgePoint());
-        item.setProblemTitle(weakness.getKnowledgePoint() + "专项复盘");
-        item.setReason("针对近期高分薄弱点安排复盘。");
-        item.setReviewFocus("复盘失败提交中的错误原因，并重新说明修正思路。");
+        item.setDayIndex(dayIndex);
+        item.setKnowledgePoint(knowledgePoint);
+        item.setProblemTitle(problemTitle);
+        item.setReason(reason);
+        item.setReviewFocus(reviewFocus);
         return item;
     }
 
-    private TrainingPlanItemResult defaultItem() {
+    private List<TrainingPlanItemResult> defaultItems(int dayIndex, List<KnowledgeCardVO> reviewCards) {
+        return List.of(
+                planItem("基础编码习惯", "近期错题复盘", dayIndex,
+                        primaryReasonForDay(dayIndex), primaryReviewFocusForDay(dayIndex)),
+                knowledgeCardItem(knowledgeCardForDay(reviewCards, dayIndex), "基础编码习惯", dayIndex));
+    }
+
+    private TrainingPlanItemResult knowledgeCardItem(KnowledgeCardVO card, String fallbackKnowledgePoint, int dayIndex) {
         TrainingPlanItemResult item = new TrainingPlanItemResult();
-        item.setItemType("PROBLEM");
-        item.setDayIndex(1);
-        item.setKnowledgePoint("基础编码习惯");
-        item.setProblemTitle("近期错题复盘");
-        item.setReason("当前薄弱点数据较少，先完成一次基础复盘。");
-        item.setReviewFocus("检查边界条件、变量更新顺序和失败用例。");
+        item.setItemType("KNOWLEDGE_CARD");
+        item.setKnowledgeCardId(card == null ? null : card.getId());
+        item.setKnowledgeCardTitle(card == null ? "后端知识卡片复习" : card.getTitle());
+        item.setDayIndex(dayIndex);
+        item.setKnowledgePoint(card == null ? fallbackKnowledgePoint : card.getLabel());
+        item.setReason(knowledgeReasonForDay(dayIndex));
+        item.setReviewFocus(card == null ? knowledgeReviewFocusForDay(dayIndex) : cardReviewFocus(card));
         return item;
+    }
+
+    private List<KnowledgeCardVO> reviewCardsForPlan() {
+        try {
+            return knowledgeCardService.listReviewCards(PLAN_DAYS);
+        } catch (Exception ex) {
+            return List.of();
+        }
+    }
+
+    private KnowledgeCardVO knowledgeCardForDay(List<KnowledgeCardVO> reviewCards, int dayIndex) {
+        if (reviewCards == null || reviewCards.isEmpty()) {
+            return null;
+        }
+        return reviewCards.get((dayIndex - 1) % reviewCards.size());
+    }
+
+    private String regenerateSummary(String reason) {
+        if (reason == null || reason.isBlank() || "USER_REQUEST".equalsIgnoreCase(reason.trim())) {
+            return "根据当前薄弱点重新生成 3 天训练计划。";
+        }
+        return reason;
+    }
+
+    private String primaryReasonForDay(int dayIndex) {
+        return switch (dayIndex) {
+            case 1 -> "优先复盘当前最高分薄弱点。";
+            case 2 -> "练习相邻薄弱点，避免错误模式迁移。";
+            default -> "回看错题卡后重新挑战相关题目。";
+        };
+    }
+
+    private String primaryReviewFocusForDay(int dayIndex) {
+        return switch (dayIndex) {
+            case 1 -> "复盘失败提交中的错误原因，并重新说明修正思路。";
+            case 2 -> "对比不同题型里的相同知识点，整理触发条件和边界。";
+            default -> "编码前先写出关键不变量、边界条件和失败用例。";
+        };
+    }
+
+    private String knowledgeReasonForDay(int dayIndex) {
+        return switch (dayIndex) {
+            case 1 -> "补一个后端知识卡片，把算法错误背后的基础表达说清楚。";
+            case 2 -> "穿插系统知识复习，避免训练只停留在刷题。";
+            default -> "用知识卡收尾，整理可以在面试里讲出来的复盘表达。";
+        };
+    }
+
+    private String knowledgeReviewFocusForDay(int dayIndex) {
+        return switch (dayIndex) {
+            case 1 -> "先自测，再对照标杆回答补齐核心记忆点。";
+            case 2 -> "重点补充定义、机制、使用场景和常见坑。";
+            default -> "把本轮薄弱点总结成 1 分钟面试回答。";
+        };
+    }
+
+    private String cardReviewFocus(KnowledgeCardVO card) {
+        if (card.getTags() == null || card.getTags().isEmpty()) {
+            return "先自测，再对照标杆回答补齐核心记忆点。";
+        }
+        return String.join("、", card.getTags());
     }
 
     private int maxDayIndex(TrainingPlanResult result) {

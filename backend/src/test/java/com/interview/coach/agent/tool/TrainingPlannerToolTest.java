@@ -45,9 +45,10 @@ class TrainingPlannerToolTest {
 
     @Test
     void fallbackPlanBalancesAlgorithmItemsWithBackendKnowledgeCards() {
-        when(knowledgeCardService.listReviewCards(2)).thenReturn(List.of(
+        when(knowledgeCardService.listReviewCards(3)).thenReturn(List.of(
                 knowledgeCard(1L, "HashMap 底层结构"),
-                knowledgeCard(2L, "MySQL 索引为什么能加速查询")));
+                knowledgeCard(2L, "MySQL 索引为什么能加速查询"),
+                knowledgeCard(3L, "Spring Bean 生命周期")));
         AgentContext context = context();
 
         TrainingPlanResult result = tool.execute(context, context);
@@ -57,18 +58,18 @@ class TrainingPlannerToolTest {
                 .hasSize(3);
         assertThat(result.getItems())
                 .filteredOn(item -> "KNOWLEDGE_CARD".equals(item.getItemType()))
-                .hasSize(2);
+                .hasSize(3);
         assertThat(result.getItems())
                 .filteredOn(item -> "KNOWLEDGE_CARD".equals(item.getItemType()))
                 .extracting(TrainingPlanResult.TrainingPlanItemResult::getKnowledgeCardTitle)
-                .containsExactly("HashMap 底层结构", "MySQL 索引为什么能加速查询");
+                .containsExactly("HashMap 底层结构", "MySQL 索引为什么能加速查询", "Spring Bean 生命周期");
         assertThat(result.getSummary()).contains("后端知识卡片");
         verify(trainingPlanService).savePlan(any(), any());
     }
 
     @Test
     void fallbackPlanStillSavesAlgorithmItemsWhenKnowledgeCardLookupFails() {
-        when(knowledgeCardService.listReviewCards(2)).thenThrow(new RuntimeException("knowledge unavailable"));
+        when(knowledgeCardService.listReviewCards(3)).thenThrow(new RuntimeException("knowledge unavailable"));
         AgentContext context = context();
 
         TrainingPlanResult result = tool.execute(context, context);

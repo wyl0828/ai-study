@@ -41,7 +41,8 @@ export default function MistakeCards({ mistakes }: MistakeCardsProps) {
           </div>
         )}
         {visibleCards.map((m) => {
-          const isError = m.errorType === "逻辑错误";
+          const isReturnOrStateIssue =
+            m.userFacingErrorTag.includes("返回") || m.userFacingErrorTag.includes("状态");
           const expanded = expandedGroupKeys.has(m.groupKey);
           return (
             <div
@@ -51,51 +52,62 @@ export default function MistakeCards({ mistakes }: MistakeCardsProps) {
               <div className="flex items-center justify-between mb-3">
                 <span
                   className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                    isError
+                    isReturnOrStateIssue
                       ? "bg-red-50 text-red-700"
                       : "bg-amber-50 text-amber-700"
                   }`}
                 >
-                  {m.errorType}
+                  {m.userFacingErrorTag}
                 </span>
                 <span className="text-xs text-outline whitespace-nowrap">
                   出现 {m.totalOccurrences} 次
                 </span>
               </div>
               <h3 className="text-sm font-semibold text-on-surface mb-2">
-                {m.problemTitle}：{m.reviewPoint}
+                {m.patternTitle}
               </h3>
               <div className="space-y-2 text-xs text-on-surface-variant leading-relaxed">
                 <div>
-                  <span className="font-medium text-on-surface">典型问题：</span>
-                  {m.typicalProblems.length > 0
-                    ? m.typicalProblems.join("；")
-                    : "同类错误摘要待补充"}
+                  <span className="font-medium text-on-surface">本质问题：</span>
+                  {m.rootCause}
                 </div>
                 <div>
-                  <span className="font-medium text-on-surface">建议复习：</span>
-                  {m.recommendedReview}
+                  <span className="font-medium text-on-surface">修复动作：</span>
+                  {m.fixAction}
                 </div>
-                <p>{m.nextTrainingAdvice}</p>
+                <div>
+                  <span className="font-medium text-on-surface">复盘口令：</span>
+                  {m.reviewScript}
+                </div>
+                <div>
+                  <span className="font-medium text-on-surface">知识点：</span>
+                  {m.knowledgePoint}
+                </div>
               </div>
 
               {m.rawRecords.length > 1 && (
-                <div className="mt-3 rounded-lg bg-surface-container/70 px-3 py-2">
+                <div className="mt-3">
                   <button
                     type="button"
                     onClick={() => toggleGroup(m.groupKey)}
-                    className="text-xs font-medium text-primary hover:underline"
+                    className="ml-auto flex items-center text-xs font-medium text-primary/80 hover:text-primary hover:underline"
                   >
                     {expanded
-                      ? "收起同类错误"
-                      : `展开同类错误 ${m.rawRecords.length} 条`}
+                      ? "收起复盘记录"
+                      : `查看最近 ${m.rawRecords.length} 条复盘记录`}
                   </button>
                   {expanded && (
-                    <ul className="mt-2 space-y-1 text-xs text-on-surface-variant">
+                    <div className="mt-2 space-y-2 rounded-lg bg-surface-container/50 px-3 py-2 text-xs text-on-surface-variant">
+                      <div className="font-medium text-on-surface">最近复盘记录</div>
                       {m.rawRecords.slice(0, 4).map((record) => (
-                        <li key={record.id}>- {record.summary}</li>
+                        <div key={record.id} className="rounded-md bg-surface-container-lowest/80 px-2 py-1.5">
+                          <div>{record.summary}</div>
+                          {record.correctIdea && record.correctIdea !== record.summary && (
+                            <div className="mt-1 text-outline">修正：{record.correctIdea}</div>
+                          )}
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   )}
                 </div>
               )}
@@ -104,9 +116,7 @@ export default function MistakeCards({ mistakes }: MistakeCardsProps) {
                 <span className="text-xs text-on-surface-variant">
                   {m.status === "RESOLVED"
                     ? "已解决"
-                    : m.sourceCount > 1
-                    ? `已合并 ${m.sourceCount} 条原始记录`
-                    : m.knowledgePoint}
+                    : `最近一次：${m.recentLabel}`}
                 </span>
                 {m.problemId ? (
                   <Link
