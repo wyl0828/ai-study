@@ -7,6 +7,7 @@ export interface ProblemPresetHints {
 export function getProblemPresetHints(
   problemId: number
 ): ProblemPresetHints | null {
+  // Legacy compatibility hook: preset hints now come from the backend problem table.
   void problemId;
   return null;
 }

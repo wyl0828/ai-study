@@ -5,6 +5,10 @@ import com.interview.coach.dto.HintGenerationResult;
 import com.interview.coach.integration.ai.AnthropicCompatibleClient;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Legacy compatibility tool. Current product flow uses preset problem hints from the problem table,
+ * and InterviewCoachAgent does not invoke this tool.
+ */
 @Deprecated
 @RequiredArgsConstructor
 public class HintGeneratorTool implements Tool<AgentContext, HintGenerationResult> {

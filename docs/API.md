@@ -369,7 +369,7 @@ Agent 每次运行都会持久化：
 
 AC 分支当前通过 `codeReview` 返回轻量点评，不写入错题卡、弱点或训练计划。
 
-> 说明：`HINT_GENERATION` 步骤已移除。题目预设分层提示由后端 `problem` 表通过 `presetHints` 返回，前端只保留空 fallback 函数以兼容旧调用边界。AI 诊断不再生成 `hintLevel1/2/3`，`hint_record` 表保留为历史兼容和未来扩展入口，当前流程不写入新数据。
+> 说明：`HINT_GENERATION` 已从当前 Agent 编排中移除；代码中仍可保留历史枚举或 `@Deprecated` 兼容类，但不在 `InterviewCoachAgent` 中调用。题目预设分层提示由后端 `problem` 表通过 `presetHints` 返回，前端只保留空 fallback 函数以兼容旧调用边界。AI 诊断不再生成 `hintLevel1/2/3`，`hint_record` 表保留为历史兼容和未来扩展入口，当前流程不写入新数据。
 
 ### 4.1 触发 Agent 分析（同步）
 
@@ -939,7 +939,7 @@ GET /api/users/{userId}/knowledge/cards/{cardId}/self-tests/recent?limit=5
 - `CodeEditor.tsx` 使用 `ProblemWorkspace` 状态中的 `code` 作为 Monaco `value`。
 - “重置代码”会清除该题草稿，并重新请求后端模板，不再恢复写死的默认模板。
 - `frontend/lib/api.ts` 对 fetch 使用 `cache: “no-store”`，避免 Next.js 或浏览器复用旧模板响应。
-- 做题页左侧”分层提示”从 `GET /api/problems/{id}` 返回的 `presetHints` 读取；旧 `101-108` 前端静态 fallback 已移除。右侧结果区只保留”测试结果”和”AI 诊断”。
+- 做题页左侧”分层提示”从 `GET /api/problems/{id}` 返回的 `presetHints` 读取；旧 `101-108` 静态提示内容已移除，仅保留返回 `null` 的兼容 fallback 函数。右侧结果区只保留”测试结果”和”AI 诊断”。
 - 提交失败后，右侧”AI 诊断”通过 SSE 实时展示 Agent 步骤（`PLANNING -> CODE_EXECUTION -> OBSERVATION -> RAG_RETRIEVAL -> ERROR_CLASSIFICATION -> MEMORY_UPDATE -> TRAINING_PLAN -> COMPLETED`），完成后展示诊断结果。
 - AC 提交后，右侧”AI 诊断”在代码点评生成中展示 Agent 步骤（`PLANNING -> CODE_EXECUTION -> OBSERVATION -> RAG_RETRIEVAL -> CODE_REVIEW -> COMPLETED`），完成后展示 `codeReview`。如果用户随后编辑代码但不重新提交，前端仍保留上次点评，只显示“基于上次提交，仅供参考”的 stale warning。
 
@@ -953,7 +953,7 @@ GET /api/users/{userId}/knowledge/cards/{cardId}/self-tests/recent?limit=5
 - 薄弱知识点排行
 - 错误类型分布；不再在同一区域重复展示“最薄弱知识点”
 - 最近提交记录
-- 合并后的错题卡片：前端复用后端 `repeatCount` 和本地同类聚合，按题目、知识点分组和错误类型合并展示“出现 N 次 / 反复出现”
+- 合并后的错题卡片：前端复用后端 `repeatCount` 和本地同类聚合，按题目、知识点和用户可读错误模式合并展示“出现 N 次”、本质问题、修复动作和复盘口令
 - 后端知识训练入口
 - AI 教练建议：前端基于最高薄弱点、今日训练项和最近错题生成确定性建议，不调用 AI
 

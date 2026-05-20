@@ -7,6 +7,9 @@ public enum AgentState {
     RAG_RETRIEVAL,
     ERROR_CLASSIFICATION,
     CODE_REVIEW,
+    /**
+     * Legacy state kept for schema/API compatibility. Current Agent workflow does not run AI hint generation.
+     */
     HINT_GENERATION,
     MEMORY_UPDATE,
     TRAINING_PLAN,
