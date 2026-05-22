@@ -97,12 +97,14 @@ Current implemented controllers:
 - `AgentController`
 - `UserController`
 - `KnowledgeController`
+- `RagChatController`
+- `MockInterviewController`
 
 Not yet exposed as REST controllers:
 
 - single-hint lookup
 - standalone accepted-code review endpoint (current accepted review is returned by `/api/agent/analyze` and SSE through `codeReview`)
-- standalone RAG chat or public RAG retrieval endpoint (current RAG is internal to Agent workflow)
+- public raw RAG retrieval endpoint; `/api/rag/chat` is a controlled learning-material QA entry, not a general chat product
 
 ## Fixed Technical Stack
 
@@ -135,7 +137,9 @@ RAG:
 
 - V1 uses MySQL structured retrieval, not embeddings or a vector database.
 - RAG sources are `problem`, `knowledge_card`, `ai_diagnosis`, and `mistake_card`.
-- `RagRetrieveTool` is an internal Agent Tool, not a standalone chat product.
+- `RagRetrieveTool` is an internal Agent Tool. `/api/rag/chat` is a controlled learning-material QA entry that reuses MySQL RAG and existing learning memory without becoming a general chat product.
+- Knowledge QA V1 only answers questions about problems, knowledge cards, AI diagnoses, mistake cards, and the current user's learning records. It does not use web search, upload documents, generate complete Java AC code, or replace the code-submission diagnosis flow.
+- Mock Interview V1 is the preferred interview-training expansion path over generic chat: `/mock-interview` uses knowledge cards as interview questions, stores session / turn / report records, evaluates user answers, asks one follow-up, writes low-score or missing-point weakness events, and still does not generate complete Java AC code.
 - RAG retrieval failure is non-blocking and should only record a failed Agent step / warning.
 - User memory chunks must be isolated by `user_id`; never leak one user's mistake cards or AI diagnoses to another user.
 
@@ -533,7 +537,7 @@ Do not add:
 - complex charting as a blocker
 - decorative UI animation as a blocker
 - full accepted answer generation as the default AI behavior
-- standalone RAG chat / public RAG retrieval REST endpoint
+- general-purpose RAG chat / public raw RAG retrieval REST endpoint
 - embedding, vector database, Elasticsearch, pgvector, Qdrant, Milvus, or similar retrieval stack in V1
 
 ## Development Style
@@ -578,10 +582,20 @@ Near-term work should follow `docs/PROJECT_STATUS.md`:
    - `RagService` indexes problem, knowledge-card, AI-diagnosis, and mistake-card chunks in MySQL.
    - RAG retrieval is optional and user-memory chunks are isolated by `user_id`.
    - Training plans prefer RAG-hit knowledge cards before generic fallback cards.
-10. Third priority: keep but do not implement yet.
+10. Knowledge QA V1. ✓
+   - `/rag-chat` and `POST /api/rag/chat` provide a controlled learning-material QA entry.
+   - It answers only problem, knowledge-card, historical diagnosis, mistake-card, and current-user learning-record questions.
+   - Learning-record questions query `UserLearningService` by `userId`; ordinary knowledge questions use MySQL RAG and chat-only rerank.
+   - It does not expose raw retrieval, web search, document upload, or complete AC code generation.
+11. Mock Interview V1. ✓
+   - `/mock-interview` and `/api/mock-interviews` provide controlled interviewer-style training.
+   - Session state is explicit: CREATED -> ASKING_MAIN -> MAIN_ANSWERED -> ASKING_FOLLOW_UP -> FOLLOW_UP_ANSWERED -> NEXT_QUESTION / FINISHED -> REPORTED.
+   - Turns persist MAIN / FOLLOW_UP questions, user answers, scores, hit / missing key points, expression issues, and AI raw JSON.
+   - Low-score or missing-point answers write `user_weakness_event` with `sourceType=MOCK_INTERVIEW`.
+12. Third priority: keep but do not implement yet.
    - Single-hint lookup endpoint.
    - Standalone accepted-code review REST endpoint.
-   - Standalone RAG chat / public RAG retrieval REST endpoint.
+   - General-purpose RAG chat / public raw RAG retrieval REST endpoint.
    - Vector / embedding retrieval upgrade.
    - Real Redis hot-cache wiring.
 

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>模拟面试 - AI 面试教练</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "on-tertiary-fixed-variant": "#444749",
+                "surface-tint": "#006399",
+                "error-container": "#ffdad6",
+                "surface-dim": "#cbdbf5",
+                "on-primary-fixed-variant": "#004b74",
+                "on-background": "#0b1c30",
+                "on-secondary": "#ffffff",
+                "on-error": "#ffffff",
+                "on-tertiary-fixed": "#191c1e",
+                "surface-bright": "#f8f9ff",
+                "on-primary-fixed": "#001d32",
+                "on-surface-variant": "#40474f",
+                "tertiary": "#494c4e",
+                "tertiary-fixed": "#e0e3e5",
+                "primary-fixed": "#cde5ff",
+                "on-tertiary-container": "#dfe1e3",
+                "on-tertiary": "#ffffff",
+                "surface-container": "#e5eeff",
+                "on-surface": "#0b1c30",
+                "on-secondary-fixed": "#141d21",
+                "tertiary-container": "#616466",
+                "secondary-fixed-dim": "#bfc8ce",
+                "inverse-surface": "#213145",
+                "background": "#f8f9ff",
+                "secondary": "#576065",
+                "primary-container": "#0369a1",
+                "surface-container-low": "#eff4ff",
+                "surface": "#f8f9ff",
+                "on-primary": "#ffffff",
+                "inverse-on-surface": "#eaf1ff",
+                "on-primary-container": "#cbe4ff",
+                "error": "#ba1a1a",
+                "primary": "#00507d",
+                "on-secondary-fixed-variant": "#3f484d",
+                "on-secondary-container": "#5d666b",
+                "outline": "#707881",
+                "primary-fixed-dim": "#94ccff",
+                "on-error-container": "#93000a",
+                "inverse-primary": "#94ccff",
+                "outline-variant": "#c0c7d1",
+                "secondary-container": "#dbe4ea",
+                "surface-variant": "#d3e4fe",
+                "surface-container-lowest": "#ffffff",
+                "tertiary-fixed-dim": "#c4c7c9",
+                "secondary-fixed": "#dbe4ea",
+                "surface-container-highest": "#d3e4fe",
+                "surface-container-high": "#dce9ff"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "margin-page": "2rem",
+                "stack-sm": "0.5rem",
+                "stack-lg": "2rem",
+                "container-max": "1200px",
+                "stack-md": "1rem",
+                "gutter": "1.5rem"
+        },
+        "fontFamily": {
+                "label-sm": [
+                        "Hanken Grotesk"
+                ],
+                "headline-lg": [
+                        "Hanken Grotesk"
+                ],
+                "label-md": [
+                        "Hanken Grotesk"
+                ],
+                "headline-lg-mobile": [
+                        "Hanken Grotesk"
+                ],
+                "headline-sm": [
+                        "Hanken Grotesk"
+                ],
+                "body-md": [
+                        "Hanken Grotesk"
+                ],
+                "body-lg": [
+                        "Hanken Grotesk"
+                ],
+                "headline-md": [
+                        "Hanken Grotesk"
+                ]
+        },
+        "fontSize": {
+                "label-sm": [
+                        "12px",
+                        {
+                                "lineHeight": "16px",
+                                "fontWeight": "500"
+                        }
+                ],
+                "headline-lg": [
+                        "30px",
+                        {
+                                "lineHeight": "38px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "label-md": [
+                        "13px",
+                        {
+                                "lineHeight": "18px",
+                                "fontWeight": "500"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-sm": [
+                        "18px",
+                        {
+                                "lineHeight": "26px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-md": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-lg": [
+                        "16px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "600"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for chat area */
+        .chat-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background-color: #c0c7d1;
+            border-radius: 10px;
+        }
+    </style>
+<script>
+        function toggleConfirmDialog() {
+            const dialog = document.getElementById('confirm-dialog');
+            if (dialog.classList.contains('hidden')) {
+                dialog.classList.remove('hidden');
+                dialog.classList.add('flex');
+            } else {
+                dialog.classList.add('hidden');
+                dialog.classList.remove('flex');
+            }
+        }
+        
+        // Auto-scroll logic could go here
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md text-body-md min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<nav class="bg-surface border-b border-outline-variant shadow-sm w-full top-0 sticky z-50">
+<div class="flex justify-between items-center h-16 px-margin-page max-w-[1200px] mx-auto">
+<!-- Brand Logo -->
+<div class="font-headline-md text-headline-md font-bold text-primary">AI 面试教练</div>
+<!-- Navigation Links -->
+<div class="hidden md:flex items-center gap-8 h-full pt-1">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors flex items-center h-full" href="#">题目</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors flex items-center h-full" href="#">知识训练</a>
+<a class="font-label-md text-label-md text-primary font-bold border-b-2 border-primary flex items-center h-full" href="#">模拟面试</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors flex items-center h-full" href="#">学习中心</a>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center gap-2 bg-primary-container/20 text-primary border border-primary/20 px-4 py-2 rounded-full font-label-md text-label-md"><span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>面试进行中</div>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<button class="hover:text-primary transition-colors hover:bg-surface-container-low rounded-lg p-1 flex items-center justify-center"><span class="material-symbols-outlined">notifications</span></button>
+<button class="hover:text-primary transition-colors hover:bg-surface-container-low rounded-lg p-1 flex items-center justify-center"><span class="material-symbols-outlined">account_circle</span></button>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-grow w-full max-w-[1200px] mx-auto px-margin-page py-stack-lg flex flex-col gap-stack-lg relative">
+<!-- Status Card -->
+<section class="bg-surface border border-outline-variant rounded-xl shadow-sm p-6 flex flex-wrap items-center justify-between gap-4">
+<div class="flex items-center gap-8">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">当前场次</span>
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">系统设计面试</span>
+</div>
+<div class="h-8 w-px bg-outline-variant hidden md:block"></div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">进度</span>
+<span class="font-headline-sm text-headline-sm text-on-surface flex items-baseline gap-1">4<span class="font-body-md text-body-md text-on-surface-variant">/10</span></span>
+</div>
+<div class="h-8 w-px bg-outline-variant hidden md:block"></div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">用时</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-mono">14:32</span>
+</div>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full border border-outline-variant shrink-0">
+<span class="material-symbols-outlined text-primary" style='font-variation-settings: "FILL" 1;'>smart_toy</span>
+<span class="font-label-md text-label-md text-primary font-bold">当前状态：生成追问中</span>
+</div>
+</section>
+<!-- Two Column Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Left Column: Conversation Area -->
+<section class="lg:col-span-2 bg-surface border border-outline-variant rounded-xl shadow-sm flex flex-col overflow-hidden relative h-[calc(100vh-280px)] min-h-[500px]">
+<!-- Chat History -->
+<div class="flex-grow p-6 overflow-y-auto chat-scroll flex flex-col gap-6 bg-surface-bright pb-[160px]">
+<!-- AI Initial Question -->
+<div class="flex items-start gap-4 max-w-[85%]">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center flex-shrink-0 border border-outline-variant">
+<span class="material-symbols-outlined text-primary">smart_toy</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl rounded-tl-sm p-4 shadow-sm text-on-surface flex flex-col gap-2">
+<p class="">你好！我们今天进行一个系统设计的模拟面试。假设你需要设计一个类似短网址生成器（TinyURL）的服务。</p>
+<p class="">首先，你能跟我梳理一下这个系统的<strong>核心功能需求</strong>和<strong>非功能需求</strong>吗？</p>
+</div>
+</div>
+<!-- User Answer -->
+<div class="flex items-start gap-4 max-w-[85%] self-end flex-row-reverse">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center flex-shrink-0 border border-primary">
+<span class="material-symbols-outlined text-on-primary-container">person</span>
+</div>
+<div class="bg-primary text-on-primary rounded-2xl rounded-tr-sm p-4 shadow-sm flex flex-col gap-2">
+<p class="">好的。核心功能需求主要有两个：一是将长 URL 转换为一个较短的 URL；二是当用户访问短 URL 时，系统能重定向到原始的长 URL。</p>
+<p class="">非功能需求方面，系统需要具备高可用性，因为重定向服务不能宕机；另外响应延迟要极低；生成的短链接应该是不可预测的，以防止被恶意遍历。</p>
+</div>
+</div>
+<!-- AI Follow-up (追问) -->
+<div class="flex items-start gap-4 max-w-[85%]">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center flex-shrink-0 border border-outline-variant">
+<span class="material-symbols-outlined text-primary">smart_toy</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl rounded-tl-sm p-4 shadow-sm text-on-surface flex flex-col gap-2">
+<p class="">很好的总结。你提到了高可用性和低延迟。</p>
+<p class="">考虑到这是一个读多写少的系统（重定向请求远大于生成请求），针对“高可用”和“低延迟”这两个非功能需求，在架构设计上你会采取哪些具体的策略？另外，如果我们需要支持自定义短链接后缀，会对系统设计产生什么影响？</p>
+</div>
+</div>
+<!-- User Answer 2 -->
+<div class="flex items-start gap-4 max-w-[85%] self-end flex-row-reverse">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center flex-shrink-0 border border-primary">
+<span class="material-symbols-outlined text-on-primary-container">person</span>
+</div>
+<div class="bg-primary text-on-primary rounded-2xl rounded-tr-sm p-4 shadow-sm flex flex-col gap-2">
+<p class="">为了保证低延迟，我会在系统中引入缓存层，比如 Redis，将频繁访问的短链接映射缓存在内存中。对于高可用，可以通过部署多个应用节点配合负载均衡器来实现无状态服务，数据库也可以采用主从架构，读写分离来提高读取性能。</p>
+<p class="">关于自定义后缀，这意味着我们需要在生成链接时检查全局唯一性，这会引入额外的数据库查询，可能成为性能瓶颈，并且由于可能产生冲突，需要设计冲突解决机制。</p>
+</div>
+</div>
+<!-- Typing Indicator -->
+<div class="flex items-start gap-4 max-w-[85%] opacity-70">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center flex-shrink-0 border border-outline-variant">
+<span class="material-symbols-outlined text-primary">smart_toy</span>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-2xl rounded-tl-sm p-4 shadow-sm text-on-surface flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse" style="animation-delay: 0.2s"></span>
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse" style="animation-delay: 0.4s"></span>
+</div>
+</div>
+</div>
+<!-- Input Area (Fixed Bottom) -->
+<div class="absolute bottom-0 left-0 right-0 border-t border-outline-variant bg-surface p-4 flex flex-col gap-3 z-10">
+<!-- Quick Actions -->
+<div class="flex flex-wrap gap-2">
+<button class="bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary hover:bg-surface-container-low rounded-full px-4 py-1.5 font-label-md text-label-md transition-all shadow-sm">
+                            补充权衡
+                        </button>
+<button class="bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary hover:bg-surface-container-low rounded-full px-4 py-1.5 font-label-md text-label-md transition-all shadow-sm">
+                            补充边界
+                        </button>
+<button class="bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary hover:bg-surface-container-low rounded-full px-4 py-1.5 font-label-md text-label-md transition-all shadow-sm">
+                            重新组织回答
+                        </button>
+<button class="bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary hover:bg-surface-container-low rounded-full px-4 py-1.5 font-label-md text-label-md transition-all shadow-sm">
+                            我不确定，请追问
+                        </button>
+</div>
+<!-- Text Input -->
+<div class="relative flex items-end bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-shadow">
+<textarea class="w-full bg-transparent border-none focus:ring-0 resize-none p-4 font-body-md text-body-md text-on-surface placeholder-on-surface-variant" placeholder="输入你的回答，或者点击上方快捷按钮..." rows="3"></textarea>
+<div class="p-3 absolute bottom-0 right-0">
+<button class="bg-primary text-on-primary rounded-lg w-10 h-10 flex items-center justify-center hover:bg-primary-container transition-colors shadow-sm disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Column: Real-time Report -->
+<aside class="lg:col-span-1 flex flex-col gap-gutter h-[calc(100vh-280px)] min-h-[500px]">
+<!-- Report Card -->
+<div class="bg-surface border border-outline-variant rounded-xl shadow-sm p-6 flex flex-col gap-6 flex-grow overflow-y-auto">
+<div class="flex items-center gap-2 border-b border-outline-variant pb-4 flex-row">
+<span class="material-symbols-outlined text-primary">query_stats</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">实时反馈</h2><div class="ml-auto bg-primary-container px-3 py-1 rounded-lg"><span class="font-label-sm text-label-sm text-on-primary-container">本轮表现：</span><span class="font-headline-sm text-headline-sm text-on-primary-container font-bold">72</span><span class="font-label-sm text-label-sm text-on-primary-container opacity-70"> / 100</span></div>
+</div>
+<div class="flex flex-col gap-5 flex-grow">
+<!-- Dimension 1 -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md text-on-surface font-semibold">需求澄清</span>
+<span class="font-label-sm text-label-sm text-primary">优秀</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 90%"></div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant text-xs mt-1">清晰区分了核心与非功能需求，逻辑严密。</p>
+</div>
+<!-- Dimension 2 -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md text-on-surface font-semibold">容量估算</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">待评估</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2">
+<div class="bg-outline-variant h-2 rounded-full" style="width: 20%"></div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant text-xs mt-1">尚未进入流量和存储容量的估算环节。</p>
+</div>
+<!-- Dimension 3 -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md text-on-surface font-semibold">核心方案</span>
+<span class="font-label-sm text-label-sm text-primary">良好</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2">
+<div class="bg-primary h-2 rounded-full opacity-80" style="width: 75%"></div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant text-xs mt-1">提出了缓存和负载均衡，可进一步探讨哈希算法和数据库选型。</p>
+</div>
+<!-- Dimension 4 -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md text-on-surface font-semibold">技术权衡</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">待评估</span>
+</div>
+<div class="w-full bg-surface-container-high rounded-full h-2">
+<div class="bg-outline-variant h-2 rounded-full" style="width: 0%"></div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant text-xs mt-1">尚未涉及方案的优缺点对比及取舍。</p>
+</div>
+</div>
+<!-- Decorative Element -->
+<div class="bg-surface-container-low rounded-lg p-4 border border-outline-variant text-center mt-auto">
+<span class="font-label-sm text-label-sm text-on-surface-variant">保持冷静，结构化表达能有效提升面试表现。</span>
+</div>
+</div>
+<!-- End Button -->
+<button class="w-full bg-surface border-2 border-primary text-primary rounded-full py-3 font-headline-sm text-headline-sm hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm flex justify-center items-center gap-2" onclick="toggleConfirmDialog()">
+<span class="material-symbols-outlined text-lg">stop_circle</span>
+                    提前结束并生成报告
+                </button>
+</aside>
+</div>
+<!-- Confirm Dialog Overlay -->
+<div class="fixed inset-0 bg-on-surface/50 z-[100] hidden items-center justify-center" id="confirm-dialog">
+<div class="bg-surface rounded-xl shadow-lg p-6 max-w-md w-full border border-outline-variant flex flex-col gap-6">
+<div class="flex items-center gap-3 text-on-surface">
+<span class="material-symbols-outlined text-error text-3xl">warning</span>
+<h3 class="font-headline-md text-headline-md font-bold">确认结束面试</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">确定提前结束本场面试并生成报告吗？当前已完成 4/10 个问题，报告会基于已有回答生成。</p>
+<div class="flex justify-end gap-3 mt-2">
+<button class="px-6 py-2 rounded-full border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors font-label-md text-label-md" onclick="toggleConfirmDialog()">取消</button>
+<button class="px-6 py-2 rounded-full bg-primary text-on-primary hover:bg-primary-container hover:text-on-primary-container transition-colors font-label-md text-label-md" onclick="toggleConfirmDialog()">确认生成</button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -16,6 +16,11 @@ import type {
   KnowledgeCategory,
   KnowledgeCardDetail,
   KnowledgeCardListItem,
+  RagChatRequest,
+  RagChatResponse,
+  MockInterviewAnswerRequest,
+  MockInterviewCreateRequest,
+  MockInterviewSession,
   SelfTestRecord,
   SelfTestSubmitRequest,
 } from "./types";
@@ -28,7 +33,9 @@ type ApiErrorContext =
   | "knowledge"
   | "sse"
   | "submit"
-  | "dashboard";
+  | "dashboard"
+  | "rag"
+  | "mockInterview";
 
 export function formatApiError(
   error: unknown,
@@ -76,6 +83,20 @@ export function formatApiError(
 
   if (context === "dashboard") {
     return `仪表盘接口加载失败，请检查后端服务是否正常。${detail}`;
+  }
+
+  if (context === "rag") {
+    if (aiFailure) {
+      return `知识库问答调用 AI 失败，请检查 AI_BASE_URL、AI_API_KEY 和 AI_MODEL 配置。${detail}`;
+    }
+    return `知识库问答接口暂不可用，请检查 Spring Boot 服务、RAG 表迁移和 AI 配置是否正常。${detail}`;
+  }
+
+  if (context === "mockInterview") {
+    if (aiFailure) {
+      return `模拟面试 AI 评分暂不可用，后端会尝试使用 keyPoints fallback；请检查 AI_BASE_URL、AI_API_KEY 和 AI_MODEL。${detail}`;
+    }
+    return `模拟面试接口暂不可用，请检查 Spring Boot 服务和 mock_interview 表迁移是否正常。${detail}`;
   }
 
   return raw || "接口请求失败，请稍后重试。";
@@ -270,4 +291,35 @@ export const knowledgeApi = {
     ),
   detail: (id: number) =>
     request<ApiResponse<KnowledgeCardDetail>>(`/api/knowledge/cards/${id}`),
+};
+
+export const ragChatApi = {
+  ask: (body: RagChatRequest) =>
+    request<ApiResponse<RagChatResponse>>("/api/rag/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+};
+
+export const mockInterviewApi = {
+  create: (body: MockInterviewCreateRequest) =>
+    request<ApiResponse<MockInterviewSession>>("/api/mock-interviews", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  get: (sessionId: number) =>
+    request<ApiResponse<MockInterviewSession>>(`/api/mock-interviews/${sessionId}`),
+  answer: (sessionId: number, body: MockInterviewAnswerRequest) =>
+    request<ApiResponse<MockInterviewSession>>(`/api/mock-interviews/${sessionId}/answers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  finish: (sessionId: number) =>
+    request<ApiResponse<MockInterviewSession>>(`/api/mock-interviews/${sessionId}/finish`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    }),
 };

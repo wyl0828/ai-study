@@ -78,6 +78,15 @@ public class RagServiceImpl implements RagService {
     }
 
     @Override
+    public RagRetrieveResult retrieveForChat(Long userId, String question, int limit) {
+        RagRetrieveQuery query = new RagRetrieveQuery();
+        query.setUserId(userId);
+        query.setLimit(limit);
+        query.setKeywords(buildQuestionKeywords(question));
+        return retrieve(query);
+    }
+
+    @Override
     public RagRetrieveResult retrieve(RagRetrieveQuery query) {
         try {
             return doRetrieve(query);
@@ -412,6 +421,12 @@ public class RagServiceImpl implements RagService {
             addKeyword(keywords, context.getObservation().getStatus());
             addKeyword(keywords, context.getObservation().getErrorMessage());
         }
+        return new ArrayList<>(keywords);
+    }
+
+    private List<String> buildQuestionKeywords(String question) {
+        Set<String> keywords = new LinkedHashSet<>();
+        addKeyword(keywords, question);
         return new ArrayList<>(keywords);
     }
 

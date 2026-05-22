@@ -12,6 +12,8 @@ public interface RagService {
 
     RagRetrieveResult retrieveForDiagnosis(AgentContext context, int limit);
 
+    RagRetrieveResult retrieveForChat(Long userId, String question, int limit);
+
     RagRetrieveResult retrieve(RagRetrieveQuery query);
 
     void indexProblem(Problem problem);

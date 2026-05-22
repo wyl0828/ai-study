@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Terminal, Bell } from "lucide-react";
+import { Bell, CircleUserRound, Terminal } from "lucide-react";
 
 const links = [
   { href: "/", label: "题目" },
   { href: "/knowledge", label: "知识训练" },
+  { href: "/mock-interview", label: "模拟面试" },
   { href: "/dashboard", label: "学习中心" },
 ];
 
@@ -43,12 +44,26 @@ export default function Navbar() {
         </nav>
       </div>
       <div className="flex items-center gap-3">
-        <button className="p-1.5 rounded-full hover:bg-surface-variant text-on-surface-variant transition-colors">
+        {pathname.startsWith("/mock-interview") && (
+          <div className="hidden items-center gap-2 rounded-full border border-primary/20 bg-primary-container/20 px-4 py-2 text-sm font-medium text-primary md:flex">
+            <span className="h-2 w-2 rounded-full bg-primary" />
+            面试进行中
+          </div>
+        )}
+        <button
+          className="p-1.5 rounded-full hover:bg-surface-variant text-on-surface-variant transition-colors"
+          type="button"
+          aria-label="通知"
+        >
           <Bell className="w-5 h-5" />
         </button>
-        <div className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-sm font-medium cursor-pointer">
-          D
-        </div>
+        <button
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-variant hover:text-primary"
+          type="button"
+          aria-label="用户中心"
+        >
+          <CircleUserRound className="h-6 w-6" />
+        </button>
       </div>
     </header>
   );

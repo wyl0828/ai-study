@@ -241,3 +241,93 @@ export interface KnowledgeCardDetail extends KnowledgeCardListItem {
   followUp: string | null;
   keyPoints: string[];
 }
+
+// 知识库问答
+export interface RagChatRequest {
+  userId: number;
+  question: string;
+}
+
+export interface RagChatSource {
+  sourceType: string;
+  sourceId: number | null;
+  title: string | null;
+  score: number;
+  snippet: string;
+  matchReason: string;
+}
+
+export interface RagChatResponse {
+  answer: string;
+  sources: RagChatSource[];
+}
+
+// 模拟面试
+export interface MockInterviewCreateRequest {
+  userId: number;
+  category: string;
+  questionCount: number;
+  interviewerStyle: "GUIDED" | "BIG_TECH" | "FAST_SCREEN";
+}
+
+export interface MockInterviewAnswerRequest {
+  userAnswer: string;
+}
+
+export interface MockInterviewTurn {
+  id: number;
+  knowledgeCardId: number;
+  turnOrder: number;
+  turnType: "MAIN" | "FOLLOW_UP";
+  parentTurnId: number | null;
+  question: string;
+  userAnswer: string;
+  score: number;
+  feedback: string;
+  performanceLevel: string;
+  strengthSummary: string;
+  gapSummary: string;
+  expressionFeedback: string;
+  interviewerObservation: string;
+  followUpReason: string;
+  hitKeyPoints: string[];
+  missingKeyPoints: string[];
+  expressionIssue: string | null;
+  createdAt: string | null;
+}
+
+export interface MockInterviewReport {
+  id: number;
+  averageScore: number;
+  summary: string;
+  strengths: string;
+  weaknesses: string;
+  expressionAdvice: string;
+  recommendedCardIds: number[];
+  weaknessTags: string[];
+  createdAt: string | null;
+}
+
+export interface MockInterviewSession {
+  sessionId: number;
+  status:
+    | "CREATED"
+    | "ASKING_MAIN"
+    | "MAIN_ANSWERED"
+    | "ASKING_FOLLOW_UP"
+    | "FOLLOW_UP_ANSWERED"
+    | "NEXT_QUESTION"
+    | "FINISHED"
+    | "REPORTED";
+  category: string;
+  interviewerStyle: "GUIDED" | "BIG_TECH" | "FAST_SCREEN";
+  questionCount: number;
+  answeredMainCount: number;
+  currentKnowledgeCardId: number | null;
+  currentQuestion: string | null;
+  currentTurnType: "MAIN" | "FOLLOW_UP" | null;
+  turns: MockInterviewTurn[];
+  report: MockInterviewReport | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+}

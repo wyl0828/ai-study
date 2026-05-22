@@ -100,6 +100,32 @@ class RagServiceImplTest {
     }
 
     @Test
+    void retrieveForChatUsesQuestionKeywordsAndKeepsUserMemoryIsolated() {
+        RagChunk currentUserMemory = chunk(1L, 101L, RagSourceTypeEnum.AI_DIAGNOSIS, 1L, 1L,
+                "Two Sum 中 HashMap 要先查询 complement 再写入当前元素，避免同一个元素被重复使用。",
+                "HashMap 基础查找", "LOGIC_ERROR", "HashMap,Two Sum");
+        RagChunk otherUserMemory = chunk(2L, 202L, RagSourceTypeEnum.MISTAKE_CARD, 2L, 1L,
+                "other user private Two Sum mistake", "HashMap 基础查找", "LOGIC_ERROR", "HashMap");
+        RagChunk systemCard = chunk(3L, 303L, RagSourceTypeEnum.KNOWLEDGE_CARD, null, null,
+                "HashMap 查询和写入顺序会影响 Two Sum 是否自匹配。",
+                "HashMap 基础查找", null, "HashMap,Two Sum");
+        when(ragChunkMapper.selectList(any())).thenReturn(List.of(otherUserMemory, systemCard, currentUserMemory));
+        when(ragDocumentMapper.selectBatchIds(any())).thenReturn(List.of(
+                document(101L, "当前用户 Two Sum 诊断"),
+                document(202L, "其他用户错题"),
+                document(303L, "HashMap 使用逻辑")));
+
+        RagRetrieveResult result = ragService.retrieveForChat(1L,
+                "HashMap 查询和写入顺序为什么会导致 Two Sum 出错？", 5);
+
+        assertThat(result.getHits())
+                .extracting(RagChunkHit::getSourceId)
+                .contains(101L, 303L)
+                .doesNotContain(202L);
+        assertThat(result.getHits().get(0).getScore()).isGreaterThanOrEqualTo(10);
+    }
+
+    @Test
     void retrieveReturnsEmptyResultWhenNoChunksExist() {
         when(ragChunkMapper.selectList(any())).thenReturn(List.of());
 

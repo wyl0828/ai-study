@@ -27,6 +27,8 @@
 - **后端知识训练一期能力**：后端已有 `KnowledgeController`、`KnowledgeCardService` 和 `knowledge_card` 表；`data/knowledge_cards.sql` 提供 120 张原创整理的 Java 后端与 AI 工程面试知识卡，侧边栏 24 个最终专题均不少于 5 张。知识卡内容源已收口到 `scripts/knowledge_card_profiles.cjs`，由 `scripts/generate_knowledge_cards_sql.cjs` 同步生成 `data/knowledge_cards.sql` 和 `frontend/lib/knowledgeSeed.ts`。
 - **知识卡内容质量整改**：120 张卡片已从批量模板问答整改为真实面试训练卡，问题改为直白短问法，答案围绕定义、机制、边界和常见坑；停用 `enrichAnswer` 自动扩写，不再用“结合后端项目”“从几个层面说明”等套话凑字数。`frontend/lib/knowledge-tree-coverage.node-test.cjs` 已加入问题模板、答案污染、空泛 keyPoints、followUps、SQL 与前端 fallback 一致性，以及 Spring Bean 生命周期、布隆过滤器、HashMap、ArrayList、Spring 事务、MySQL MVCC 等高风险卡关键词护栏。
 - **RAG V1 内部检索层**：已新增 `rag_document` / `rag_chunk` MySQL 表、`RagService` 和 `RagRetrieveTool`，在 `OBSERVATION` 后检索题目、知识卡、AI 诊断和当前用户错题记忆；检索结果作为错误诊断和 AC 点评 prompt 证据，检索失败不阻塞核心闭环。
+- **知识库问答 V1**：已新增 `/rag-chat` 和 `POST /api/rag/chat` 作为受控学习资料问答入口；它只回答题目、知识卡、历史诊断、错题卡和当前用户学习记录相关问题，复用 MySQL RAG V1 与现有学习记忆数据，不接入联网搜索、不上传文档、不生成完整 AC 代码、不替代代码提交诊断主流程。
+- **模拟面试 V1**：已新增 `/mock-interview` 和 `POST /api/mock-interviews` / `GET /api/mock-interviews/{sessionId}` / `POST /answers` / `POST /finish`，把知识卡升级为面试会话；后端通过显式状态机管理主问题、追问、评分、薄弱点事件和报告，前端以“模拟面试”为主导航入口，弱化普通问答页。
 - **训练计划接入知识卡片**：`training_plan_item` 已支持 `PROBLEM` 和 `KNOWLEDGE_CARD` 两类条目；Agent 自动训练计划保留 3 条算法复盘项并最多选取 3 张 RAG 命中的知识卡，手动重新生成会创建 3 天计划且每天包含 1 个算法复盘任务和 1 个知识卡复习任务，不根据算法错因强行推荐八股。
 - **学习记忆连续化**：失败诊断会写入弱点事件，错题卡按 fingerprint 合并重复错误；知识卡自测写入 `self_test_record` 并更新 `user_knowledge_card_mastery`，低分自测也会进入弱点事件。
 - **固定演示样例**：主线演示已切换为 `1 两数之和`、`206 反转链表` 和 `121 买卖股票的最佳时机`，使用说明见 `docs/DEMO_CASES.md`。
@@ -57,8 +59,8 @@
 - **本地依赖较多**：MySQL、Piston、后端、前端都要启动；Redis 当前只有配置预留，热点题目/题目详情缓存待接入，演示前需要一键化或清晰启动脚本。
 - **SSE 稳定性**：SSE 已接入前端，并补充了 `agentStreamState` 状态决策和源码级回归测试；AC 代码点评分支也已展示实时 Agent 步骤。正式演示前仍建议用连续提交、用户中断和后端不可达场景做一次手动压测。
 - **题目内容已迁移到后端**：`problem` 表存储 `hint_level1/2/3` 和 `solution_outline`，通过 `ProblemDetailVO.presetHints` 与 `solutionOutline` 返回。
-- **知识数据导入依赖**：新库可直接执行 `data/schema.sql` 和 `data/knowledge_cards.sql`；旧库需要先执行 `data/knowledge_training_migration.sql`、`data/learning_memory_continuity_migration.sql` 和 `data/rag_mysql_migration.sql`，再执行 `data/knowledge_cards.sql`。导入新知识卡后要通过 `RagService.rebuildSystemIndex()` 或等价维护流程重建系统 RAG 索引，避免 Agent 检索到旧知识卡 chunk。
-- **知识卡内容边界**：当前知识卡参考小林 coding 和 JavaGuide 选题覆盖并重新整理，可作为 RAG V1 的系统知识来源，但 `/knowledge` 页面不是开放 RAG 问答入口，也不应直接复制外部文章长文本。后续维护时不要恢复自动扩写或模板化问题，问题、答案、keyPoints、followUps 都应在内容源里显式维护。
+- **知识数据导入依赖**：新库可直接执行 `data/schema.sql` 和 `data/knowledge_cards.sql`；旧库需要先执行 `data/knowledge_training_migration.sql`、`data/learning_memory_continuity_migration.sql`、`data/rag_mysql_migration.sql` 和 `data/mock_interview_migration.sql`，再执行 `data/knowledge_cards.sql`。导入新知识卡后要通过 `RagService.rebuildSystemIndex()` 或等价维护流程重建系统 RAG 索引，避免 Agent 检索到旧知识卡 chunk。
+- **知识卡内容边界**：当前知识卡参考小林 coding 和 JavaGuide 选题覆盖并重新整理，可作为 RAG V1 的系统知识来源；`/knowledge` 页面是知识训练入口，`/rag-chat` 是受控学习资料问答入口，两者都不是通用聊天或公开 raw retrieval。后续维护时不要恢复自动扩写或模板化问题，问题、答案、keyPoints、followUps 都应在内容源里显式维护。
 - **文档与代码容易漂移**：提示/诊断边界已调整，后续修改接口或页面时要同步更新 `docs/API.md` 和设计文档。
 
 ## 4. 下一步大纲
@@ -102,7 +104,7 @@
 - 单独 hint 查询接口。
 - 单独 accepted-code review REST 接口。
 - 知识卡收藏。
-- 独立 RAG 聊天 / 检索 REST 接口。
+- 通用 RAG 聊天 / 公开 raw RAG 检索接口。
 - Redis 热点缓存真正接入。
 
 ### 4.4 最终阶段再考虑
