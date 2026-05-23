@@ -5,12 +5,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.interview.coach.entity.MistakeCard;
+import com.interview.coach.entity.MockInterviewReport;
+import com.interview.coach.entity.MockInterviewSession;
 import com.interview.coach.entity.Problem;
 import com.interview.coach.entity.Submission;
 import com.interview.coach.entity.TrainingPlan;
 import com.interview.coach.entity.TrainingPlanItem;
 import com.interview.coach.entity.UserWeakness;
 import com.interview.coach.mapper.MistakeCardMapper;
+import com.interview.coach.mapper.MockInterviewReportMapper;
+import com.interview.coach.mapper.MockInterviewSessionMapper;
 import com.interview.coach.mapper.ProblemMapper;
 import com.interview.coach.mapper.SubmissionMapper;
 import com.interview.coach.mapper.TrainingPlanItemMapper;
@@ -19,6 +23,7 @@ import com.interview.coach.mapper.UserWeaknessMapper;
 import com.interview.coach.service.impl.UserLearningServiceImpl;
 import com.interview.coach.vo.DashboardStatsVO;
 import com.interview.coach.vo.MistakeCardVO;
+import com.interview.coach.vo.MockInterviewRecentVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
 import com.interview.coach.vo.TrainingPlanVO;
 import com.interview.coach.vo.UserWeaknessVO;
@@ -53,6 +58,12 @@ class UserLearningServiceImplTest {
 
     @Mock
     private ProblemMapper problemMapper;
+
+    @Mock
+    private MockInterviewSessionMapper mockInterviewSessionMapper;
+
+    @Mock
+    private MockInterviewReportMapper mockInterviewReportMapper;
 
     @InjectMocks
     private UserLearningServiceImpl userLearningService;
@@ -250,6 +261,31 @@ class UserLearningServiceImplTest {
         assertThat(submissions.get(0).getTotalCount()).isEqualTo(3);
     }
 
+    @Test
+    void getRecentMockInterviewsReturnsSessionAndReportSummary() {
+        MockInterviewSession reported = mockSession(30L, "REPORTED");
+        MockInterviewSession active = mockSession(31L, "ASKING_FOLLOW_UP");
+        when(mockInterviewSessionMapper.selectList(any())).thenReturn(List.of(reported, active));
+        MockInterviewReport report = new MockInterviewReport();
+        report.setSessionId(30L);
+        report.setAverageScore(new BigDecimal("76.50"));
+        report.setWeaknessTags("BeanPostProcessor,销毁");
+        report.setCreatedAt(LocalDateTime.now());
+        when(mockInterviewReportMapper.selectList(any())).thenReturn(List.of(report));
+
+        List<MockInterviewRecentVO> result = userLearningService.getRecentMockInterviews(1L, 5);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getSessionId()).isEqualTo(30L);
+        assertThat(result.get(0).getStatus()).isEqualTo("REPORTED");
+        assertThat(result.get(0).getCategory()).isEqualTo("SPRING");
+        assertThat(result.get(0).getAverageScore()).isEqualByComparingTo("76.50");
+        assertThat(result.get(0).getWeaknessTags()).containsExactly("BeanPostProcessor", "销毁");
+        assertThat(result.get(1).getSessionId()).isEqualTo(31L);
+        assertThat(result.get(1).getAverageScore()).isNull();
+        assertThat(result.get(1).getWeaknessTags()).isEmpty();
+    }
+
     private Submission submission(Long problemId, String status) {
         Submission submission = new Submission();
         submission.setUserId(1L);
@@ -275,6 +311,22 @@ class UserLearningServiceImplTest {
         plan.setEndDate(LocalDate.now().plusDays(2));
         plan.setCreatedAt(LocalDateTime.now());
         return plan;
+    }
+
+    private MockInterviewSession mockSession(Long id, String status) {
+        MockInterviewSession session = new MockInterviewSession();
+        session.setId(id);
+        session.setUserId(1L);
+        session.setCategory("SPRING");
+        session.setStatus(status);
+        session.setInterviewerStyle("BIG_TECH");
+        session.setQuestionCount(3);
+        session.setAnsweredMainCount(1);
+        session.setStartedAt(LocalDateTime.now().minusMinutes(15));
+        session.setFinishedAt("REPORTED".equals(status) ? LocalDateTime.now().minusMinutes(5) : null);
+        session.setCreatedAt(LocalDateTime.now().minusMinutes(15));
+        session.setUpdatedAt(LocalDateTime.now().minusMinutes(5));
+        return session;
     }
 
     private UserWeakness weakness(Long id, String knowledgePoint, String errorType,

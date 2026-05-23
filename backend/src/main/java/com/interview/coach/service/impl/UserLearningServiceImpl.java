@@ -2,6 +2,8 @@ package com.interview.coach.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.interview.coach.entity.MistakeCard;
+import com.interview.coach.entity.MockInterviewReport;
+import com.interview.coach.entity.MockInterviewSession;
 import com.interview.coach.entity.Problem;
 import com.interview.coach.entity.Submission;
 import com.interview.coach.entity.TrainingPlan;
@@ -10,6 +12,8 @@ import com.interview.coach.entity.UserWeakness;
 import com.interview.coach.entity.UserWeaknessEvent;
 import com.interview.coach.enums.SubmissionStatusEnum;
 import com.interview.coach.mapper.MistakeCardMapper;
+import com.interview.coach.mapper.MockInterviewReportMapper;
+import com.interview.coach.mapper.MockInterviewSessionMapper;
 import com.interview.coach.mapper.ProblemMapper;
 import com.interview.coach.mapper.SubmissionMapper;
 import com.interview.coach.mapper.TrainingPlanItemMapper;
@@ -20,12 +24,14 @@ import com.interview.coach.service.UserLearningService;
 import com.interview.coach.vo.DashboardStatsVO;
 import com.interview.coach.vo.ErrorStatsVO;
 import com.interview.coach.vo.MistakeCardVO;
+import com.interview.coach.vo.MockInterviewRecentVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
 import com.interview.coach.vo.TrainingPlanItemVO;
 import com.interview.coach.vo.TrainingPlanVO;
 import com.interview.coach.vo.UserWeaknessEventVO;
 import com.interview.coach.vo.UserWeaknessVO;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -53,6 +59,10 @@ public class UserLearningServiceImpl implements UserLearningService {
     private final TrainingPlanItemMapper trainingPlanItemMapper;
 
     private final ProblemMapper problemMapper;
+
+    private final MockInterviewSessionMapper mockInterviewSessionMapper;
+
+    private final MockInterviewReportMapper mockInterviewReportMapper;
 
     @Override
     public DashboardStatsVO getDashboardStats(Long userId) {
@@ -141,6 +151,36 @@ public class UserLearningServiceImpl implements UserLearningService {
                 .toList());
         return submissions.stream()
                 .map(submission -> toSubmissionHistoryVO(submission, problems))
+                .toList();
+    }
+
+    @Override
+    public List<MockInterviewRecentVO> getRecentMockInterviews(Long userId, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 20));
+        List<MockInterviewSession> sessions = mockInterviewSessionMapper.selectList(
+                new LambdaQueryWrapper<MockInterviewSession>()
+                        .eq(MockInterviewSession::getUserId, userId)
+                        .orderByDesc(MockInterviewSession::getCreatedAt)
+                        .last("LIMIT " + safeLimit));
+        if (sessions.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> sessionIds = sessions.stream()
+                .map(MockInterviewSession::getId)
+                .toList();
+        Map<Long, MockInterviewReport> reportsBySessionId = mockInterviewReportMapper.selectList(
+                new LambdaQueryWrapper<MockInterviewReport>()
+                        .eq(MockInterviewReport::getUserId, userId)
+                        .in(MockInterviewReport::getSessionId, sessionIds))
+                .stream()
+                .collect(Collectors.toMap(
+                        MockInterviewReport::getSessionId,
+                        Function.identity(),
+                        (first, ignored) -> first));
+
+        return sessions.stream()
+                .map(session -> toMockInterviewRecentVO(session, reportsBySessionId.get(session.getId())))
                 .toList();
     }
 
@@ -288,6 +328,22 @@ public class UserLearningServiceImpl implements UserLearningService {
         return vo;
     }
 
+    private MockInterviewRecentVO toMockInterviewRecentVO(MockInterviewSession session, MockInterviewReport report) {
+        MockInterviewRecentVO vo = new MockInterviewRecentVO();
+        vo.setSessionId(session.getId());
+        vo.setCategory(session.getCategory());
+        vo.setStatus(session.getStatus());
+        vo.setInterviewerStyle(session.getInterviewerStyle());
+        vo.setQuestionCount(session.getQuestionCount());
+        vo.setAnsweredMainCount(session.getAnsweredMainCount());
+        vo.setAverageScore(report == null ? null : report.getAverageScore());
+        vo.setWeaknessTags(report == null ? List.of() : splitComma(report.getWeaknessTags()));
+        vo.setStartedAt(session.getStartedAt());
+        vo.setFinishedAt(session.getFinishedAt());
+        vo.setCreatedAt(session.getCreatedAt());
+        return vo;
+    }
+
     private MistakeCardVO toMistakeCardVO(MistakeCard mistake, Map<Long, Problem> problems) {
         MistakeCardVO vo = new MistakeCardVO();
         vo.setId(mistake.getId());
@@ -345,6 +401,16 @@ public class UserLearningServiceImpl implements UserLearningService {
 
     private String safeText(String value) {
         return value == null ? "" : value;
+    }
+
+    private List<String> splitComma(String value) {
+        if (value == null || value.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(value.split(","))
+                .map(String::trim)
+                .filter(text -> !text.isBlank())
+                .toList();
     }
 
     private SubmissionHistoryVO toSubmissionHistoryVO(Submission submission, Map<Long, Problem> problems) {

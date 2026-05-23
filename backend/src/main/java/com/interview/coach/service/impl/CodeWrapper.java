@@ -31,17 +31,25 @@ final class CodeWrapper {
     private static Map<Long, SolutionProblemAdapter> adapters() {
         Map<Long, SolutionProblemAdapter> adapters = new LinkedHashMap<>();
         adapters.put(1L, CodeWrapper::wrapTwoSum);
+        adapters.put(3L, CodeWrapper::wrapLongestSubstring);
+        adapters.put(15L, CodeWrapper::wrapThreeSum);
+        adapters.put(20L, CodeWrapper::wrapValidParentheses);
         adapters.put(21L, CodeWrapper::wrapMergeTwoLists);
         adapters.put(49L, CodeWrapper::wrapGroupAnagrams);
+        adapters.put(53L, CodeWrapper::wrapMaxSubArray);
+        adapters.put(56L, CodeWrapper::wrapMergeIntervals);
         adapters.put(70L, CodeWrapper::wrapClimbStairs);
+        adapters.put(94L, CodeWrapper::wrapInorderTraversal);
         adapters.put(102L, CodeWrapper::wrapLevelOrder);
         adapters.put(104L, CodeWrapper::wrapMaxDepth);
         adapters.put(121L, CodeWrapper::wrapBestTimeToBuyAndSellStock);
         adapters.put(128L, CodeWrapper::wrapLongestConsecutive);
         adapters.put(141L, CodeWrapper::wrapHasCycle);
         adapters.put(198L, CodeWrapper::wrapHouseRobber);
+        adapters.put(200L, CodeWrapper::wrapNumberOfIslands);
         adapters.put(206L, CodeWrapper::wrapReverseList);
         adapters.put(226L, CodeWrapper::wrapInvertTree);
+        adapters.put(704L, CodeWrapper::wrapBinarySearch);
         return adapters;
     }
 
@@ -66,6 +74,49 @@ final class CodeWrapper {
                         System.out.print(result);
                     }
                 """), userCode);
+    }
+
+    private static String wrapLongestSubstring(String userCode) {
+        return appendUserCode("""
+                import java.util.*;
+
+                public class Main {
+                    public static void main(String[] args) {
+                        Scanner sc = new Scanner(System.in);
+                        String s = sc.hasNext() ? sc.next() : "";
+                        int result = new Solution().lengthOfLongestSubstring(s);
+                        System.out.print(result);
+                    }
+                }
+
+                """, userCode);
+    }
+
+    private static String wrapThreeSum(String userCode) {
+        return appendUserCode(commonArrayHeader("""
+                    public static void main(String[] args) {
+                        Scanner sc = new Scanner(System.in);
+                        int[] nums = readIntArray(sc);
+                        List<List<Integer>> result = new Solution().threeSum(nums);
+                        printIntegerGroups(result);
+                    }
+                """), userCode);
+    }
+
+    private static String wrapValidParentheses(String userCode) {
+        return appendUserCode("""
+                import java.util.*;
+
+                public class Main {
+                    public static void main(String[] args) {
+                        Scanner sc = new Scanner(System.in);
+                        String s = sc.hasNext() ? sc.next() : "";
+                        boolean result = new Solution().isValid(s);
+                        System.out.print(result);
+                    }
+                }
+
+                """, userCode);
     }
 
     private static String wrapLongestConsecutive(String userCode) {
@@ -95,6 +146,17 @@ final class CodeWrapper {
                 """, userCode);
     }
 
+    private static String wrapMaxSubArray(String userCode) {
+        return appendUserCode(commonArrayHeader("""
+                    public static void main(String[] args) {
+                        Scanner sc = new Scanner(System.in);
+                        int[] nums = readIntArray(sc);
+                        int result = new Solution().maxSubArray(nums);
+                        System.out.print(result);
+                    }
+                """), userCode);
+    }
+
     private static String wrapHouseRobber(String userCode) {
         return appendUserCode(commonArrayHeader("""
                     public static void main(String[] args) {
@@ -104,6 +166,48 @@ final class CodeWrapper {
                         System.out.print(result);
                     }
                 """), userCode);
+    }
+
+    private static String wrapMergeIntervals(String userCode) {
+        return appendUserCode("""
+                import java.util.*;
+
+                public class Main {
+                    public static void main(String[] args) {
+                        Scanner sc = new Scanner(System.in);
+                        int[][] intervals = readIntervals(sc);
+                        int[][] result = new Solution().merge(intervals);
+                        printIntMatrix(result);
+                    }
+
+                    private static int[][] readIntervals(Scanner sc) {
+                        int n = sc.hasNextInt() ? sc.nextInt() : 0;
+                        int[][] intervals = new int[n][2];
+                        for (int i = 0; i < n; i++) {
+                            intervals[i][0] = sc.nextInt();
+                            intervals[i][1] = sc.nextInt();
+                        }
+                        return intervals;
+                    }
+
+                    private static void printIntMatrix(int[][] values) {
+                        if (values == null) {
+                            System.out.print("[]");
+                            return;
+                        }
+                        StringBuilder sb = new StringBuilder("[");
+                        for (int i = 0; i < values.length; i++) {
+                            if (i > 0) {
+                                sb.append(",");
+                            }
+                            sb.append("[").append(values[i][0]).append(",").append(values[i][1]).append("]");
+                        }
+                        sb.append("]");
+                        System.out.print(sb);
+                    }
+                }
+
+                """, userCode);
     }
 
     private static String wrapGroupAnagrams(String userCode) {
@@ -239,6 +343,17 @@ final class CodeWrapper {
                 """), userCode);
     }
 
+    private static String wrapInorderTraversal(String userCode) {
+        return appendUserCode(treeHeader("""
+                    public static void main(String[] args) {
+                        Scanner sc = new Scanner(System.in);
+                        TreeNode root = readTree(sc);
+                        List<Integer> result = new Solution().inorderTraversal(root);
+                        printIntegerList(result);
+                    }
+                """), userCode);
+    }
+
     private static String wrapInvertTree(String userCode) {
         return appendUserCode(treeHeader("""
                     public static void main(String[] args) {
@@ -246,6 +361,44 @@ final class CodeWrapper {
                         TreeNode root = readTree(sc);
                         TreeNode result = new Solution().invertTree(root);
                         printTree(result);
+                    }
+                """), userCode);
+    }
+
+    private static String wrapNumberOfIslands(String userCode) {
+        return appendUserCode("""
+                import java.util.*;
+
+                public class Main {
+                    public static void main(String[] args) {
+                        Scanner sc = new Scanner(System.in);
+                        char[][] grid = readCharGrid(sc);
+                        int result = new Solution().numIslands(grid);
+                        System.out.print(result);
+                    }
+
+                    private static char[][] readCharGrid(Scanner sc) {
+                        int rows = sc.hasNextInt() ? sc.nextInt() : 0;
+                        int cols = sc.hasNextInt() ? sc.nextInt() : 0;
+                        char[][] grid = new char[rows][cols];
+                        for (int i = 0; i < rows; i++) {
+                            grid[i] = sc.next().toCharArray();
+                        }
+                        return grid;
+                    }
+                }
+
+                """, userCode);
+    }
+
+    private static String wrapBinarySearch(String userCode) {
+        return appendUserCode(commonArrayHeader("""
+                    public static void main(String[] args) {
+                        Scanner sc = new Scanner(System.in);
+                        int[] nums = readIntArray(sc);
+                        int target = sc.nextInt();
+                        int result = new Solution().search(nums, target);
+                        System.out.print(result);
                     }
                 """), userCode);
     }
@@ -277,6 +430,37 @@ final class CodeWrapper {
                                 sb.append(",");
                             }
                             sb.append(values[i]);
+                        }
+                        sb.append("]");
+                        System.out.print(sb);
+                    }
+
+                    private static void printIntegerGroups(List<List<Integer>> groups) {
+                        if (groups == null) {
+                            System.out.print("[]");
+                            return;
+                        }
+                        List<List<Integer>> normalized = new ArrayList<>();
+                        for (List<Integer> group : groups) {
+                            List<Integer> copy = new ArrayList<>(group);
+                            Collections.sort(copy);
+                            normalized.add(copy);
+                        }
+                        normalized.sort(Comparator.comparing(group -> group.toString()));
+                        StringBuilder sb = new StringBuilder("[");
+                        for (int i = 0; i < normalized.size(); i++) {
+                            if (i > 0) {
+                                sb.append(",");
+                            }
+                            sb.append("[");
+                            List<Integer> group = normalized.get(i);
+                            for (int j = 0; j < group.size(); j++) {
+                                if (j > 0) {
+                                    sb.append(",");
+                                }
+                                sb.append(group.get(j));
+                            }
+                            sb.append("]");
                         }
                         sb.append("]");
                         System.out.print(sb);
@@ -389,6 +573,22 @@ final class CodeWrapper {
                                 sb.append(group.get(j));
                             }
                             sb.append("]");
+                        }
+                        sb.append("]");
+                        System.out.print(sb);
+                    }
+
+                    private static void printIntegerList(List<Integer> values) {
+                        if (values == null) {
+                            System.out.print("[]");
+                            return;
+                        }
+                        StringBuilder sb = new StringBuilder("[");
+                        for (int i = 0; i < values.size(); i++) {
+                            if (i > 0) {
+                                sb.append(",");
+                            }
+                            sb.append(values.get(i));
                         }
                         sb.append("]");
                         System.out.print(sb);

@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import MockInterviewPage from "@/components/MockInterviewPage";
 
 export default function Page() {
-  return <MockInterviewPage />;
+  return (
+    <Suspense fallback={null}>
+      <MockInterviewPage />
+    </Suspense>
+  );
 }

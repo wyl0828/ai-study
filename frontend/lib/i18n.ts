@@ -30,10 +30,17 @@ const knowledgePointMap: Record<string, string> = {
 };
 
 const categoryMap: Record<string, string> = {
+  Array: "数组",
   HashMap: "HashMap",
   LinkedList: "链表",
   Tree: "二叉树",
   DynamicProgramming: "动态规划",
+  Greedy: "贪心",
+  SlidingWindow: "滑动窗口",
+  TwoPointers: "双指针",
+  Stack: "栈",
+  BinarySearch: "二分查找",
+  Graph: "图搜索",
 };
 
 const difficultyMap: Record<string, string> = {

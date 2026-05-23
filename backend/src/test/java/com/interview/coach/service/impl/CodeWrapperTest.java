@@ -10,7 +10,9 @@ class CodeWrapperTest {
     @Test
     void registersHot100SolutionAdapters() {
         assertThat(CodeWrapper.supportedProblemIds())
-                .containsExactlyInAnyOrder(1L, 21L, 49L, 70L, 102L, 104L, 121L, 128L, 141L, 198L, 206L, 226L);
+                .containsExactlyInAnyOrder(
+                        1L, 3L, 15L, 20L, 21L, 49L, 53L, 56L, 70L, 94L,
+                        102L, 104L, 121L, 128L, 141L, 198L, 200L, 206L, 226L, 704L);
     }
 
     @Test
@@ -96,6 +98,74 @@ class CodeWrapperTest {
         assertThat(wrapped).contains("class Solution");
         assertThat(wrapped).contains("public ListNode mergeTwoLists(ListNode list1, ListNode list2)");
         assertThat(wrapped.indexOf("public class Main")).isLessThan(wrapped.indexOf("class ListNode"));
+    }
+
+    @Test
+    void wrapsLongestSubstringSolutionWithStringInput() {
+        String userCode = """
+                class Solution {
+                    public int lengthOfLongestSubstring(String s) {
+                        return s.length();
+                    }
+                }
+                """;
+
+        String wrapped = CodeWrapper.wrap(problem(3L), userCode);
+
+        assertThat(wrapped).contains("String s = sc.hasNext() ? sc.next() : \"\"");
+        assertThat(wrapped).contains("new Solution().lengthOfLongestSubstring(s)");
+        assertThat(wrapped).contains("System.out.print(result)");
+    }
+
+    @Test
+    void wrapsThreeSumSolutionWithNormalizedGroups() {
+        String userCode = """
+                class Solution {
+                    public List<List<Integer>> threeSum(int[] nums) {
+                        return new ArrayList<>();
+                    }
+                }
+                """;
+
+        String wrapped = CodeWrapper.wrap(problem(15L), userCode);
+
+        assertThat(wrapped).contains("new Solution().threeSum(nums)");
+        assertThat(wrapped).contains("printIntegerGroups(result)");
+        assertThat(wrapped).contains("normalized.sort");
+    }
+
+    @Test
+    void wrapsNumberOfIslandsSolutionWithGridInput() {
+        String userCode = """
+                class Solution {
+                    public int numIslands(char[][] grid) {
+                        return 0;
+                    }
+                }
+                """;
+
+        String wrapped = CodeWrapper.wrap(problem(200L), userCode);
+
+        assertThat(wrapped).contains("char[][] grid = readCharGrid(sc)");
+        assertThat(wrapped).contains("new Solution().numIslands(grid)");
+        assertThat(wrapped).contains("grid[i] = sc.next().toCharArray()");
+    }
+
+    @Test
+    void wrapsBinarySearchSolutionWithArrayAndTarget() {
+        String userCode = """
+                class Solution {
+                    public int search(int[] nums, int target) {
+                        return -1;
+                    }
+                }
+                """;
+
+        String wrapped = CodeWrapper.wrap(problem(704L), userCode);
+
+        assertThat(wrapped).contains("int[] nums = readIntArray(sc)");
+        assertThat(wrapped).contains("int target = sc.nextInt()");
+        assertThat(wrapped).contains("new Solution().search(nums, target)");
     }
 
     @Test

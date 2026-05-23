@@ -10,6 +10,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.interview.coach.agent.AgentContext;
+import com.interview.coach.dto.TrainingPlanResult;
 import com.interview.coach.dto.MockInterviewAiEvaluationResponse;
 import com.interview.coach.dto.MockInterviewAnswerRequest;
 import com.interview.coach.dto.MockInterviewCreateRequest;
@@ -27,8 +29,10 @@ import com.interview.coach.mapper.MockInterviewReportMapper;
 import com.interview.coach.mapper.MockInterviewSessionMapper;
 import com.interview.coach.mapper.MockInterviewTurnMapper;
 import com.interview.coach.mapper.UserWeaknessEventMapper;
+import com.interview.coach.service.TrainingPlanService;
 import com.interview.coach.vo.MockInterviewSessionVO;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,6 +61,9 @@ class MockInterviewServiceImplTest {
     @Mock
     private AnthropicCompatibleClient aiClient;
 
+    @Mock
+    private TrainingPlanService trainingPlanService;
+
     private MockInterviewServiceImpl service;
 
     @BeforeEach
@@ -67,7 +74,8 @@ class MockInterviewServiceImplTest {
                 turnMapper,
                 reportMapper,
                 weaknessEventMapper,
-                aiClient);
+                aiClient,
+                trainingPlanService);
     }
 
     @Test
@@ -135,6 +143,39 @@ class MockInterviewServiceImplTest {
         assertThat(result.getStatus()).isEqualTo("ASKING_FOLLOW_UP");
         assertThat(result.getCurrentQuestion()).isEqualTo("为什么 BeanPostProcessor 能影响初始化前后？");
         assertThat(result.getCurrentTurnType()).isEqualTo("FOLLOW_UP");
+    }
+
+    @Test
+    void forgetfulMainAnswerUsesNarrowHintFollowUpInsteadOfHardPressure() {
+        when(sessionMapper.selectById(9L)).thenReturn(session(9L, "ASKING_MAIN", 1831L, 0));
+        when(knowledgeCardMapper.selectById(1831L)).thenReturn(card(1831L));
+        AtomicReference<MockInterviewTurn> insertedTurn = new AtomicReference<>();
+        doAnswer(invocation -> {
+            MockInterviewTurn turn = invocation.getArgument(0);
+            turn.setId(21L);
+            insertedTurn.set(turn);
+            return 1;
+        }).when(turnMapper).insert(any(MockInterviewTurn.class));
+        when(turnMapper.selectList(any())).thenAnswer(invocation ->
+                insertedTurn.get() == null ? List.of() : List.of(insertedTurn.get()));
+
+        MockInterviewSessionVO result = service.answer(9L, answer("我忘了，不太清楚。"));
+
+        verify(aiClient, never()).askJson(anyString(), anyString(), eq(MockInterviewAiEvaluationResponse.class));
+        ArgumentCaptor<MockInterviewTurn> turnCaptor = ArgumentCaptor.forClass(MockInterviewTurn.class);
+        verify(turnMapper).insert(turnCaptor.capture());
+        MockInterviewTurn turn = turnCaptor.getValue();
+        assertThat(turn.getScore()).isLessThanOrEqualTo(10);
+        assertThat(turn.getStrengthSummary()).contains("不会", "忘了");
+        assertThat(turn.getGapSummary()).contains("还没有说出 Bean 生命周期的核心阶段");
+        assertThat(turn.getFollowUpReason()).contains("缩小范围")
+                .contains("实例化和初始化的区别");
+        assertThat(turn.getAiRawJson()).contains("实例化和初始化的区别")
+                .doesNotContain("AOP 为什么依赖 BeanPostProcessor");
+        assertThat(result.getStatus()).isEqualTo("ASKING_FOLLOW_UP");
+        assertThat(result.getCurrentQuestion()).contains("没关系")
+                .contains("实例化和初始化的区别")
+                .contains("复述");
     }
 
     @Test
@@ -367,6 +408,16 @@ class MockInterviewServiceImplTest {
         assertThat(reportCaptor.getValue().getAverageScore()).isEqualByComparingTo("61.00");
         assertThat(reportCaptor.getValue().getRecommendedCardIds()).contains("1831");
         assertThat(reportCaptor.getValue().getWeaknessTags()).contains("销毁");
+        ArgumentCaptor<AgentContext> contextCaptor = ArgumentCaptor.forClass(AgentContext.class);
+        ArgumentCaptor<TrainingPlanResult> planCaptor = ArgumentCaptor.forClass(TrainingPlanResult.class);
+        verify(trainingPlanService).savePlan(contextCaptor.capture(), planCaptor.capture());
+        assertThat(contextCaptor.getValue().getUserId()).isEqualTo(1L);
+        assertThat(planCaptor.getValue().getTitle()).contains("模拟面试");
+        assertThat(planCaptor.getValue().getSummary()).contains("平均分 61.00");
+        assertThat(planCaptor.getValue().getItems()).hasSize(1);
+        assertThat(planCaptor.getValue().getItems().get(0).getItemType()).isEqualTo("KNOWLEDGE_CARD");
+        assertThat(planCaptor.getValue().getItems().get(0).getKnowledgeCardId()).isEqualTo(1831L);
+        assertThat(planCaptor.getValue().getItems().get(0).getReason()).contains("模拟面试");
 
         ArgumentCaptor<MockInterviewSession> sessionCaptor = ArgumentCaptor.forClass(MockInterviewSession.class);
         verify(sessionMapper).updateById(sessionCaptor.capture());

@@ -7,6 +7,7 @@ import type {
   DashboardStatsVO,
   ErrorStatsVO,
   MistakeCard as MistakeCardType,
+  MockInterviewRecent,
   SubmissionHistoryVO,
   TrainingPlan as TrainingPlanType,
   UserWeakness,
@@ -33,12 +34,29 @@ const emptyStats: DashboardStatsVO = {
   mistakeCount: 0,
 };
 
+const mockInterviewCategoryLabels: Record<string, string> = {
+  JAVA: "Java",
+  JVM: "JVM",
+  SPRING: "Spring",
+  MYSQL: "MySQL",
+  REDIS: "Redis",
+  AI: "系统设计",
+  PROJECT: "系统设计",
+};
+
+function mockInterviewStatusLabel(status: MockInterviewRecent["status"]) {
+  if (status === "REPORTED") return "已生成报告";
+  if (status === "FINISHED") return "已完成";
+  return "进行中";
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStatsVO>(emptyStats);
   const [weaknesses, setWeaknesses] = useState<UserWeakness[]>([]);
   const [mistakes, setMistakes] = useState<MistakeCardType[]>([]);
   const [trainingPlan, setTrainingPlan] = useState<TrainingPlanType | null>(null);
   const [submissions, setSubmissions] = useState<SubmissionHistoryVO[]>([]);
+  const [mockInterviews, setMockInterviews] = useState<MockInterviewRecent[]>([]);
   const [errorStats, setErrorStats] = useState<ErrorStatsVO | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
@@ -58,6 +76,7 @@ export default function DashboardPage() {
           mistakesResponse,
           planResponse,
           submissionsResponse,
+          mockInterviewsResponse,
           errorStatsResponse,
         ] = await Promise.all([
           userApi.stats(DEMO_USER_ID),
@@ -65,6 +84,7 @@ export default function DashboardPage() {
           userApi.mistakes(DEMO_USER_ID),
           userApi.latestPlan(DEMO_USER_ID),
           userApi.recentSubmissions(DEMO_USER_ID),
+          userApi.recentMockInterviews(DEMO_USER_ID),
           userApi.errorStats(DEMO_USER_ID),
         ]);
 
@@ -77,6 +97,7 @@ export default function DashboardPage() {
         setMistakes(mistakesResponse.data);
         setTrainingPlan(planResponse.data);
         setSubmissions(submissionsResponse.data);
+        setMockInterviews(mockInterviewsResponse.data);
         setErrorStats(errorStatsResponse.data);
       } catch (err) {
         if (!cancelled) {
@@ -194,6 +215,66 @@ export default function DashboardPage() {
           />
           <WeaknessList weaknesses={aggregatedWeaknesses} />
           <SubmissionHistory submissions={submissions} />
+          <section className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-base font-semibold text-on-surface">最近模拟面试</h2>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  复盘最近的文字一问一答训练，继续把面试结果带回学习闭环。
+                </p>
+              </div>
+              <a
+                href="/mock-interview"
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                开始新面试
+              </a>
+            </div>
+            {mockInterviews.length === 0 ? (
+              <p className="text-sm text-on-surface-variant">
+                暂无模拟面试记录，完成一场后这里会展示报告和继续入口。
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {mockInterviews.map((item) => (
+                  <div
+                    key={item.sessionId}
+                    className="rounded-lg border border-outline-variant/30 px-4 py-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-medium text-on-surface">
+                          {mockInterviewCategoryLabels[item.category] || item.category} 面试
+                        </div>
+                        <div className="mt-1 text-xs text-on-surface-variant">
+                          {mockInterviewStatusLabel(item.status)}
+                          {item.averageScore != null ? ` · 平均分 ${item.averageScore}` : ""}
+                        </div>
+                      </div>
+                      <a
+                        href={`/mock-interview?sessionId=${item.sessionId}`}
+                        className="text-xs font-medium text-primary hover:underline"
+                      >
+                        {item.status === "REPORTED" ? "查看报告" : "继续面试"}
+                      </a>
+                    </div>
+                    {item.weaknessTags.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {item.weaknessTags.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-full bg-amber-50 px-2 py-1 text-[11px] text-amber-700"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
 
         <aside className="space-y-6 lg:sticky lg:top-24 xl:sticky xl:top-24 self-start">

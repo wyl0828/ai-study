@@ -20,6 +20,7 @@ import type {
   RagChatResponse,
   MockInterviewAnswerRequest,
   MockInterviewCreateRequest,
+  MockInterviewRecent,
   MockInterviewSession,
   SelfTestRecord,
   SelfTestSubmitRequest,
@@ -276,6 +277,8 @@ export const userApi = {
     ),
   recentSubmissions: (userId: number) =>
     request<ApiResponse<SubmissionHistoryVO[]>>(`/api/users/${userId}/submissions/recent`),
+  recentMockInterviews: (userId: number) =>
+    request<ApiResponse<MockInterviewRecent[]>>(`/api/users/${userId}/mock-interviews/recent`),
   errorStats: (userId: number) =>
     request<ApiResponse<ErrorStatsVO>>(`/api/users/${userId}/dashboard/error-stats`),
 };

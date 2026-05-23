@@ -3,9 +3,12 @@ package com.interview.coach.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.interview.coach.agent.AgentContext;
 import com.interview.coach.dto.MockInterviewAiEvaluationResponse;
 import com.interview.coach.dto.MockInterviewAnswerRequest;
 import com.interview.coach.dto.MockInterviewCreateRequest;
+import com.interview.coach.dto.TrainingPlanResult;
+import com.interview.coach.dto.TrainingPlanResult.TrainingPlanItemResult;
 import com.interview.coach.entity.KnowledgeCard;
 import com.interview.coach.entity.MockInterviewReport;
 import com.interview.coach.entity.MockInterviewSession;
@@ -21,6 +24,7 @@ import com.interview.coach.mapper.MockInterviewSessionMapper;
 import com.interview.coach.mapper.MockInterviewTurnMapper;
 import com.interview.coach.mapper.UserWeaknessEventMapper;
 import com.interview.coach.service.MockInterviewService;
+import com.interview.coach.service.TrainingPlanService;
 import com.interview.coach.vo.MockInterviewReportVO;
 import com.interview.coach.vo.MockInterviewSessionVO;
 import com.interview.coach.vo.MockInterviewTurnVO;
@@ -64,6 +68,8 @@ public class MockInterviewServiceImpl implements MockInterviewService {
     private final UserWeaknessEventMapper weaknessEventMapper;
 
     private final AnthropicCompatibleClient aiClient;
+
+    private final TrainingPlanService trainingPlanService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -169,7 +175,13 @@ public class MockInterviewServiceImpl implements MockInterviewService {
     public MockInterviewSessionVO finish(Long sessionId) {
         MockInterviewSession session = requireSession(sessionId);
         MockInterviewSessionStatusEnum status = status(session);
-        if (status != MockInterviewSessionStatusEnum.FINISHED && status != MockInterviewSessionStatusEnum.REPORTED) {
+        if (status == MockInterviewSessionStatusEnum.ASKING_MAIN
+                || status == MockInterviewSessionStatusEnum.ASKING_FOLLOW_UP) {
+            session.setStatus(MockInterviewSessionStatusEnum.FINISHED.name());
+            session.setFinishedAt(LocalDateTime.now());
+            session.setUpdatedAt(LocalDateTime.now());
+            sessionMapper.updateById(session);
+        } else if (status != MockInterviewSessionStatusEnum.FINISHED && status != MockInterviewSessionStatusEnum.REPORTED) {
             throw new BusinessException("cannot finish in status " + session.getStatus());
         }
         MockInterviewReport existing = report(sessionId);
@@ -183,10 +195,68 @@ public class MockInterviewServiceImpl implements MockInterviewService {
         List<MockInterviewTurn> turns = turns(sessionId);
         MockInterviewReport report = buildReport(session, turns);
         reportMapper.insert(report);
+        saveTrainingPlan(session, report, turns);
         session.setStatus(MockInterviewSessionStatusEnum.REPORTED.name());
         session.setUpdatedAt(LocalDateTime.now());
         sessionMapper.updateById(session);
         return buildSessionVO(session, turns, report, currentCard(session));
+    }
+
+    private void saveTrainingPlan(MockInterviewSession session, MockInterviewReport report,
+            List<MockInterviewTurn> turns) {
+        TrainingPlanResult result = buildTrainingPlanResult(report, turns);
+        if (result.getItems().isEmpty()) {
+            return;
+        }
+        AgentContext context = new AgentContext();
+        context.setUserId(session.getUserId());
+        try {
+            trainingPlanService.savePlan(context, result);
+        } catch (RuntimeException ignored) {
+            // Training-plan persistence should not block report generation.
+        }
+    }
+
+    private TrainingPlanResult buildTrainingPlanResult(MockInterviewReport report, List<MockInterviewTurn> turns) {
+        TrainingPlanResult result = new TrainingPlanResult();
+        result.setTitle("模拟面试复盘训练");
+        result.setSummary("本次模拟面试平均分 " + report.getAverageScore() + "，优先复盘面试中暴露的知识卡和表达缺口。");
+
+        List<Long> recommendedIds = splitLongs(report.getRecommendedCardIds());
+        Set<String> weaknessTags = new LinkedHashSet<>(splitComma(report.getWeaknessTags()));
+        for (int index = 0; index < recommendedIds.size(); index++) {
+            Long cardId = recommendedIds.get(index);
+            TrainingPlanItemResult item = new TrainingPlanItemResult();
+            item.setItemType("KNOWLEDGE_CARD");
+            item.setKnowledgeCardId(cardId);
+            item.setDayIndex(index + 1);
+            item.setKnowledgePoint(firstWeaknessTag(weaknessTags));
+            item.setKnowledgeCardTitle(cardTitle(cardId, turns));
+            item.setReason("来自模拟面试报告的推荐复盘项。");
+            item.setReviewFocus(reviewFocus(weaknessTags));
+            result.getItems().add(item);
+        }
+        return result;
+    }
+
+    private String cardTitle(Long cardId, List<MockInterviewTurn> turns) {
+        return turns.stream()
+                .filter(turn -> Objects.equals(turn.getKnowledgeCardId(), cardId))
+                .map(MockInterviewTurn::getQuestion)
+                .filter(StringUtils::hasText)
+                .findFirst()
+                .orElse("模拟面试知识卡片复盘");
+    }
+
+    private String firstWeaknessTag(Set<String> weaknessTags) {
+        return weaknessTags.stream().findFirst().orElse("模拟面试表达复盘");
+    }
+
+    private String reviewFocus(Set<String> weaknessTags) {
+        if (weaknessTags.isEmpty()) {
+            return "复盘本次面试问答，整理成“定义 -> 流程 -> 边界 -> 场景”的 1 分钟回答。";
+        }
+        return "重点补齐：" + joinNatural(weaknessTags.stream().toList(), 3);
     }
 
     private void updateSessionAfterAnswer(MockInterviewSession session, KnowledgeCard card,
@@ -224,6 +294,9 @@ public class MockInterviewServiceImpl implements MockInterviewService {
 
     private MockInterviewAiEvaluationResponse evaluate(MockInterviewSession session, KnowledgeCard card, String question,
             String userAnswer) {
+        if (isForgetfulAnswer(userAnswer)) {
+            return forgetfulEvaluation(card);
+        }
         try {
             MockInterviewAiEvaluationResponse response = aiClient.askJson(
                     systemPrompt(),
@@ -235,6 +308,42 @@ public class MockInterviewServiceImpl implements MockInterviewService {
         } catch (RuntimeException ex) {
             return fallbackEvaluation(card, userAnswer);
         }
+    }
+
+    private MockInterviewAiEvaluationResponse forgetfulEvaluation(KnowledgeCard card) {
+        List<String> missing = forgetfulMissingPoints(card);
+        MockInterviewAiEvaluationResponse response = new MockInterviewAiEvaluationResponse();
+        response.setScore(6);
+        response.setHitKeyPoints(List.of());
+        response.setMissingKeyPoints(missing);
+        response.setFeedback("你目前只表达了“不会/忘了”，还没有说出当前问题的核心阶段。");
+        response.setExpressionIssue("先不要空着，可以先复述一个最小可回答点。");
+        response.setFollowUpQuestion(forgetfulFollowUpQuestion(card));
+        response.setWeaknessTags(missing);
+        response.setRecommendedCardIds(List.of(card.getId()));
+        return response;
+    }
+
+    private List<String> forgetfulMissingPoints(KnowledgeCard card) {
+        if (isSpringBeanLifecycle(card)) {
+            return List.of(
+                    "实例化和属性填充的区别",
+                    "BeanPostProcessor 的前后置扩展点",
+                    "AOP 代理通常发生在初始化后置处理阶段",
+                    "singleton 和 prototype 销毁管理不同");
+        }
+        List<String> keyPoints = splitLines(card.getKeyPoints());
+        if (!keyPoints.isEmpty()) {
+            return keyPoints;
+        }
+        return List.of(defaultText(card.getTitle(), "当前知识点"));
+    }
+
+    private String forgetfulFollowUpQuestion(KnowledgeCard card) {
+        if (isSpringBeanLifecycle(card)) {
+            return "没关系，我们先缩小范围。你只说实例化和初始化的区别就行。实例化是创建 Bean 对象，初始化是对象创建后执行扩展回调和 init 方法。你可以试着用自己的话复述一下吗？";
+        }
+        return "没关系，我们先缩小范围。你先用自己的话说出这个知识点的定义，或者说一个你最确定的使用场景。";
     }
 
     private void normalizeEvaluation(MockInterviewAiEvaluationResponse response, KnowledgeCard card) {
@@ -613,8 +722,15 @@ public class MockInterviewServiceImpl implements MockInterviewService {
                 Evaluate the answer as an interviewer. Return strict JSON only.
                 Do not provide complete Java AC code or turn this into generic chat.
                 Score like a real interviewer: avoid 100, be strict about depth and boundaries.
+                If the user says they forgot, do not escalate to a harder question; narrow the scope and ask for one minimal recoverable point.
                 Required fields: score, hitKeyPoints, missingKeyPoints, feedback, expressionIssue,
                 followUpQuestion, weaknessTags, recommendedCardIds.
+
+                Text quality rules:
+                - feedback and missingKeyPoints must be standalone Chinese sentences, not dependent clauses.
+                - Never start a sentence with: 但、但是、不过、然而、同时、而且.
+                - feedback should directly state what is missing, not restate strengths then pivot.
+                - Each missingKeyPoints item should be a complete, self-contained statement.
                 """;
     }
 
@@ -723,6 +839,17 @@ public class MockInterviewServiceImpl implements MockInterviewService {
         String level = performanceLevel(safeScore(evaluation.getScore()));
         List<String> hit = evaluation.getHitKeyPoints() == null ? List.of() : evaluation.getHitKeyPoints();
         List<String> missing = evaluation.getMissingKeyPoints() == null ? List.of() : evaluation.getMissingKeyPoints();
+        if (isForgetfulAnswer(userAnswer)) {
+            String strength = "你这轮主要表达了不会或忘了，说明当前题目还没有形成可复述的知识框架。";
+            String gap = isSpringBeanLifecycle(card)
+                    ? "还没有说出 Bean 生命周期的核心阶段。"
+                    : "还没有说出当前问题的核心概念和主流程。";
+            String expression = "真实面试里可以先说“我先按我记得的部分回答”，再补一个最小可回答点。";
+            String reason = isSpringBeanLifecycle(card)
+                    ? "我会先缩小范围，让你只补实例化和初始化的区别。"
+                    : "我会先缩小范围，让你补一个最小可回答点。";
+            return new DisplayFeedback(level, strength + gap, strength, gap, expression, reason, reason);
+        }
         String focus = missing.stream().filter(StringUtils::hasText).findFirst()
                 .map(this::compactPoint)
                 .orElseGet(() -> StringUtils.hasText(card.getTitle()) ? card.getTitle() : card.getCategory());
@@ -749,12 +876,19 @@ public class MockInterviewServiceImpl implements MockInterviewService {
 
     private String gapSummary(KnowledgeCard card, List<String> missing) {
         if (isSpringBeanLifecycle(card) && missing.stream().anyMatch(this::isBeanPostProcessorPoint)) {
-            return "但“初始化前置/后置处理”没有明确说出 BeanPostProcessor，也没有解释它和 AOP 代理创建的关系。";
+            return "初始化前置/后置处理阶段没有明确说出 BeanPostProcessor，也没有解释它和 AOP 代理创建的关系。";
         }
         if (missing.isEmpty()) {
             return "这一轮核心内容覆盖比较完整，后面可以继续补充边界和工程场景。";
         }
-        return "还需要把" + joinNatural(missing.stream().map(this::compactPoint).toList(), 2) + "展开清楚。";
+        List<String> compacted = missing.stream().map(this::compactPoint).toList();
+        if (compacted.size() == 1) {
+            return "还需要补充" + compacted.get(0) + "这一点。";
+        }
+        if (compacted.size() == 2) {
+            return "还需要补充" + compacted.get(0) + "和" + compacted.get(1) + "。";
+        }
+        return "还需要补充" + compacted.get(0) + "、" + compacted.get(1) + "等" + compacted.size() + "个关键点。";
     }
 
     private String performanceLevel(int score) {
@@ -855,6 +989,14 @@ public class MockInterviewServiceImpl implements MockInterviewService {
         return count >= 3;
     }
 
+    private boolean isForgetfulAnswer(String answer) {
+        if (!StringUtils.hasText(answer)) {
+            return false;
+        }
+        return List.of("我忘了", "不知道", "不太清楚", "没思路", "忘记了", "不会").stream()
+                .anyMatch(answer::contains);
+    }
+
     private boolean isBeanPostProcessorPoint(String point) {
         return StringUtils.hasText(point) && point.contains("BeanPostProcessor");
     }
@@ -871,20 +1013,29 @@ public class MockInterviewServiceImpl implements MockInterviewService {
 
     private List<String> keyTerms(String point) {
         List<String> candidates = List.of(
-                "BeanPostProcessor",
-                "AOP",
-                "@PostConstruct",
-                "afterPropertiesSet",
-                "InitializingBean",
-                "prototype",
-                "Aware",
-                "实例化",
-                "依赖注入",
-                "属性填充",
-                "初始化",
-                "销毁",
-                "后置处理器",
-                "扩展机制");
+                // Spring
+                "BeanPostProcessor", "AOP", "@PostConstruct", "afterPropertiesSet",
+                "InitializingBean", "prototype", "Aware", "实例化", "依赖注入",
+                "属性填充", "初始化", "销毁", "后置处理器", "扩展机制",
+                // Redis
+                "内存", "I/O多路复用", "IO多路复用", "epoll", "select", "单线程",
+                "命令执行", "串行", "锁竞争", "上下文切换", "数据结构",
+                "跳表", "哈希表", "压缩列表", "持久化", "RDB", "AOF",
+                "主从", "哨兵", "集群", "过期", "淘汰", "大key",
+                // MySQL
+                "索引", "B+树", "事务", "ACID", "MVCC", "幻读", "脏读",
+                "可重复读", "行锁", "表锁", "间隙锁", "慢查询", "回表",
+                "覆盖索引", "联合索引", "最左前缀", "分库分表", "主从复制",
+                // JVM
+                "堆", "栈", "方法区", "GC", "垃圾回收", "可达性分析",
+                "标记清除", "复制算法", "分代", "类加载", "双亲委派",
+                "Full GC", "Minor GC", "内存溢出", "内存泄漏",
+                // Java 并发
+                "线程池", "CAS", "synchronized", "ReentrantLock", "volatile",
+                "ThreadLocal", "CountDownLatch", "CompletableFuture",
+                // 通用
+                "高并发", "缓存", "一致性", "可用性", "扩展性",
+                "负载均衡", "限流", "熔断", "降级", "幂等");
         return candidates.stream()
                 .filter(point::contains)
                 .toList();
@@ -894,6 +1045,7 @@ public class MockInterviewServiceImpl implements MockInterviewService {
         if (!StringUtils.hasText(point)) {
             return "关键扩展点";
         }
+        // Spring
         if (point.contains("BeanPostProcessor") && point.contains("AOP")) {
             return "BeanPostProcessor 与 AOP 的关系";
         }
@@ -908,10 +1060,7 @@ public class MockInterviewServiceImpl implements MockInterviewService {
             return "初始化回调顺序";
         }
         if (point.contains("prototype")) {
-            return "prototype Bean 销毁边界";
-        }
-        if (point.contains("销毁")) {
-            return "销毁阶段";
+            return "prototype 销毁边界";
         }
         if (point.contains("初始化") || point.contains("后置处理器") || point.contains("扩展机制")) {
             return "初始化扩展机制";
@@ -922,7 +1071,57 @@ public class MockInterviewServiceImpl implements MockInterviewService {
         if (point.contains("实例化")) {
             return "实例化阶段";
         }
-        return point.length() > 24 ? point.substring(0, 24) : point;
+        if (point.contains("销毁")) {
+            return "销毁阶段";
+        }
+        // Redis
+        if (point.contains("内存") && point.contains("单线程")) {
+            return "内存访问与单线程模型";
+        }
+        if (point.contains("内存")) {
+            return "内存访问";
+        }
+        if (point.contains("I/O多路复用") || point.contains("IO多路复用") || point.contains("epoll")) {
+            return "I/O 多路复用";
+        }
+        if (point.contains("单线程") && point.contains("锁")) {
+            return "单线程减少锁竞争";
+        }
+        if (point.contains("单线程")) {
+            return "单线程模型";
+        }
+        if (point.contains("数据结构")) {
+            return "高效数据结构";
+        }
+        if (point.contains("持久化") || point.contains("RDB") || point.contains("AOF")) {
+            return "持久化机制";
+        }
+        if (point.contains("大key") || point.contains("大 key")) {
+            return "大 key 问题";
+        }
+        // MySQL
+        if (point.contains("索引") && point.contains("B+")) {
+            return "B+ 树索引";
+        }
+        if (point.contains("索引")) {
+            return "索引设计";
+        }
+        if (point.contains("MVCC")) {
+            return "MVCC 机制";
+        }
+        if (point.contains("事务")) {
+            return "事务隔离";
+        }
+        if (point.contains("慢查询")) {
+            return "慢查询优化";
+        }
+        // Generic fallback: extract first meaningful segment
+        String[] segments = point.split("[，。；]");
+        if (segments.length > 0 && segments[0].length() > 2) {
+            String first = segments[0].trim();
+            return first.length() > 20 ? first.substring(0, 20) : first;
+        }
+        return point.length() > 20 ? point.substring(0, 20) : point;
     }
 
     private record DisplayFeedback(

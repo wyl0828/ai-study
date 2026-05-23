@@ -9,7 +9,7 @@ function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), "utf8");
 }
 
-const hot100Ids = [1, 21, 49, 70, 102, 104, 121, 128, 141, 198, 206, 226];
+const hot100Ids = [1, 3, 15, 20, 21, 49, 53, 56, 70, 94, 102, 104, 121, 128, 141, 198, 200, 206, 226, 704];
 
 test("Hot100 seed contains exactly the selected Solution-mode problems", () => {
   const sql = read("data/problems.sql");

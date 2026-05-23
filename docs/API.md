@@ -252,7 +252,7 @@ GET /api/problems/{id}/template
 
 | problemId | 模式 | 模板/提交形态 |
 |------|------|------|
-| 当前 Hot100 精选 12 题 | Solution | 用户提交非 `public` 的 `class Solution`，不处理 stdin/stdout |
+| 当前 Hot100 精选 20 题 | Solution | 用户提交非 `public` 的 `class Solution`，不处理 stdin/stdout |
 
 ---
 
@@ -541,7 +541,7 @@ $env:AI_MAX_TOKENS="3000"
 
 ## 6. 用户学习与 Dashboard 接口
 
-Dashboard 查询接口读取 Agent 诊断后持久化的学习数据，用于展示统计卡片、今日优先训练、薄弱点、错误类型分布、最近提交、合并错题卡、完整训练计划和 AI 教练建议。当前 demo 前端固定使用 `userId=1`。
+Dashboard 查询接口读取 Agent 诊断和模拟面试后持久化的学习数据，用于展示统计卡片、今日优先训练、薄弱点、错误类型分布、最近提交、最近模拟面试、合并错题卡、完整训练计划和 AI 教练建议。当前 demo 前端固定使用 `userId=1`。
 
 ### 6.1 学习统计概览
 
@@ -770,6 +770,30 @@ GET /api/users/{userId}/submissions/recent
 
 排序：按 `created_at DESC`，限制 10 条。
 
+### 6.10 最近模拟面试记录
+
+```http
+GET /api/users/{userId}/mock-interviews/recent?limit=5
+```
+
+**响应 `data`：** `MockInterviewRecentVO[]`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `sessionId` | Long | 模拟面试会话 ID |
+| `category` | String | 面试分类，如 `JAVA` / `JVM` / `SPRING` / `MYSQL` / `REDIS` / `AI` / `PROJECT` |
+| `status` | String | 会话状态：`CREATED` / `ASKING_MAIN` / `ASKING_FOLLOW_UP` / `FINISHED` / `REPORTED` 等 |
+| `interviewerStyle` | String | 面试风格：`GUIDED` / `BIG_TECH` / `FAST_SCREEN` |
+| `questionCount` | Integer | 本场计划主问题数量 |
+| `answeredMainCount` | Integer | 已完成主问题数量 |
+| `averageScore` | BigDecimal / null | 已生成报告时的平均分，进行中会话为空 |
+| `weaknessTags` | String[] | 报告中的弱点标签，未生成报告时为空数组 |
+| `startedAt` | LocalDateTime / null | 开始时间 |
+| `finishedAt` | LocalDateTime / null | 完成时间 |
+| `createdAt` | LocalDateTime | 创建时间 |
+
+排序：按 `mock_interview_session.created_at DESC`。`limit` 会被限制在 1 到 20 之间。Dashboard 使用该接口展示最近模拟面试，并根据状态跳转到 `/mock-interview?sessionId={sessionId}` 继续面试或查看报告。
+
 ---
 
 ## 7. 后端知识训练接口
@@ -943,7 +967,13 @@ CREATED -> ASKING_MAIN -> MAIN_ANSWERED -> ASKING_FOLLOW_UP
 -> FOLLOW_UP_ANSWERED -> NEXT_QUESTION / FINISHED -> REPORTED
 ```
 
-会话详情响应包含当前状态、当前题目、turn 列表和报告，前端刷新后通过 `GET /api/mock-interviews/{sessionId}` 恢复，不自行推断状态。
+会话详情响应包含当前状态、当前题目、turn 列表和报告，前端刷新后通过 `GET /api/mock-interviews/{sessionId}` 恢复，不自行推断状态。前端创建会话后会把地址替换为 `/mock-interview?sessionId={sessionId}`，Dashboard 最近面试入口也使用该参数恢复会话。
+
+补充规则：
+
+- 用户回答“我忘了”“不知道”“不太清楚”等明显卡住的内容时，后端会使用本地兜底评价，给出较低分、缺失要点和收窄后的追问，不再调用 AI 生成更难的压力追问。
+- `finish` 在 `ASKING_MAIN` / `ASKING_FOLLOW_UP` 状态也允许提前结束，会先把会话置为 `FINISHED`，再生成报告。
+- 报告生成后会根据 `recommendedCardIds` 写入一份“模拟面试复盘训练”计划；训练计划保存失败不影响报告生成。
 
 ---
 
@@ -971,6 +1001,7 @@ CREATED -> ASKING_MAIN -> MAIN_ANSWERED -> ASKING_FOLLOW_UP
 | `POST` | `/api/users/{userId}/training-plans/regenerate` | 手动重新生成训练计划 |
 | `GET` | `/api/users/{userId}/dashboard/error-stats` | 获取错误类型分布和 Top 薄弱点 |
 | `GET` | `/api/users/{userId}/submissions/recent` | 获取最近提交记录 |
+| `GET` | `/api/users/{userId}/mock-interviews/recent` | 获取最近模拟面试记录 |
 | `POST` | `/api/rag/chat` | 受控知识库问答 / 学习资料问答 |
 | `POST` | `/api/mock-interviews` | 创建模拟面试会话 |
 | `GET` | `/api/mock-interviews/{sessionId}` | 获取 / 恢复模拟面试会话 |
@@ -1019,11 +1050,12 @@ CREATED -> ASKING_MAIN -> MAIN_ANSWERED -> ASKING_FOLLOW_UP
 - 薄弱知识点排行
 - 错误类型分布；不再在同一区域重复展示“最薄弱知识点”
 - 最近提交记录
+- 最近模拟面试记录：展示会话状态、平均分、弱点标签，并跳转继续面试或查看报告
 - 合并后的错题卡片：前端复用后端 `repeatCount` 和本地同类聚合，按题目、知识点和用户可读错误模式合并展示“出现 N 次”、本质问题、修复动作和复盘口令
 - 后端知识训练入口
 - AI 教练建议：前端基于最高薄弱点、今日训练项和最近错题生成确定性建议，不调用 AI
 
-前端加载时会并发请求统计、薄弱点、错题、最新训练计划、最近提交记录和错误统计。无数据时显示空状态引导文案，不回退 mock 数据。训练计划操作通过 `PATCH /training-plans/items/{itemId}/status` 和 `POST /training-plans/regenerate` 写回后端，再刷新最新计划。上述教练化排序和错题合并属于前端展示层优化，不新增 REST 接口或数据库字段。
+前端加载时会并发请求统计、薄弱点、错题、最新训练计划、最近提交记录、最近模拟面试记录和错误统计。无数据时显示空状态引导文案，不回退 mock 数据。训练计划操作通过 `PATCH /training-plans/items/{itemId}/status` 和 `POST /training-plans/regenerate` 写回后端，再刷新最新计划。上述教练化排序和错题合并属于前端展示层优化；最近模拟面试使用 `UserController` 新增的查询接口返回后端会话摘要。
 
 ### 9.3 知识训练页面当前状态
 

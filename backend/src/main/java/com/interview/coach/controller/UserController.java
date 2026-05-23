@@ -10,6 +10,7 @@ import com.interview.coach.vo.ApiResponse;
 import com.interview.coach.vo.DashboardStatsVO;
 import com.interview.coach.vo.ErrorStatsVO;
 import com.interview.coach.vo.MistakeCardVO;
+import com.interview.coach.vo.MockInterviewRecentVO;
 import com.interview.coach.vo.SelfTestRecordVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
 import com.interview.coach.vo.TrainingPlanVO;
@@ -103,6 +104,13 @@ public class UserController {
     @GetMapping("/{userId}/submissions/recent")
     public ApiResponse<List<SubmissionHistoryVO>> getRecentSubmissions(@PathVariable Long userId) {
         return ApiResponse.success(userLearningService.getRecentSubmissions(userId));
+    }
+
+    @GetMapping("/{userId}/mock-interviews/recent")
+    public ApiResponse<List<MockInterviewRecentVO>> getRecentMockInterviews(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "5") int limit) {
+        return ApiResponse.success(userLearningService.getRecentMockInterviews(userId, limit));
     }
 
     @GetMapping("/{userId}/dashboard/error-stats")

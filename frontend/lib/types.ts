@@ -308,6 +308,28 @@ export interface MockInterviewReport {
   createdAt: string | null;
 }
 
+export interface MockInterviewRecent {
+  sessionId: number;
+  category: string;
+  status:
+    | "CREATED"
+    | "ASKING_MAIN"
+    | "MAIN_ANSWERED"
+    | "ASKING_FOLLOW_UP"
+    | "FOLLOW_UP_ANSWERED"
+    | "NEXT_QUESTION"
+    | "FINISHED"
+    | "REPORTED";
+  interviewerStyle: "GUIDED" | "BIG_TECH" | "FAST_SCREEN";
+  questionCount: number;
+  answeredMainCount: number;
+  averageScore: number | null;
+  weaknessTags: string[];
+  startedAt: string | null;
+  finishedAt: string | null;
+  createdAt: string | null;
+}
+
 export interface MockInterviewSession {
   sessionId: number;
   status:

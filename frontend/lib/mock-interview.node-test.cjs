@@ -26,9 +26,9 @@ test("mock interview page exists and is positioned as interview training", () =>
   assert.match(component, /本场面试预览/);
   assert.match(component, /训练边界/);
   assert.match(component, /max-w-\[1280px\]/);
-  assert.match(component, /max-w-\[1440px\]/);
-  assert.match(component, /lg:grid-cols-\[minmax\(0,1fr\)_400px\]/);
-  assert.match(component, /xl:grid-cols-\[minmax\(0,1fr\)_420px\]/);
+  assert.match(component, /max-w-\[1500px\]/);
+  assert.match(component, /lg:grid-cols-\[minmax\(0,1fr\)_360px\]/);
+  assert.match(component, /xl:grid-cols-\[minmax\(0,1fr\)_380px\]/);
   assert.match(navbar, /href:\s*"\/mock-interview"/);
   assert.match(navbar, /label:\s*"模拟面试"/);
   assert.match(navbar, /面试进行中/);
@@ -103,9 +103,38 @@ test("conversation uses an independently scrolling message area with fixed compo
   assert.match(conversation, /messagesEndRef/);
   assert.match(conversation, /scrollIntoView/);
   assert.match(conversation, /overflow-y-auto/);
-  assert.match(conversation, /min-h-\[620px\]/);
+  assert.match(conversation, /h-\[calc\(100vh-300px\)\]/);
+  assert.match(conversation, /min-h-\[420px\]/);
+  assert.match(conversation, /max-h-\[620px\]/);
+  assert.doesNotMatch(conversation, /min-h-\[620px\]/);
   assert.match(conversation, /border-t/);
-  assert.match(conversation, /这里会保留本轮问答记录，方便你复盘表达/);
+  assert.match(conversation, /最近问答记录/);
+  assert.doesNotMatch(conversation, /mt-auto/);
+});
+
+test("conversation presents current question as a compact workbench instead of a chat bubble", () => {
+  const conversation = read("components/InterviewConversation.tsx");
+  const currentQuestionCard = conversation.match(/function CurrentQuestionCard[\s\S]*?function AnswerComposer/)[0];
+  const returnBlock = conversation.match(/return \([\s\S]*?<\/section>\s*\);/)[0];
+
+  assert.match(conversation, /function CurrentQuestionCard/);
+  assert.match(currentQuestionCard, /当前问题/);
+  assert.match(conversation, /面试官追问/);
+  assert.match(conversation, /面试官主问题/);
+  assert.match(currentQuestionCard, /回答建议/);
+  assert.match(currentQuestionCard, /session\.currentQuestion/);
+  assert.match(conversation, /function AnswerComposer/);
+  assert.match(conversation, /你的回答/);
+  assert.match(conversation, /min-h-\[96px\]/);
+  assert.doesNotMatch(conversation, /min-h-28/);
+  assert.ok(
+    returnBlock.indexOf("<CurrentQuestionCard") < returnBlock.indexOf("最近问答记录"),
+    "current question card should render before history"
+  );
+  assert.ok(
+    returnBlock.indexOf("<AnswerComposer") > returnBlock.indexOf("最近问答记录"),
+    "answer composer should render after history"
+  );
 });
 
 test("right feedback has a compact empty state and keeps finish action inside the card", () => {
@@ -118,13 +147,68 @@ test("right feedback has a compact empty state and keeps finish action inside th
   assert.match(component, /本轮建议/);
   assert.match(component, /回答后会在这里给出最需要补充的一点/);
   assert.match(component, /RealtimeFeedback[\s\S]*提前结束并生成报告[\s\S]*<\/section>/);
+  assert.doesNotMatch(component, /min-h-\[500px\]/);
   assert.doesNotMatch(component, /<aside className="space-y-5">[\s\S]*<button[\s\S]*提前结束并生成报告/);
+});
+
+test("right feedback is actionable instead of showing fixed scoring dimensions", () => {
+  const component = read("components/MockInterviewPage.tsx");
+
+  assert.match(component, /本轮主要问题/);
+  assert.match(component, /缺失要点/);
+  assert.match(component, /下一轮怎么补答/);
+  assert.match(component, /displayMissingPoints/);
+  assert.match(component, /expressionAdvice/);
+  assert.match(component, /visibleMissingPoints/);
+  assert.match(component, /还有 \{hiddenMissingCount\} 个要点待补齐/);
+  assert.match(component, /h-full overflow-hidden/);
+  assert.match(component, /flex-1 overflow-y-auto/);
+  assert.doesNotMatch(component, /dimensionPresets/);
+  assert.doesNotMatch(component, /buildFeedbackDimensions/);
+  assert.doesNotMatch(component, /回答维度/);
+  assert.doesNotMatch(component, /概念覆盖|机制理解|关键细节|表达结构/);
+  assert.doesNotMatch(component, /style=\{\{ width: `\$\{Math\.max\(item\.value/);
+  assert.doesNotMatch(component, /保持冷静，结构化表达能有效提升面试表现/);
+});
+
+test("workspace uses wider container with a narrower feedback rail", () => {
+  const component = read("components/MockInterviewPage.tsx");
+  const workspace = component.match(/function MockInterviewWorkspace[\s\S]*?export default function MockInterviewPage/)[0];
+
+  assert.match(workspace, /max-w-\[1500px\]/);
+  assert.match(workspace, /px-6/);
+  assert.match(workspace, /xl:px-10/);
+  assert.match(workspace, /space-y-5/);
+  assert.match(workspace, /gap-5/);
+  assert.match(workspace, /lg:grid-cols-\[minmax\(0,1fr\)_360px\]/);
+  assert.match(workspace, /xl:grid-cols-\[minmax\(0,1fr\)_380px\]/);
+  assert.doesNotMatch(workspace, /lg:grid-cols-\[minmax\(0,1fr\)_400px\]/);
+  assert.doesNotMatch(workspace, /xl:grid-cols-\[minmax\(0,1fr\)_420px\]/);
+});
+
+test("right feedback uses backend turn fields without hard-coded Bean lifecycle advice", () => {
+  const component = read("components/MockInterviewPage.tsx");
+  const feedbackFunction = component.match(/function RealtimeFeedback[\s\S]*?function MockInterviewStartView/)[0];
+
+  assert.match(feedbackFunction, /latest\.score/);
+  assert.doesNotMatch(feedbackFunction, /averageScore\(session\?\.turns/);
+  assert.doesNotMatch(component, /function enrichedMissingPoints/);
+  assert.doesNotMatch(component, /function suggestedAnswerFramework/);
+  assert.doesNotMatch(component, /function isBeanLifecycleTurn/);
+  assert.doesNotMatch(feedbackFunction, /BeanPostProcessor|singleton 和 prototype|Spring Bean 生命周期大致包括/);
 });
 
 test("page restores session from backend and avoids durable localStorage training data", () => {
   const component = read("components/MockInterviewPage.tsx");
+  const appPage = read("app/mock-interview/page.tsx");
 
+  assert.match(appPage, /Suspense/);
+  assert.match(component, /useSearchParams/);
+  assert.match(component, /sessionId/);
+  assert.match(component, /const sessionId = Number\(restoredSessionId\)/);
+  assert.match(component, /mockInterviewApi\.get\(sessionId\)/);
   assert.match(component, /mockInterviewApi\.get\(session\.sessionId\)/);
+  assert.match(component, /window\.history\.replaceState/);
   assert.doesNotMatch(component, /localStorage\.setItem|localStorage\.getItem/);
 });
 
@@ -155,12 +239,33 @@ test("conversation keeps answered turns attached to their original questions", (
   const turnMapIndex = conversation.indexOf("session.turns.map");
   const turnQuestionIndex = conversation.indexOf("turn.question");
   const turnAnswerIndex = conversation.indexOf("turn.userAnswer");
-  const currentQuestionAfterTurnsIndex = conversation.indexOf("{showCurrentQuestion");
+  const currentQuestionCardIndex = conversation.indexOf("<CurrentQuestionCard");
+  const recentRecordIndex = conversation.indexOf("最近问答记录");
 
   assert.ok(turnMapIndex >= 0, "conversation should render persisted turns");
   assert.ok(turnQuestionIndex > turnMapIndex, "each completed turn must render its own question");
   assert.ok(turnQuestionIndex < turnAnswerIndex, "turn question must appear before that turn answer");
-  assert.ok(currentQuestionAfterTurnsIndex > turnAnswerIndex, "currentQuestion should be rendered after completed turns as the next unanswered question");
+  assert.ok(currentQuestionCardIndex >= 0, "currentQuestion should render in the workbench card");
+  assert.ok(currentQuestionCardIndex < recentRecordIndex, "current question card should appear before the history section");
+});
+
+test("recent interview records render as structured review cards instead of chat buttons", () => {
+  const conversation = read("components/InterviewConversation.tsx");
+  const reviewCard = conversation.match(/function ReviewTurnCard[\s\S]*?export default function InterviewConversation/)[0];
+  const turnMapIndex = conversation.indexOf("session.turns.map");
+  const reviewCardUseIndex = conversation.indexOf("<ReviewTurnCard", turnMapIndex);
+
+  assert.match(reviewCard, /面试官/);
+  assert.match(reviewCard, /你的回答/);
+  assert.match(reviewCard, /\{question\}/);
+  assert.match(reviewCard, /\{answer\}/);
+  assert.match(reviewCard, /bg-surface-container-low|bg-slate-50/);
+  assert.ok(reviewCardUseIndex > turnMapIndex, "completed turns should render through the review card");
+  assert.match(conversation, /question=\{turn\.question\}/);
+  assert.match(conversation, /answer=\{turn\.userAnswer\}/);
+  assert.doesNotMatch(reviewCard, /bg-primary[\s\S]*\{answer\}/);
+  assert.doesNotMatch(conversation, /function interviewerQuestion/);
+  assert.doesNotMatch(conversation, /function userAnswer/);
 });
 
 test("conversation hides implementation scoring details until final report", () => {

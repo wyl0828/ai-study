@@ -106,3 +106,11 @@ test("reference solution panel exposes a copy code action", () => {
   assert.match(solutionPanel, /复制代码/);
   assert.match(solutionPanel, /navigator\.clipboard\.writeText/);
 });
+
+test("reference solution panel chunks long explanation into collapsible sections", () => {
+  const solutionPanel = read("components/ProblemSolutionPanel.tsx");
+
+  assert.match(solutionPanel, /solutionSections/);
+  assert.match(solutionPanel, /aria-expanded=\{openSections\.has\(section\.title\)\}/);
+  assert.doesNotMatch(solutionPanel, /<p className="whitespace-pre-wrap text-sm leading-relaxed text-on-surface-variant">\s*\{explanation\}/);
+});

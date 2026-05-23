@@ -67,13 +67,16 @@ test("Dashboard uses MySQL-backed userApi only and keeps empty states instead of
   const stats = read("components/ErrorStats.tsx");
   const aggregation = read("lib/dashboardAggregation.ts");
 
-  assert.doesNotMatch(dashboard, /mock|lib\/mock|@\/lib\/mock/);
+  assert.doesNotMatch(dashboard, /lib\/mock|@\/lib\/mock/);
   assert.match(dashboard, /userApi\.stats/);
   assert.match(dashboard, /userApi\.weaknesses/);
   assert.match(dashboard, /userApi\.mistakes/);
   assert.match(dashboard, /userApi\.latestPlan/);
   assert.match(dashboard, /userApi\.recentSubmissions/);
+  assert.match(dashboard, /userApi\.recentMockInterviews/);
   assert.match(dashboard, /userApi\.errorStats/);
+  assert.match(dashboard, /最近模拟面试/);
+  assert.match(dashboard, /继续面试|查看报告/);
   assert.match(dashboard, /groupWeaknesses\(weaknesses\)/);
   assert.match(dashboard, /groupMistakeCards\(mistakes\)/);
   assert.match(aggregation, /export function groupWeaknesses/);
