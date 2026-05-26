@@ -27,8 +27,8 @@ test("mock interview page exists and is positioned as interview training", () =>
   assert.match(component, /训练边界/);
   assert.match(component, /max-w-\[1280px\]/);
   assert.match(component, /max-w-\[1500px\]/);
-  assert.match(component, /lg:grid-cols-\[minmax\(0,1fr\)_360px\]/);
-  assert.match(component, /xl:grid-cols-\[minmax\(0,1fr\)_380px\]/);
+  assert.match(component, /lg:grid-cols-\[minmax\(0,1fr\)_420px\]/);
+  assert.match(component, /grid-cols-\[minmax\(0,1fr\)_380px\]/);
   assert.match(navbar, /href:\s*"\/mock-interview"/);
   assert.match(navbar, /label:\s*"模拟面试"/);
   assert.match(navbar, /面试进行中/);
@@ -103,10 +103,9 @@ test("conversation uses an independently scrolling message area with fixed compo
   assert.match(conversation, /messagesEndRef/);
   assert.match(conversation, /scrollIntoView/);
   assert.match(conversation, /overflow-y-auto/);
-  assert.match(conversation, /h-\[calc\(100vh-300px\)\]/);
-  assert.match(conversation, /min-h-\[420px\]/);
-  assert.match(conversation, /max-h-\[620px\]/);
-  assert.doesNotMatch(conversation, /min-h-\[620px\]/);
+  assert.match(conversation, /h-\[calc\(100dvh-300px\)\]/);
+  assert.match(conversation, /min-h-0/);
+  assert.match(conversation, /grid-rows-\[auto_minmax\(0,1fr\)_auto\]/);
   assert.match(conversation, /border-t/);
   assert.match(conversation, /最近问答记录/);
   assert.doesNotMatch(conversation, /mt-auto/);
@@ -125,7 +124,7 @@ test("conversation presents current question as a compact workbench instead of a
   assert.match(currentQuestionCard, /session\.currentQuestion/);
   assert.match(conversation, /function AnswerComposer/);
   assert.match(conversation, /你的回答/);
-  assert.match(conversation, /min-h-\[96px\]/);
+  assert.match(conversation, /min-h-\[88px\]/);
   assert.doesNotMatch(conversation, /min-h-28/);
   assert.ok(
     returnBlock.indexOf("<CurrentQuestionCard") < returnBlock.indexOf("最近问答记录"),
@@ -161,7 +160,7 @@ test("right feedback is actionable instead of showing fixed scoring dimensions",
   assert.match(component, /expressionAdvice/);
   assert.match(component, /visibleMissingPoints/);
   assert.match(component, /还有 \{hiddenMissingCount\} 个要点待补齐/);
-  assert.match(component, /h-full overflow-hidden/);
+  assert.match(component, /h-full flex-col overflow-hidden/);
   assert.match(component, /flex-1 overflow-y-auto/);
   assert.doesNotMatch(component, /dimensionPresets/);
   assert.doesNotMatch(component, /buildFeedbackDimensions/);
@@ -178,10 +177,9 @@ test("workspace uses wider container with a narrower feedback rail", () => {
   assert.match(workspace, /max-w-\[1500px\]/);
   assert.match(workspace, /px-6/);
   assert.match(workspace, /xl:px-10/);
-  assert.match(workspace, /space-y-5/);
   assert.match(workspace, /gap-5/);
-  assert.match(workspace, /lg:grid-cols-\[minmax\(0,1fr\)_360px\]/);
-  assert.match(workspace, /xl:grid-cols-\[minmax\(0,1fr\)_380px\]/);
+  assert.match(workspace, /grid-cols-\[minmax\(0,1fr\)_380px\]/);
+  assert.match(workspace, /grid-rows-\[auto_minmax\(0,1fr\)_auto\]/);
   assert.doesNotMatch(workspace, /lg:grid-cols-\[minmax\(0,1fr\)_400px\]/);
   assert.doesNotMatch(workspace, /xl:grid-cols-\[minmax\(0,1fr\)_420px\]/);
 });
@@ -228,9 +226,10 @@ test("answer submission shows interviewer waiting state and disables input", () 
   assert.match(component, /pendingAnswer/);
   assert.ok(submitAnswer.indexOf('setAnswer("")') < submitAnswer.indexOf("mockInterviewApi.answer"));
   assert.match(submitAnswer, /catch[\s\S]*setAnswer\(submitted\)/);
-  assert.match(conversation, /面试官正在评估你的回答/);
-  assert.match(conversation, /面试官在判断是否继续追问/);
-  assert.match(conversation, /disabled=\{loading/);
+  assert.match(conversation, /面试官正在分析你的回答/);
+  assert.match(conversation, /分析完成后会给出追问或进入下一题/);
+  assert.match(conversation, /const disabled = displayState === "EVALUATING" \|\| displayState === "REPORTED" \|\| loading/);
+  assert.match(conversation, /disabled=\{disabled\}/);
   assert.match(conversation, /评估中/);
 });
 

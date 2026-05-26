@@ -71,6 +71,25 @@ export default function TrainingPlan({
       return { label: "待完成", className: "text-primary" };
   };
 
+  const sourceLabel = (sourceType?: string | null) => {
+    switch (sourceType) {
+      case "SUBMISSION_FAILED":
+        return "失败提交";
+      case "RAG_KNOWLEDGE_CARD":
+        return "RAG 知识卡";
+      case "USER_WEAKNESS":
+        return "薄弱点";
+      case "KNOWLEDGE_CARD_REVIEW":
+        return "知识卡复习";
+      case "MOCK_INTERVIEW_REPORT":
+        return "模拟面试报告";
+      case "GENERAL_REVIEW":
+        return "通用复盘";
+      default:
+        return sourceType || "学习记录";
+    }
+  };
+
   const dayIndexes = Object.keys(grouped).map(Number);
   const firstDay = dayIndexes.length > 0 ? Math.min(...dayIndexes) : 1;
   const orderedDayIndexes = dayIndexes.sort((a, b) => a - b);
@@ -168,6 +187,12 @@ export default function TrainingPlan({
                   <p className="text-xs text-on-surface-variant">
                     {trainingPlanText(item.reason)}
                   </p>
+                  {(item.sourceSummary || item.sourceType) && (
+                    <p className="mt-2 rounded-md border border-outline-variant/30 bg-surface-container px-2 py-1.5 text-xs text-on-surface-variant">
+                      <span className="font-medium text-on-surface">推荐来源：</span>
+                      {trainingPlanText(item.sourceSummary || sourceLabel(item.sourceType))}
+                    </p>
+                  )}
                   {item.reviewFocus && (
                     <p className="mt-2 rounded-md border border-primary/15 bg-primary/5 px-2 py-1.5 text-xs text-on-surface-variant">
                       <span className="font-medium text-primary">复习重点：</span>

@@ -3,6 +3,7 @@ package com.interview.coach.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
@@ -30,5 +31,13 @@ public class TrainingPlanItem {
 
     private String reviewFocus;
 
+    private String sourceType;
+
+    private Long sourceId;
+
+    private String sourceSummary;
+
     private String status;
+
+    private LocalDateTime statusUpdatedAt;
 }

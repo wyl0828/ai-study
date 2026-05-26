@@ -11,6 +11,8 @@
 
 题目页左侧内容来自后端 `problem` 表：题面按“任务说明 / 返回要求 / 约束与边界”组织，提示为预设 Level 1/2/3，题解包含解题思路、易错点、复杂度和完整 Java 参考实现；这些内容不触发 AI 调用。
 
+结构化样例清单维护在 `docs/demo-cases/demo-cases.json`，其中记录当前活跃演示题的 bug/fixed 文件、预期失败用例、预期错误类型和知识点。新增或替换演示样例时，以该 manifest 为准，并运行 `node frontend/lib/demo-cases.node-test.cjs`。
+
 ## 使用方式
 
 1. 启动 MySQL、Piston、Spring Boot 后端和 Next.js 前端；Redis 当前只有配置预留，核心 demo 不依赖缓存读写。

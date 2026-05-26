@@ -12,13 +12,16 @@ import com.interview.coach.dto.TrainingPlanResult.TrainingPlanItemResult;
 import com.interview.coach.entity.TrainingPlan;
 import com.interview.coach.entity.TrainingPlanItem;
 import com.interview.coach.entity.UserWeakness;
+import com.interview.coach.entity.UserWeaknessEvent;
 import com.interview.coach.handler.BusinessException;
 import com.interview.coach.mapper.TrainingPlanItemMapper;
 import com.interview.coach.mapper.TrainingPlanMapper;
+import com.interview.coach.mapper.UserWeaknessEventMapper;
 import com.interview.coach.mapper.UserWeaknessMapper;
 import com.interview.coach.service.KnowledgeCardService;
 import com.interview.coach.vo.KnowledgeCardVO;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +41,9 @@ class TrainingPlanServiceImplTest {
 
     @Mock
     private UserWeaknessMapper userWeaknessMapper;
+
+    @Mock
+    private UserWeaknessEventMapper userWeaknessEventMapper;
 
     @Mock
     private KnowledgeCardService knowledgeCardService;
@@ -66,8 +72,14 @@ class TrainingPlanServiceImplTest {
                 .extracting(TrainingPlanItem::getItemType)
                 .containsExactly("PROBLEM", "KNOWLEDGE_CARD");
         assertThat(itemCaptor.getAllValues().get(0).getProblemTitle()).isEqualTo("两数之和");
+        assertThat(itemCaptor.getAllValues().get(0).getSourceType()).isEqualTo("SUBMISSION_FAILED");
+        assertThat(itemCaptor.getAllValues().get(0).getSourceId()).isEqualTo(101L);
+        assertThat(itemCaptor.getAllValues().get(0).getSourceSummary()).contains("失败提交");
         assertThat(itemCaptor.getAllValues().get(1).getKnowledgeCardId()).isEqualTo(1L);
         assertThat(itemCaptor.getAllValues().get(1).getKnowledgeCardTitle()).isEqualTo("HashMap 底层结构");
+        assertThat(itemCaptor.getAllValues().get(1).getSourceType()).isEqualTo("RAG_KNOWLEDGE_CARD");
+        assertThat(itemCaptor.getAllValues().get(1).getSourceId()).isEqualTo(1L);
+        assertThat(itemCaptor.getAllValues().get(1).getSourceSummary()).contains("RAG");
     }
 
     @Test
@@ -120,9 +132,47 @@ class TrainingPlanServiceImplTest {
         ArgumentCaptor<TrainingPlanItem> itemCaptor = ArgumentCaptor.forClass(TrainingPlanItem.class);
         verify(trainingPlanItemMapper).updateById(itemCaptor.capture());
         assertThat(itemCaptor.getValue().getStatus()).isEqualTo("COMPLETED");
+        assertThat(itemCaptor.getValue().getStatusUpdatedAt()).isBetween(
+                LocalDateTime.now().minusMinutes(1),
+                LocalDateTime.now().plusMinutes(1));
         ArgumentCaptor<TrainingPlan> planCaptor = ArgumentCaptor.forClass(TrainingPlan.class);
         verify(trainingPlanMapper).updateById(planCaptor.capture());
         assertThat(planCaptor.getValue().getStatus()).isEqualTo("COMPLETED");
+    }
+
+    @Test
+    void updateItemStatusRecordsWeaknessImprovementWhenTrainingItemIsCompleted() {
+        TrainingPlanItem item = new TrainingPlanItem();
+        item.setId(5L);
+        item.setPlanId(100L);
+        item.setKnowledgePoint("HashMap 在两数之和中的应用");
+        item.setProblemTitle("两数之和专项复盘");
+        item.setStatus("PENDING");
+        TrainingPlan plan = new TrainingPlan();
+        plan.setId(100L);
+        plan.setUserId(1L);
+        plan.setStatus("ACTIVE");
+        UserWeakness weakness = weakness("HashMap 在两数之和中的应用", "LOGIC_ERROR", "38");
+        weakness.setId(8L);
+        when(trainingPlanItemMapper.selectById(5L)).thenReturn(item);
+        when(trainingPlanMapper.selectById(100L)).thenReturn(plan);
+        when(trainingPlanItemMapper.selectList(any())).thenReturn(List.of(item));
+        when(userWeaknessMapper.selectList(any())).thenReturn(List.of(weakness));
+
+        trainingPlanService.updateItemStatus(1L, 5L, "COMPLETED");
+
+        ArgumentCaptor<UserWeakness> weaknessCaptor = ArgumentCaptor.forClass(UserWeakness.class);
+        verify(userWeaknessMapper).updateById(weaknessCaptor.capture());
+        assertThat(weaknessCaptor.getValue().getWeaknessScore()).isEqualByComparingTo("36");
+
+        ArgumentCaptor<UserWeaknessEvent> eventCaptor = ArgumentCaptor.forClass(UserWeaknessEvent.class);
+        verify(userWeaknessEventMapper).insert(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getSourceType()).isEqualTo("TRAINING_PLAN_COMPLETED");
+        assertThat(eventCaptor.getValue().getSourceId()).isEqualTo(5L);
+        assertThat(eventCaptor.getValue().getDeltaScore()).isEqualByComparingTo("-2");
+        assertThat(eventCaptor.getValue().getBeforeScore()).isEqualByComparingTo("38");
+        assertThat(eventCaptor.getValue().getAfterScore()).isEqualByComparingTo("36");
+        assertThat(eventCaptor.getValue().getReason()).contains("两数之和专项复盘");
     }
 
     @Test
@@ -179,6 +229,9 @@ class TrainingPlanServiceImplTest {
         assertThat(itemCaptor.getAllValues())
                 .extracting(TrainingPlanItem::getKnowledgeCardTitle)
                 .contains("HashMap 底层结构", "MySQL 索引为什么能加速查询", "Spring Bean 生命周期");
+        assertThat(itemCaptor.getAllValues())
+                .extracting(TrainingPlanItem::getSourceType)
+                .containsOnly("USER_WEAKNESS", "KNOWLEDGE_CARD_REVIEW");
     }
 
     private TrainingPlanItemResult problemItem() {
@@ -189,6 +242,9 @@ class TrainingPlanServiceImplTest {
         item.setProblemTitle("两数之和");
         item.setReason("复盘本次失败的知识点。");
         item.setReviewFocus("说明失败用例为什么会击穿当前思路。");
+        item.setSourceType("SUBMISSION_FAILED");
+        item.setSourceId(101L);
+        item.setSourceSummary("来自失败提交 #101 的 AI 诊断。");
         return item;
     }
 
@@ -201,6 +257,9 @@ class TrainingPlanServiceImplTest {
         item.setKnowledgePoint("Java 集合");
         item.setReason("穿插一个 Java 后端高频知识点，保持面试表达训练。");
         item.setReviewFocus("数组、链表、红黑树、扩容。");
+        item.setSourceType("RAG_KNOWLEDGE_CARD");
+        item.setSourceId(1L);
+        item.setSourceSummary("来自 RAG 命中的知识卡片。");
         return item;
     }
 

@@ -10,6 +10,7 @@ import com.interview.coach.mapper.KnowledgePointMapper;
 import com.interview.coach.mapper.ProblemKnowledgePointMapper;
 import com.interview.coach.mapper.ProblemMapper;
 import com.interview.coach.mapper.TestCaseMapper;
+import com.interview.coach.service.ProblemCacheService;
 import com.interview.coach.service.ProblemService;
 import com.interview.coach.vo.ProblemDetailVO;
 import com.interview.coach.vo.ProblemListItemVO;
@@ -18,8 +19,10 @@ import com.interview.coach.vo.TestCaseVO;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProblemServiceImpl implements ProblemService {
@@ -32,16 +35,45 @@ public class ProblemServiceImpl implements ProblemService {
 
     private final KnowledgePointMapper knowledgePointMapper;
 
+    private final ProblemCacheService problemCacheService;
+
     @Override
     public List<ProblemListItemVO> listProblems() {
+        try {
+            return problemCacheService.getProblemList()
+                    .orElseGet(this::listProblemsFromMysqlAndCache);
+        } catch (Exception ex) {
+            log.warn("Problem list cache read failed; downgrade to MySQL: {}", ex.getMessage());
+            return listProblemsFromMysqlAndCache();
+        }
+    }
+
+    private List<ProblemListItemVO> listProblemsFromMysqlAndCache() {
         List<Problem> problems = problemMapper.selectList(new LambdaQueryWrapper<Problem>()
                 .eq(Problem::getEnabled, true)
                 .orderByAsc(Problem::getId));
-        return problems.stream().map(this::toListItem).toList();
+        List<ProblemListItemVO> result = problems.stream().map(this::toListItem).toList();
+        try {
+            problemCacheService.putProblemList(result);
+        } catch (Exception ex) {
+            log.warn("Problem list cache write failed; keep MySQL result: {}", ex.getMessage());
+        }
+        return result;
     }
 
     @Override
     public ProblemDetailVO getProblemDetail(Long id) {
+        try {
+            return problemCacheService.getProblemDetail(id)
+                    .orElseGet(() -> getProblemDetailFromMysqlAndCache(id));
+        } catch (Exception ex) {
+            log.warn("Problem detail cache read failed; downgrade to MySQL: problemId={}, error={}",
+                    id, ex.getMessage());
+            return getProblemDetailFromMysqlAndCache(id);
+        }
+    }
+
+    private ProblemDetailVO getProblemDetailFromMysqlAndCache(Long id) {
         Problem problem = getEnabledProblem(id);
         ProblemDetailVO vo = new ProblemDetailVO();
         vo.setId(problem.getId());
@@ -61,16 +93,39 @@ public class ProblemServiceImpl implements ProblemService {
             hints.setLevel3(problem.getHintLevel3());
             vo.setPresetHints(hints);
         }
+        try {
+            problemCacheService.putProblemDetail(id, vo);
+        } catch (Exception ex) {
+            log.warn("Problem detail cache write failed; keep MySQL result: problemId={}, error={}",
+                    id, ex.getMessage());
+        }
         return vo;
     }
 
     @Override
     public ProblemTemplateVO getProblemTemplate(Long id) {
+        try {
+            return problemCacheService.getProblemTemplate(id)
+                    .orElseGet(() -> getProblemTemplateFromMysqlAndCache(id));
+        } catch (Exception ex) {
+            log.warn("Problem template cache read failed; downgrade to MySQL: problemId={}, error={}",
+                    id, ex.getMessage());
+            return getProblemTemplateFromMysqlAndCache(id);
+        }
+    }
+
+    private ProblemTemplateVO getProblemTemplateFromMysqlAndCache(Long id) {
         Problem problem = getEnabledProblem(id);
         ProblemTemplateVO vo = new ProblemTemplateVO();
         vo.setProblemId(problem.getId());
         vo.setLanguage("java");
         vo.setTemplateCode(problem.getTemplateCode());
+        try {
+            problemCacheService.putProblemTemplate(id, vo);
+        } catch (Exception ex) {
+            log.warn("Problem template cache write failed; keep MySQL result: problemId={}, error={}",
+                    id, ex.getMessage());
+        }
         return vo;
     }
 

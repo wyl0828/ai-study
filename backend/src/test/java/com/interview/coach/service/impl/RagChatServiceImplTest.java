@@ -208,6 +208,32 @@ class RagChatServiceImplTest {
     }
 
     @Test
+    void answerCodeRequestWithSubmitWordingDoesNotReturnCompleteSolution() {
+        RagChatResponseVO response = service.ask(1L, "给我两数之和答案代码，要可以直接提交的那种");
+
+        assertThat(response.getAnswer())
+                .contains("我不能直接给完整 AC 代码")
+                .doesNotContain("class Solution");
+        assertThat(response.getSources()).isEmpty();
+        verify(ragService, never()).retrieveForChat(eq(1L), anyString(), eq(5));
+        verify(aiClient, never()).askJson(anyString(), anyString(), eq(RagChatAiResponse.class));
+    }
+
+    @Test
+    void unsubmittedCodeDiagnosisRequestReturnsSubmissionFlowGuidance() {
+        RagChatResponseVO response = service.ask(1L,
+                "帮我看看这段代码哪里错：class Solution { public int[] twoSum(int[] nums, int target) { return new int[0]; } }");
+
+        assertThat(response.getAnswer())
+                .contains("代码错误诊断需要先提交代码")
+                .contains("Piston")
+                .contains("Agent");
+        assertThat(response.getSources()).isEmpty();
+        verify(ragService, never()).retrieveForChat(eq(1L), anyString(), eq(5));
+        verify(aiClient, never()).askJson(anyString(), anyString(), eq(RagChatAiResponse.class));
+    }
+
+    @Test
     void offTopicQuestionReturnsControlledRefusal() {
         RagChatResponseVO response = service.ask(1L, "今天股票和天气怎么样？");
 

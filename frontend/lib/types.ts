@@ -157,6 +157,32 @@ export interface TrainingPlan {
   items: TrainingPlanItem[];
 }
 
+export interface TrainingPlanHistory {
+  id: number;
+  title: string;
+  summary: string | null;
+  status: string;
+  startDate: string | null;
+  endDate: string | null;
+  itemCount: number;
+  completedCount: number;
+  skippedCount: number;
+  createdAt: string | null;
+}
+
+export interface TrainingPlanActivity {
+  itemId: number;
+  planId: number;
+  planTitle: string | null;
+  itemType: "PROBLEM" | "KNOWLEDGE_CARD";
+  taskTitle: string;
+  knowledgePoint: string;
+  sourceType?: string | null;
+  sourceSummary?: string | null;
+  status: "COMPLETED" | "SKIPPED";
+  statusUpdatedAt: string | null;
+}
+
 export interface TrainingPlanItem {
   id: number;
   itemType: "PROBLEM" | "KNOWLEDGE_CARD";
@@ -168,7 +194,11 @@ export interface TrainingPlanItem {
   knowledgeCardTitle?: string | null;
   reason: string;
   reviewFocus: string;
+  sourceType?: string | null;
+  sourceId?: number | null;
+  sourceSummary?: string | null;
   status: string;
+  statusUpdatedAt?: string | null;
 }
 
 export interface SelfTestRecord {
@@ -328,6 +358,20 @@ export interface MockInterviewRecent {
   startedAt: string | null;
   finishedAt: string | null;
   createdAt: string | null;
+}
+
+export interface MockInterviewTrend {
+  knowledgeCardId: number;
+  knowledgePoint: string;
+  category: string;
+  latestSessionId: number;
+  latestScore: number;
+  previousScore: number | null;
+  deltaScore: number;
+  trendLabel: string;
+  interviewCount: number;
+  latestIssue: string | null;
+  lastInterviewAt: string | null;
 }
 
 export interface MockInterviewSession {

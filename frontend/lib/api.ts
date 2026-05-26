@@ -22,8 +22,11 @@ import type {
   MockInterviewCreateRequest,
   MockInterviewRecent,
   MockInterviewSession,
+  MockInterviewTrend,
   SelfTestRecord,
   SelfTestSubmitRequest,
+  TrainingPlanActivity,
+  TrainingPlanHistory,
 } from "./types";
 
 const API_BASE = "http://localhost:8080";
@@ -249,6 +252,12 @@ export const userApi = {
     request<ApiResponse<MistakeCard[]>>(`/api/users/${userId}/mistakes`),
   latestPlan: (userId: number) =>
     request<ApiResponse<TrainingPlan | null>>(`/api/users/${userId}/training-plans/latest`),
+  trainingPlanHistory: (userId: number) =>
+    request<ApiResponse<TrainingPlanHistory[]>>(`/api/users/${userId}/training-plans/history`),
+  trainingPlanActivities: (userId: number) =>
+    request<ApiResponse<TrainingPlanActivity[]>>(
+      `/api/users/${userId}/training-plans/activities/recent`
+    ),
   updateTrainingPlanItemStatus: (
     userId: number,
     itemId: number,
@@ -279,6 +288,8 @@ export const userApi = {
     request<ApiResponse<SubmissionHistoryVO[]>>(`/api/users/${userId}/submissions/recent`),
   recentMockInterviews: (userId: number) =>
     request<ApiResponse<MockInterviewRecent[]>>(`/api/users/${userId}/mock-interviews/recent`),
+  mockInterviewTrends: (userId: number) =>
+    request<ApiResponse<MockInterviewTrend[]>>(`/api/users/${userId}/mock-interviews/trends`),
   errorStats: (userId: number) =>
     request<ApiResponse<ErrorStatsVO>>(`/api/users/${userId}/dashboard/error-stats`),
 };

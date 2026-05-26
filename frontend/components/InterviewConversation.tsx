@@ -210,17 +210,12 @@ export default function InterviewConversation({
         ) : (
           <div className="space-y-3">
             {session.turns.map((turn) => (
-              <div key={turn.id} className="rounded-lg border border-outline-variant/50 bg-surface-container-lowest p-3 text-sm">
-                <p className="line-clamp-2 text-xs font-semibold text-on-surface-variant">
-                  Q：{turn.question}
-                </p>
-                <p className="mt-1 rounded bg-surface-container-low px-2 py-1 text-xs leading-5 text-on-surface-variant line-clamp-2">
-                  A：{turn.userAnswer}
-                </p>
-                {turn.gapSummary && (
-                  <p className="mt-1 text-[11px] text-on-surface-variant/70 line-clamp-1">{turn.gapSummary}</p>
-                )}
-              </div>
+              <ReviewTurnCard
+                key={turn.id}
+                question={turn.question}
+                answer={turn.userAnswer}
+                note={turn.gapSummary || turn.followUpReason || undefined}
+              />
             ))}
 
             {pendingAnswer && displayState === "EVALUATING" && (

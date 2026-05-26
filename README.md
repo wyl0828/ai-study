@@ -22,7 +22,7 @@
 | 前端 | Next.js 14 + Tailwind CSS + Monaco Editor |
 | 后端 | Spring Boot 3 + Java 17 |
 | 持久层 | MySQL 8 + MyBatis-Plus |
-| 缓存 | Redis（当前预留配置，热点题目/题目详情缓存待接入） |
+| 缓存 | Redis（题目列表、题目详情、题目模板热点缓存） |
 | 代码执行 | Piston API（可替换为 Docker 沙箱） |
 | AI | Anthropic-compatible Messages API |
 | 流式通信 | Server-Sent Events |
@@ -45,6 +45,7 @@ ai-study/
 │   ├── PROJECT_STATUS.md              # 当前成果与下一步
 │   ├── KNOWLEDGE_TRAINING_DESIGN.md   # 后端知识训练设计
 │   ├── DEMO_CASES.md                  # 演示用例
+│   ├── FINAL_ACCEPTANCE_CHECKLIST.md  # 最终验收清单和一键联调脚本说明
 │   └── demo-cases/                    # 演示 bug/fixed 代码
 ├── .env                               # 环境变量（不提交）
 ├── start-backend.bat                  # Windows 启动脚本
@@ -59,7 +60,7 @@ ai-study/
 - Maven 3.8+
 - Node.js 18+
 - MySQL 8
-- Redis（当前预留配置，核心 demo 不依赖缓存读写）
+- Redis（题目热点缓存；不可用时自动降级 MySQL）
 - Piston（代码执行服务）
 
 ### 1. 数据库初始化
@@ -82,6 +83,9 @@ cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < da
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\knowledge_training_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\learning_memory_continuity_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\rag_mysql_migration.sql"
+cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\rag_vector_migration.sql"
+cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\training_plan_source_migration.sql"
+cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\training_plan_activity_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\knowledge_cards.sql"
 ```
 
@@ -99,9 +103,13 @@ MYSQL_URL=jdbc:mysql://localhost:3306/ai_interview_coach?useUnicode=true&charact
 MYSQL_USERNAME=root
 MYSQL_PASSWORD=your_password
 
-# Redis（预留配置，热点缓存待接入）
+# Redis（题目热点缓存；训练数据仍以 MySQL 为准）
 REDIS_HOST=localhost
 REDIS_PORT=6379
+PROBLEM_CACHE_ENABLED=true
+PROBLEM_CACHE_LIST_TTL=10m
+PROBLEM_CACHE_DETAIL_TTL=30m
+PROBLEM_CACHE_TEMPLATE_TTL=30m
 
 # Piston（代码执行）
 PISTON_BASE_URL=http://localhost:2000/api/v2
@@ -110,9 +118,33 @@ PISTON_BASE_URL=http://localhost:2000/api/v2
 AI_BASE_URL=https://api.anthropic.com
 AI_API_KEY=your_api_key
 AI_MODEL=claude-3-5-sonnet-latest
+
+# Embedding（OpenAI-compatible，可选向量 RAG）
+RAG_VECTOR_ENABLED=false
+QDRANT_HOST=localhost
+QDRANT_PORT=6334
+QDRANT_USE_TLS=false
+RAG_VECTOR_SIZE=1536
+EMBEDDING_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode
+EMBEDDING_API_KEY=your_embedding_key
+EMBEDDING_MODEL=text-embedding-v4
+EMBEDDING_DIMENSIONS=1536
 ```
 
 如果 Windows 本机 `2000` 端口被系统排除或已占用，可以把 Piston 映射到其他端口，例如 `2238`，并同步设置 `PISTON_BASE_URL=http://localhost:2238/api/v2`。
+
+Redis 可用 Docker Compose 启动：
+
+```powershell
+docker compose up -d redis
+```
+
+题目接口访问后可检查缓存 key：
+
+```powershell
+docker exec ai-study-redis redis-cli --scan --pattern "coach:problem:*"
+docker exec ai-study-redis redis-cli TTL coach:problem:list:v1
+```
 
 ### 3. 启动后端
 
@@ -148,6 +180,25 @@ netsh interface ipv6 show excludedportrange protocol=tcp
 
 正常启动后访问 `http://127.0.0.1:4000`。
 
+### 5. 一键端到端验收
+
+演示前建议运行完整验收脚本：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_demo_smoke.ps1
+```
+
+脚本会真实检查 MySQL、Piston、Qdrant、Embedding、后端、前端，并自动跑 Two Sum 错误提交、SSE AI 诊断、AC 提交代码点评、Dashboard、RAG Chat 和向量落库检查。
+
+如果只想先验证主链路，可临时跳过外部 embedding 或前端页面：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_demo_smoke.ps1 -SkipEmbedding
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_demo_smoke.ps1 -SkipFrontend
+```
+
+完整验收标准见 `docs/FINAL_ACCEPTANCE_CHECKLIST.md`。
+
 ## 核心功能
 
 ### 1. 题目与提交
@@ -157,6 +208,34 @@ netsh interface ipv6 show excludedportrange protocol=tcp
 - 题面使用“任务说明 / 返回要求 / 约束与边界”的面试式描述；左侧题解包含解题思路、易错点、复杂度和完整 Java 参考实现
 - Monaco Editor 代码编辑器
 - 后端在送入 Piston 前通过 `CodeWrapper` 注册表包装为 `Main.java`，数据库保存用户原始 Solution 代码
+- Redis 缓存只接入题目列表、题目详情和题目模板这三类读多写少数据；Redis 失败时自动降级 MySQL，不影响提交、诊断和训练计划。
+
+### 1.1 Redis 热点缓存边界
+
+Redis 是加速层，不是事实源。当前缓存 key：
+
+```text
+coach:problem:list:v1
+coach:problem:detail:v1:{problemId}
+coach:problem:template:v1:{problemId}
+```
+
+默认 TTL：
+
+```text
+题目列表：10 分钟
+题目详情：30 分钟
+题目模板：30 分钟
+```
+
+不会放入 Redis 的数据：
+
+- 提交记录、判题结果、AI 诊断
+- 弱点、错题卡、训练计划
+- 模拟面试会话、报告和用户回答
+- RAG 用户记忆、AgentContext 和 SSE 状态
+
+这些数据仍由 MySQL 作为事实源，保证学习闭环和用户记忆不依赖缓存。
 
 ### 2. Agent Workflow 诊断
 
@@ -254,15 +333,24 @@ com.interview.coach
 | GET | `/api/users/{id}/weakness-events/recent` | 最近弱点事件 |
 | GET | `/api/users/{id}/mistakes` | 错题卡片 |
 | GET | `/api/users/{id}/training-plans/latest` | 最新训练计划 |
+| GET | `/api/users/{id}/training-plans/history` | 训练计划历史摘要 |
+| GET | `/api/users/{id}/training-plans/activities/recent` | 最近完成 / 跳过的训练项 |
 | PATCH | `/api/users/{id}/training-plans/items/{itemId}/status` | 更新训练计划条目状态 |
 | POST | `/api/users/{id}/training-plans/regenerate` | 手动重新生成训练计划 |
 | GET | `/api/users/{id}/dashboard/error-stats` | 错误统计 |
 | GET | `/api/users/{id}/submissions/recent` | 最近提交记录 |
+| GET | `/api/users/{id}/mock-interviews/recent` | 最近模拟面试记录 |
+| GET | `/api/users/{id}/mock-interviews/trends` | 模拟面试知识点趋势 |
 | GET | `/api/knowledge/categories` | 后端知识分类 |
 | GET | `/api/knowledge/cards` | 后端知识卡片列表 |
 | GET | `/api/knowledge/cards/{id}` | 后端知识卡片详情 |
 | POST | `/api/users/{id}/knowledge/cards/{cardId}/self-tests` | 提交知识卡自测 |
 | GET | `/api/users/{id}/knowledge/cards/{cardId}/self-tests/recent` | 获取最近知识卡自测 |
+| POST | `/api/rag/chat` | 受控学习资料问答 |
+| POST | `/api/mock-interviews` | 创建模拟面试会话 |
+| GET | `/api/mock-interviews/{sessionId}` | 获取 / 恢复模拟面试会话 |
+| POST | `/api/mock-interviews/{sessionId}/answers` | 提交面试回答 |
+| POST | `/api/mock-interviews/{sessionId}/finish` | 生成模拟面试报告 |
 
 完整接口文档见 `docs/API.md`。
 

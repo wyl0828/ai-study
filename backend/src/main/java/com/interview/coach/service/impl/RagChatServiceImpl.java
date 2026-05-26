@@ -44,6 +44,9 @@ public class RagChatServiceImpl implements RagChatService {
     private static final String FULL_CODE_REFUSAL =
             "我不能直接给完整 AC 代码，但可以帮你梳理思路、伪代码和易错点。建议先明确状态定义 / 遍历顺序 / 边界条件，再自己提交一次，系统会根据你的代码做诊断。";
 
+    private static final String CODE_DIAGNOSIS_FLOW_GUIDANCE =
+            "代码错误诊断需要先提交代码，系统会通过 Piston 执行测试用例，再由 Agent 结合 Observation 和 RAG 证据给出诊断。/rag-chat 可以解释历史诊断、错题和知识点，但不直接诊断未提交代码。";
+
     private final RagService ragService;
 
     private final AnthropicCompatibleClient aiClient;
@@ -60,6 +63,9 @@ public class RagChatServiceImpl implements RagChatService {
         }
 
         String normalizedQuestion = question.trim();
+        if (detectUnsubmittedCodeDiagnosisRequest(normalizedQuestion)) {
+            return response(CODE_DIAGNOSIS_FLOW_GUIDANCE, List.of());
+        }
         if (detectFullCodeRequest(normalizedQuestion)) {
             return response(FULL_CODE_REFUSAL, List.of());
         }
@@ -293,7 +299,14 @@ public class RagChatServiceImpl implements RagChatService {
     private boolean detectFullCodeRequest(String message) {
         String normalized = normalize(message);
         return containsAny(normalized, "完整代码", "ac代码", "ac 代码", "直接给答案", "java 参考实现", "完整实现",
-                "class solution");
+                "class solution", "答案代码", "可直接提交", "可以直接提交", "直接提交的", "提交代码");
+    }
+
+    private boolean detectUnsubmittedCodeDiagnosisRequest(String message) {
+        String normalized = normalize(message);
+        return containsAny(normalized, "class solution", "public int", "public listnode", "public boolean", "public string",
+                "public void")
+                && containsAny(normalized, "哪里错", "哪错", "为什么错", "帮我看", "帮我看看", "诊断", "报错", "过不了");
     }
 
     private boolean detectOffTopicQuestion(String message) {

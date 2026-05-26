@@ -418,6 +418,9 @@ class MockInterviewServiceImplTest {
         assertThat(planCaptor.getValue().getItems().get(0).getItemType()).isEqualTo("KNOWLEDGE_CARD");
         assertThat(planCaptor.getValue().getItems().get(0).getKnowledgeCardId()).isEqualTo(1831L);
         assertThat(planCaptor.getValue().getItems().get(0).getReason()).contains("模拟面试");
+        assertThat(planCaptor.getValue().getItems().get(0).getSourceType()).isEqualTo("MOCK_INTERVIEW_REPORT");
+        assertThat(planCaptor.getValue().getItems().get(0).getSourceId()).isEqualTo(31L);
+        assertThat(planCaptor.getValue().getItems().get(0).getSourceSummary()).contains("模拟面试报告 #31");
 
         ArgumentCaptor<MockInterviewSession> sessionCaptor = ArgumentCaptor.forClass(MockInterviewSession.class);
         verify(sessionMapper).updateById(sessionCaptor.capture());

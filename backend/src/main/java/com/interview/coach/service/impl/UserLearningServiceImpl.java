@@ -1,9 +1,11 @@
 package com.interview.coach.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.interview.coach.entity.KnowledgeCard;
 import com.interview.coach.entity.MistakeCard;
 import com.interview.coach.entity.MockInterviewReport;
 import com.interview.coach.entity.MockInterviewSession;
+import com.interview.coach.entity.MockInterviewTurn;
 import com.interview.coach.entity.Problem;
 import com.interview.coach.entity.Submission;
 import com.interview.coach.entity.TrainingPlan;
@@ -14,23 +16,30 @@ import com.interview.coach.enums.SubmissionStatusEnum;
 import com.interview.coach.mapper.MistakeCardMapper;
 import com.interview.coach.mapper.MockInterviewReportMapper;
 import com.interview.coach.mapper.MockInterviewSessionMapper;
+import com.interview.coach.mapper.MockInterviewTurnMapper;
 import com.interview.coach.mapper.ProblemMapper;
 import com.interview.coach.mapper.SubmissionMapper;
 import com.interview.coach.mapper.TrainingPlanItemMapper;
 import com.interview.coach.mapper.TrainingPlanMapper;
 import com.interview.coach.mapper.UserWeaknessEventMapper;
 import com.interview.coach.mapper.UserWeaknessMapper;
+import com.interview.coach.mapper.KnowledgeCardMapper;
 import com.interview.coach.service.UserLearningService;
 import com.interview.coach.vo.DashboardStatsVO;
 import com.interview.coach.vo.ErrorStatsVO;
 import com.interview.coach.vo.MistakeCardVO;
 import com.interview.coach.vo.MockInterviewRecentVO;
+import com.interview.coach.vo.MockInterviewTrendVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
+import com.interview.coach.vo.TrainingPlanActivityVO;
+import com.interview.coach.vo.TrainingPlanHistoryVO;
 import com.interview.coach.vo.TrainingPlanItemVO;
 import com.interview.coach.vo.TrainingPlanVO;
 import com.interview.coach.vo.UserWeaknessEventVO;
 import com.interview.coach.vo.UserWeaknessVO;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Collections;
@@ -63,6 +72,10 @@ public class UserLearningServiceImpl implements UserLearningService {
     private final MockInterviewSessionMapper mockInterviewSessionMapper;
 
     private final MockInterviewReportMapper mockInterviewReportMapper;
+
+    private final MockInterviewTurnMapper mockInterviewTurnMapper;
+
+    private final KnowledgeCardMapper knowledgeCardMapper;
 
     @Override
     public DashboardStatsVO getDashboardStats(Long userId) {
@@ -141,6 +154,57 @@ public class UserLearningServiceImpl implements UserLearningService {
     }
 
     @Override
+    public List<TrainingPlanHistoryVO> getTrainingPlanHistory(Long userId, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 20));
+        List<TrainingPlan> plans = trainingPlanMapper.selectList(new LambdaQueryWrapper<TrainingPlan>()
+                .eq(TrainingPlan::getUserId, userId)
+                .orderByDesc(TrainingPlan::getCreatedAt)
+                .last("LIMIT " + safeLimit));
+        if (plans.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> planIds = plans.stream()
+                .map(TrainingPlan::getId)
+                .toList();
+        Map<Long, List<TrainingPlanItem>> itemsByPlanId = trainingPlanItemMapper.selectList(
+                new LambdaQueryWrapper<TrainingPlanItem>()
+                        .in(TrainingPlanItem::getPlanId, planIds))
+                .stream()
+                .collect(Collectors.groupingBy(TrainingPlanItem::getPlanId));
+
+        return plans.stream()
+                .map(plan -> toTrainingPlanHistoryVO(plan, itemsByPlanId.getOrDefault(plan.getId(), List.of())))
+                .toList();
+    }
+
+    @Override
+    public List<TrainingPlanActivityVO> getRecentTrainingActivities(Long userId, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 20));
+        List<TrainingPlan> plans = trainingPlanMapper.selectList(new LambdaQueryWrapper<TrainingPlan>()
+                .eq(TrainingPlan::getUserId, userId)
+                .orderByDesc(TrainingPlan::getCreatedAt)
+                .last("LIMIT 20"));
+        if (plans.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, TrainingPlan> plansById = plans.stream()
+                .collect(Collectors.toMap(TrainingPlan::getId, Function.identity()));
+        List<Long> planIds = plans.stream()
+                .map(TrainingPlan::getId)
+                .toList();
+        return trainingPlanItemMapper.selectList(new LambdaQueryWrapper<TrainingPlanItem>()
+                .in(TrainingPlanItem::getPlanId, planIds)
+                .in(TrainingPlanItem::getStatus, List.of("COMPLETED", "SKIPPED"))
+                .orderByDesc(TrainingPlanItem::getStatusUpdatedAt)
+                .last("LIMIT " + safeLimit))
+                .stream()
+                .map(item -> toTrainingPlanActivityVO(item, plansById.get(item.getPlanId())))
+                .toList();
+    }
+
+    @Override
     public List<SubmissionHistoryVO> getRecentSubmissions(Long userId) {
         List<Submission> submissions = submissionMapper.selectList(new LambdaQueryWrapper<Submission>()
                 .eq(Submission::getUserId, userId)
@@ -181,6 +245,64 @@ public class UserLearningServiceImpl implements UserLearningService {
 
         return sessions.stream()
                 .map(session -> toMockInterviewRecentVO(session, reportsBySessionId.get(session.getId())))
+                .toList();
+    }
+
+    @Override
+    public List<MockInterviewTrendVO> getMockInterviewTrends(Long userId, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 20));
+        List<MockInterviewSession> sessions = mockInterviewSessionMapper.selectList(
+                new LambdaQueryWrapper<MockInterviewSession>()
+                        .eq(MockInterviewSession::getUserId, userId)
+                        .orderByDesc(MockInterviewSession::getCreatedAt)
+                        .last("LIMIT 50"));
+        if (sessions.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, MockInterviewSession> sessionsById = sessions.stream()
+                .collect(Collectors.toMap(MockInterviewSession::getId, Function.identity()));
+        List<Long> sessionIds = sessions.stream()
+                .map(MockInterviewSession::getId)
+                .toList();
+        List<MockInterviewTurn> turns = mockInterviewTurnMapper.selectList(
+                new LambdaQueryWrapper<MockInterviewTurn>()
+                        .in(MockInterviewTurn::getSessionId, sessionIds)
+                        .isNotNull(MockInterviewTurn::getScore)
+                        .orderByDesc(MockInterviewTurn::getCreatedAt)
+                        .orderByDesc(MockInterviewTurn::getId));
+        if (turns.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, KnowledgeCard> cardsById = knowledgeCardsById(turns.stream()
+                .map(MockInterviewTurn::getKnowledgeCardId)
+                .filter(id -> id != null)
+                .toList());
+        Map<String, MockInterviewAttemptBuilder> builders = new LinkedHashMap<>();
+        for (MockInterviewTurn turn : turns) {
+            MockInterviewSession session = sessionsById.get(turn.getSessionId());
+            if (session == null || turn.getKnowledgeCardId() == null || turn.getScore() == null) {
+                continue;
+            }
+            String key = turn.getKnowledgeCardId() + "#" + turn.getSessionId();
+            builders.computeIfAbsent(key,
+                    ignored -> new MockInterviewAttemptBuilder(turn.getKnowledgeCardId(), session))
+                    .add(turn);
+        }
+
+        Map<Long, List<MockInterviewAttempt>> attemptsByCard = builders.values().stream()
+                .map(MockInterviewAttemptBuilder::build)
+                .collect(Collectors.groupingBy(
+                        MockInterviewAttempt::knowledgeCardId,
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+
+        return attemptsByCard.entrySet().stream()
+                .map(entry -> toMockInterviewTrendVO(entry.getKey(), entry.getValue(), cardsById))
+                .sorted(Comparator.comparing(MockInterviewTrendVO::getLastInterviewAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(safeLimit)
                 .toList();
     }
 
@@ -275,11 +397,14 @@ public class UserLearningServiceImpl implements UserLearningService {
         if (userWeaknessEventMapper == null) {
             return Collections.emptyMap();
         }
-        return userWeaknessEventMapper.selectList(new LambdaQueryWrapper<UserWeaknessEvent>()
+        List<UserWeaknessEvent> events = userWeaknessEventMapper.selectList(new LambdaQueryWrapper<UserWeaknessEvent>()
                 .eq(UserWeaknessEvent::getUserId, userId)
                 .orderByDesc(UserWeaknessEvent::getCreatedAt)
-                .last("LIMIT 50"))
-                .stream()
+                .last("LIMIT 50"));
+        if (events == null) {
+            return Collections.emptyMap();
+        }
+        return events.stream()
                 .collect(Collectors.toMap(
                         event -> normalizeKnowledgePoint(event.getKnowledgePoint()),
                         Function.identity(),
@@ -344,6 +469,61 @@ public class UserLearningServiceImpl implements UserLearningService {
         return vo;
     }
 
+    private Map<Long, KnowledgeCard> knowledgeCardsById(List<Long> cardIds) {
+        List<Long> ids = cardIds.stream().distinct().toList();
+        if (ids.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return knowledgeCardMapper.selectBatchIds(ids).stream()
+                .collect(Collectors.toMap(KnowledgeCard::getId, Function.identity()));
+    }
+
+    private MockInterviewTrendVO toMockInterviewTrendVO(Long knowledgeCardId, List<MockInterviewAttempt> attempts,
+            Map<Long, KnowledgeCard> cardsById) {
+        List<MockInterviewAttempt> sortedAttempts = attempts.stream()
+                .sorted(Comparator.comparing(MockInterviewAttempt::attemptedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+        MockInterviewAttempt latest = sortedAttempts.get(0);
+        MockInterviewAttempt previous = sortedAttempts.size() > 1 ? sortedAttempts.get(1) : null;
+        KnowledgeCard card = cardsById.get(knowledgeCardId);
+        BigDecimal delta = previous == null
+                ? BigDecimal.ZERO
+                : latest.averageScore().subtract(previous.averageScore());
+
+        MockInterviewTrendVO vo = new MockInterviewTrendVO();
+        vo.setKnowledgeCardId(knowledgeCardId);
+        vo.setKnowledgePoint(card == null ? "知识卡 #" + knowledgeCardId : card.getTitle());
+        vo.setCategory(card == null ? latest.category() : card.getCategory());
+        vo.setLatestSessionId(latest.sessionId());
+        vo.setLatestScore(latest.averageScore());
+        vo.setPreviousScore(previous == null ? null : previous.averageScore());
+        vo.setDeltaScore(delta);
+        vo.setTrendLabel(trendDeltaLabel(delta, previous == null));
+        vo.setInterviewCount(sortedAttempts.size());
+        vo.setLatestIssue(latest.issue());
+        vo.setLastInterviewAt(latest.attemptedAt());
+        return vo;
+    }
+
+    private String trendDeltaLabel(BigDecimal delta, boolean firstAttempt) {
+        if (firstAttempt) {
+            return "首次记录";
+        }
+        int direction = delta.compareTo(BigDecimal.ZERO);
+        if (direction > 0) {
+            return "较上次提升 " + scoreText(delta) + " 分";
+        }
+        if (direction < 0) {
+            return "较上次下降 " + scoreText(delta.abs()) + " 分";
+        }
+        return "与上次持平";
+    }
+
+    private String scoreText(BigDecimal value) {
+        return value.stripTrailingZeros().toPlainString();
+    }
+
     private MistakeCardVO toMistakeCardVO(MistakeCard mistake, Map<Long, Problem> problems) {
         MistakeCardVO vo = new MistakeCardVO();
         vo.setId(mistake.getId());
@@ -371,8 +551,60 @@ public class UserLearningServiceImpl implements UserLearningService {
         vo.setKnowledgeCardTitle(item.getKnowledgeCardTitle());
         vo.setReason(item.getReason());
         vo.setReviewFocus(item.getReviewFocus());
+        vo.setSourceType(item.getSourceType());
+        vo.setSourceId(item.getSourceId());
+        vo.setSourceSummary(item.getSourceSummary());
         vo.setStatus(item.getStatus());
+        vo.setStatusUpdatedAt(item.getStatusUpdatedAt());
         return vo;
+    }
+
+    private TrainingPlanHistoryVO toTrainingPlanHistoryVO(TrainingPlan plan, List<TrainingPlanItem> items) {
+        TrainingPlanHistoryVO vo = new TrainingPlanHistoryVO();
+        vo.setId(plan.getId());
+        vo.setTitle(plan.getTitle());
+        vo.setSummary(plan.getSummary());
+        vo.setStatus(plan.getStatus() == null ? "ACTIVE" : plan.getStatus());
+        vo.setStartDate(plan.getStartDate());
+        vo.setEndDate(plan.getEndDate());
+        vo.setItemCount(items.size());
+        vo.setCompletedCount((int) items.stream()
+                .filter(item -> "COMPLETED".equalsIgnoreCase(item.getStatus()))
+                .count());
+        vo.setSkippedCount((int) items.stream()
+                .filter(item -> "SKIPPED".equalsIgnoreCase(item.getStatus()))
+                .count());
+        vo.setCreatedAt(plan.getCreatedAt());
+        return vo;
+    }
+
+    private TrainingPlanActivityVO toTrainingPlanActivityVO(TrainingPlanItem item, TrainingPlan plan) {
+        TrainingPlanActivityVO vo = new TrainingPlanActivityVO();
+        vo.setItemId(item.getId());
+        vo.setPlanId(item.getPlanId());
+        vo.setPlanTitle(plan == null ? null : plan.getTitle());
+        vo.setItemType(item.getItemType() == null ? "PROBLEM" : item.getItemType());
+        vo.setTaskTitle(activityTaskTitle(item));
+        vo.setKnowledgePoint(item.getKnowledgePoint());
+        vo.setSourceType(item.getSourceType());
+        vo.setSourceSummary(item.getSourceSummary());
+        vo.setStatus(item.getStatus());
+        vo.setStatusUpdatedAt(item.getStatusUpdatedAt());
+        return vo;
+    }
+
+    private String activityTaskTitle(TrainingPlanItem item) {
+        String itemType = item.getItemType() == null ? "PROBLEM" : item.getItemType();
+        String title = "KNOWLEDGE_CARD".equalsIgnoreCase(itemType)
+                ? item.getKnowledgeCardTitle()
+                : item.getProblemTitle();
+        if (title != null && !title.isBlank()) {
+            return title;
+        }
+        if (item.getKnowledgePoint() != null && !item.getKnowledgePoint().isBlank()) {
+            return item.getKnowledgePoint();
+        }
+        return "训练项";
     }
 
     private Long trainingProblemId(TrainingPlanItem item) {
@@ -440,6 +672,86 @@ public class UserLearningServiceImpl implements UserLearningService {
 
     private Integer toInt(Long value) {
         return Math.toIntExact(value == null ? 0L : value);
+    }
+
+    private record MockInterviewAttempt(
+            Long knowledgeCardId,
+            Long sessionId,
+            String category,
+            BigDecimal averageScore,
+            String issue,
+            LocalDateTime attemptedAt) {
+    }
+
+    private static class MockInterviewAttemptBuilder {
+
+        private final Long knowledgeCardId;
+
+        private final MockInterviewSession session;
+
+        private int totalScore;
+
+        private int scoreCount;
+
+        private String issue;
+
+        private LocalDateTime latestTurnAt;
+
+        MockInterviewAttemptBuilder(Long knowledgeCardId, MockInterviewSession session) {
+            this.knowledgeCardId = knowledgeCardId;
+            this.session = session;
+        }
+
+        void add(MockInterviewTurn turn) {
+            totalScore += turn.getScore();
+            scoreCount++;
+            LocalDateTime turnTime = turn.getCreatedAt();
+            if (turnTime != null && (latestTurnAt == null || turnTime.isAfter(latestTurnAt))) {
+                latestTurnAt = turnTime;
+            }
+            if (issue == null || issue.isBlank()) {
+                issue = firstNonBlank(
+                        turn.getMissingKeyPoints(),
+                        turn.getGapSummary(),
+                        turn.getExpressionIssue(),
+                        turn.getFeedback());
+            }
+        }
+
+        MockInterviewAttempt build() {
+            BigDecimal averageScore = scoreCount == 0
+                    ? BigDecimal.ZERO
+                    : BigDecimal.valueOf(totalScore).divide(BigDecimal.valueOf(scoreCount), 1, RoundingMode.HALF_UP);
+            return new MockInterviewAttempt(
+                    knowledgeCardId,
+                    session.getId(),
+                    session.getCategory(),
+                    averageScore,
+                    issue,
+                    attemptedAt());
+        }
+
+        private LocalDateTime attemptedAt() {
+            if (session.getFinishedAt() != null) {
+                return session.getFinishedAt();
+            }
+            if (latestTurnAt != null) {
+                return latestTurnAt;
+            }
+            if (session.getUpdatedAt() != null) {
+                return session.getUpdatedAt();
+            }
+            return session.getCreatedAt();
+        }
+
+        private String firstNonBlank(String... values) {
+            for (String value : values) {
+                if (value != null && !value.isBlank()) {
+                    return value.trim();
+                }
+            }
+            return null;
+        }
     }
 
     private static class AggregatedWeakness {

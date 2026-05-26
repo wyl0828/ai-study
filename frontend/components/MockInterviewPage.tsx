@@ -491,7 +491,7 @@ function MockInterviewWorkspace({
 
         <aside className="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
           {session.report ? (
-            <InterviewReport report={session.report} />
+            <InterviewReport report={session.report} turns={session.turns} />
           ) : (
             <RealtimeFeedback
               session={session}

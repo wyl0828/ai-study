@@ -2,10 +2,13 @@ package com.interview.coach.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.interview.coach.agent.AgentContext;
+import com.interview.coach.config.EmbeddingProperties;
+import com.interview.coach.config.RagVectorProperties;
 import com.interview.coach.dto.AgentExecutionObservation;
 import com.interview.coach.dto.RagChunkHit;
 import com.interview.coach.dto.RagRetrieveQuery;
 import com.interview.coach.dto.RagRetrieveResult;
+import com.interview.coach.dto.RagVectorHit;
 import com.interview.coach.entity.AiDiagnosis;
 import com.interview.coach.entity.KnowledgeCard;
 import com.interview.coach.entity.MistakeCard;
@@ -13,16 +16,21 @@ import com.interview.coach.entity.Problem;
 import com.interview.coach.entity.RagChunk;
 import com.interview.coach.entity.RagDocument;
 import com.interview.coach.enums.RagSourceTypeEnum;
+import com.interview.coach.integration.ai.EmbeddingClient;
+import com.interview.coach.integration.vector.RagVectorStore;
 import com.interview.coach.mapper.KnowledgeCardMapper;
 import com.interview.coach.mapper.ProblemMapper;
 import com.interview.coach.mapper.RagChunkMapper;
 import com.interview.coach.mapper.RagDocumentMapper;
 import com.interview.coach.service.RagService;
+import com.interview.coach.vo.RagHealthVO;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -42,6 +50,10 @@ public class RagServiceImpl implements RagService {
 
     private static final String ACTIVE = "ACTIVE";
 
+    private static final String VECTOR_INDEXED = "INDEXED";
+
+    private static final String VECTOR_FAILED = "FAILED";
+
     private static final int MAX_CANDIDATES = 200;
 
     private final RagDocumentMapper ragDocumentMapper;
@@ -51,6 +63,14 @@ public class RagServiceImpl implements RagService {
     private final ProblemMapper problemMapper;
 
     private final KnowledgeCardMapper knowledgeCardMapper;
+
+    private final RagVectorProperties ragVectorProperties;
+
+    private final EmbeddingProperties embeddingProperties;
+
+    private final EmbeddingClient embeddingClient;
+
+    private final RagVectorStore ragVectorStore;
 
     @Override
     public RagRetrieveResult retrieveForDiagnosis(AgentContext context, int limit) {
@@ -103,17 +123,9 @@ public class RagServiceImpl implements RagService {
     private RagRetrieveResult doRetrieve(RagRetrieveQuery query) {
         RagRetrieveQuery safeQuery = query == null ? new RagRetrieveQuery() : query;
         int limit = safeQuery.getLimit() <= 0 ? 5 : safeQuery.getLimit();
-        List<RagChunk> chunks = ragChunkMapper.selectList(new LambdaQueryWrapper<RagChunk>()
-                .and(wrapper -> {
-                    if (safeQuery.getUserId() == null) {
-                        wrapper.isNull(RagChunk::getUserId);
-                    } else {
-                        wrapper.isNull(RagChunk::getUserId)
-                                .or()
-                                .eq(RagChunk::getUserId, safeQuery.getUserId());
-                    }
-                })
-                .last("LIMIT " + MAX_CANDIDATES));
+        List<RagChunk> chunks = loadCandidateChunks(safeQuery);
+        Map<Long, RagVectorHit> vectorHits = vectorHits(safeQuery);
+        chunks = mergeVectorOnlyChunks(chunks, vectorHits);
         if (chunks == null || chunks.isEmpty()) {
             return new RagRetrieveResult();
         }
@@ -122,7 +134,12 @@ public class RagServiceImpl implements RagService {
         List<RagChunkHit> hits = chunks.stream()
                 .filter(chunk -> isAllowedForUser(safeQuery.getUserId(), chunk))
                 .filter(chunk -> isActiveDocument(documents.get(chunk.getDocumentId())))
-                .map(chunk -> toHit(chunk, documents.get(chunk.getDocumentId()), score(safeQuery, chunk, documents.get(chunk.getDocumentId()))))
+                .map(chunk -> toHit(
+                        safeQuery,
+                        chunk,
+                        documents.get(chunk.getDocumentId()),
+                        score(safeQuery, chunk, documents.get(chunk.getDocumentId()))))
+                .map(hit -> applyVectorScore(hit, vectorHits.get(hit.getChunkId())))
                 .sorted(Comparator.comparingInt(RagChunkHit::getScore).reversed()
                         .thenComparing(hit -> hit.getChunkId() == null ? Long.MAX_VALUE : hit.getChunkId()))
                 .limit(limit)
@@ -131,6 +148,102 @@ public class RagServiceImpl implements RagService {
         RagRetrieveResult result = new RagRetrieveResult();
         result.setHits(hits);
         return result;
+    }
+
+    private List<RagChunk> loadCandidateChunks(RagRetrieveQuery query) {
+        return ragChunkMapper.selectList(new LambdaQueryWrapper<RagChunk>()
+                .and(wrapper -> {
+                    if (query.getUserId() == null) {
+                        wrapper.isNull(RagChunk::getUserId);
+                    } else {
+                        wrapper.isNull(RagChunk::getUserId)
+                                .or()
+                                .eq(RagChunk::getUserId, query.getUserId());
+                    }
+                })
+                .last("LIMIT " + MAX_CANDIDATES));
+    }
+
+    private List<RagChunk> mergeVectorOnlyChunks(List<RagChunk> chunks, Map<Long, RagVectorHit> vectorHits) {
+        if (vectorHits == null || vectorHits.isEmpty()) {
+            return chunks == null ? List.of() : chunks;
+        }
+        Map<Long, RagChunk> merged = new HashMap<>();
+        if (chunks != null) {
+            for (RagChunk chunk : chunks) {
+                if (chunk.getId() != null) {
+                    merged.put(chunk.getId(), chunk);
+                }
+            }
+        }
+
+        List<Long> missingVectorChunkIds = vectorHits.keySet().stream()
+                .filter(chunkId -> !merged.containsKey(chunkId))
+                .toList();
+        if (!missingVectorChunkIds.isEmpty()) {
+            List<RagChunk> vectorChunks = ragChunkMapper.selectBatchIds(missingVectorChunkIds);
+            if (vectorChunks != null) {
+                for (RagChunk chunk : vectorChunks) {
+                    if (chunk.getId() != null) {
+                        merged.put(chunk.getId(), chunk);
+                    }
+                }
+            }
+        }
+        return new ArrayList<>(merged.values());
+    }
+
+    private Map<Long, RagVectorHit> vectorHits(RagRetrieveQuery query) {
+        if (!vectorEnabled()) {
+            return Map.of();
+        }
+        String queryText = vectorQueryText(query);
+        if (!StringUtils.hasText(queryText)) {
+            return Map.of();
+        }
+        try {
+            float[] vector = embeddingClient.embed(queryText);
+            List<RagVectorHit> hits = ragVectorStore.search(query, vector, vectorCandidateLimit());
+            if (hits == null || hits.isEmpty()) {
+                return Map.of();
+            }
+            return hits.stream()
+                    .filter(hit -> hit.getChunkId() != null)
+                    .collect(Collectors.toMap(
+                            RagVectorHit::getChunkId,
+                            Function.identity(),
+                            (left, right) -> left.getSimilarity() >= right.getSimilarity() ? left : right));
+        } catch (RuntimeException ex) {
+            log.warn("Vector RAG search failed; downgrade to MySQL-only retrieval: {}", ex.getMessage());
+            return Map.of();
+        }
+    }
+
+    private RagChunkHit applyVectorScore(RagChunkHit hit, RagVectorHit vectorHit) {
+        if (vectorHit == null || vectorHit.getSimilarity() == null) {
+            return hit;
+        }
+        double similarity = Math.max(0, vectorHit.getSimilarity());
+        int hybridScore = (int) Math.round(hit.getScore() * ruleWeight() + similarity * 100 * vectorWeight());
+        hit.setScore(hybridScore);
+        String vectorReason = "向量相似度 " + String.format(Locale.ROOT, "%.2f", similarity);
+        hit.setMatchReason(joinNonBlank("、", hit.getMatchReason(), vectorReason));
+        return hit;
+    }
+
+    private String vectorQueryText(RagRetrieveQuery query) {
+        if (query == null) {
+            return "";
+        }
+        List<String> keywords = query.getKeywords() == null ? List.of() : query.getKeywords();
+        return joinNonBlank("\n",
+                query.getProblemTitle(),
+                query.getProblemCategory(),
+                query.getKnowledgePoint(),
+                query.getErrorType(),
+                query.getExecutionStatus(),
+                query.getErrorMessage(),
+                String.join("\n", keywords));
     }
 
     private boolean isMissingRagTable(BadSqlGrammarException ex) {
@@ -146,6 +259,115 @@ public class RagServiceImpl implements RagService {
             current = current.getCause();
         }
         return current.getMessage() == null ? throwable.getMessage() : current.getMessage();
+    }
+
+    @Override
+    public RagHealthVO checkHealth() {
+        try {
+            return doCheckHealth();
+        } catch (BadSqlGrammarException ex) {
+            if (!isMissingRagTable(ex)) {
+                throw ex;
+            }
+            RagHealthVO health = new RagHealthVO();
+            health.setTablesAvailable(false);
+            health.setHealthy(false);
+            health.setCheckedAt(LocalDateTime.now());
+            health.getWarnings().add("RAG_TABLES_MISSING");
+            return health;
+        }
+    }
+
+    private RagHealthVO doCheckHealth() {
+        LocalDateTime checkedAt = LocalDateTime.now();
+        List<RagDocument> documents = safeList(ragDocumentMapper.selectList(new LambdaQueryWrapper<>()));
+        List<RagChunk> chunks = safeList(ragChunkMapper.selectList(new LambdaQueryWrapper<>()));
+        List<KnowledgeCard> enabledKnowledgeCards = safeList(knowledgeCardMapper.selectList(
+                new LambdaQueryWrapper<KnowledgeCard>().eq(KnowledgeCard::getEnabled, true)));
+
+        List<RagDocument> systemDocuments = documents.stream()
+                .filter(document -> document.getUserId() == null)
+                .toList();
+        List<RagChunk> systemChunks = chunks.stream()
+                .filter(chunk -> chunk.getUserId() == null)
+                .toList();
+
+        RagHealthVO health = new RagHealthVO();
+        health.setCheckedAt(checkedAt);
+        health.setTablesAvailable(true);
+        health.setSystemDocumentCount(systemDocuments.size());
+        health.setSystemChunkCount(systemChunks.size());
+        health.setUserMemoryDocumentCount((int) documents.stream()
+                .filter(document -> document.getUserId() != null)
+                .count());
+        health.setUserMemoryChunkCount((int) chunks.stream()
+                .filter(chunk -> chunk.getUserId() != null)
+                .count());
+        health.setDuplicateSystemDocumentCount(countDuplicateSystemDocuments(systemDocuments));
+        health.setStaleKnowledgeCardDocumentCount(countStaleKnowledgeCardDocuments(
+                systemDocuments,
+                enabledKnowledgeCards));
+
+        addRagHealthWarnings(health);
+        health.setHealthy(health.getWarnings().isEmpty());
+        return health;
+    }
+
+    private <T> List<T> safeList(List<T> values) {
+        return values == null ? List.of() : values;
+    }
+
+    private int countDuplicateSystemDocuments(List<RagDocument> systemDocuments) {
+        Map<String, Integer> counts = new HashMap<>();
+        for (RagDocument document : systemDocuments) {
+            if (!isSystemSource(document) || document.getSourceId() == null) {
+                continue;
+            }
+            String key = document.getSourceType() + "#" + document.getSourceId();
+            counts.merge(key, 1, Integer::sum);
+        }
+        return (int) counts.values().stream()
+                .filter(count -> count > 1)
+                .count();
+    }
+
+    private boolean isSystemSource(RagDocument document) {
+        return RagSourceTypeEnum.PROBLEM.name().equals(document.getSourceType())
+                || RagSourceTypeEnum.KNOWLEDGE_CARD.name().equals(document.getSourceType());
+    }
+
+    private int countStaleKnowledgeCardDocuments(
+            List<RagDocument> systemDocuments,
+            List<KnowledgeCard> enabledKnowledgeCards) {
+        Map<Long, KnowledgeCard> cardsById = enabledKnowledgeCards.stream()
+                .filter(card -> card.getId() != null)
+                .collect(Collectors.toMap(KnowledgeCard::getId, Function.identity(), (first, ignored) -> first));
+        return (int) systemDocuments.stream()
+                .filter(document -> RagSourceTypeEnum.KNOWLEDGE_CARD.name().equals(document.getSourceType()))
+                .filter(document -> isStaleKnowledgeCardDocument(document, cardsById.get(document.getSourceId())))
+                .count();
+    }
+
+    private boolean isStaleKnowledgeCardDocument(RagDocument document, KnowledgeCard card) {
+        if (card == null) {
+            return true;
+        }
+        if (card.getUpdatedAt() == null) {
+            return false;
+        }
+        return document.getUpdatedAt() == null || card.getUpdatedAt().isAfter(document.getUpdatedAt());
+    }
+
+    private void addRagHealthWarnings(RagHealthVO health) {
+        if (health.getSystemDocumentCount() == 0 || health.getSystemChunkCount() == 0) {
+            health.getWarnings().add("SYSTEM_INDEX_EMPTY");
+        }
+        if (health.getDuplicateSystemDocumentCount() > 0) {
+            health.getWarnings().add("DUPLICATE_SYSTEM_DOCUMENTS");
+        }
+        if (health.getStaleKnowledgeCardDocumentCount() > 0) {
+            health.getWarnings().add("STALE_KNOWLEDGE_CARD_DOCUMENTS");
+        }
     }
 
     @Override
@@ -229,6 +451,7 @@ public class RagServiceImpl implements RagService {
     @Override
     @Transactional
     public void rebuildSystemIndex() {
+        deleteSystemVectorChunks();
         ragChunkMapper.delete(new LambdaQueryWrapper<RagChunk>().isNull(RagChunk::getUserId));
         ragDocumentMapper.delete(new LambdaQueryWrapper<RagDocument>().isNull(RagDocument::getUserId));
 
@@ -245,6 +468,18 @@ public class RagServiceImpl implements RagService {
                 .orderByAsc(KnowledgeCard::getId));
         for (KnowledgeCard card : cards) {
             indexKnowledgeCard(card);
+        }
+    }
+
+    private void deleteSystemVectorChunks() {
+        if (!vectorEnabled()) {
+            return;
+        }
+        try {
+            ragVectorStore.deleteSystemChunks();
+        } catch (RuntimeException ex) {
+            log.warn("Failed to delete system vector chunks; continue rebuilding MySQL RAG index: {}",
+                    ex.getMessage());
         }
     }
 
@@ -270,6 +505,7 @@ public class RagServiceImpl implements RagService {
             ragDocumentMapper.insert(document);
         } else {
             ragDocumentMapper.updateById(document);
+            deleteDocumentVectorChunks(document.getId());
             ragChunkMapper.delete(new LambdaQueryWrapper<RagChunk>()
                     .eq(RagChunk::getDocumentId, document.getId()));
         }
@@ -305,7 +541,42 @@ public class RagServiceImpl implements RagService {
         chunk.setTags(document.getTags());
         chunk.setCreatedAt(LocalDateTime.now());
         ragChunkMapper.insert(chunk);
+        indexVectorChunk(chunk);
         return chunkIndex + 1;
+    }
+
+    private void indexVectorChunk(RagChunk chunk) {
+        if (!vectorEnabled() || chunk == null || chunk.getId() == null || !StringUtils.hasText(chunk.getChunkText())) {
+            return;
+        }
+        try {
+            float[] vector = embeddingClient.embed(chunk.getChunkText());
+            ragVectorStore.upsertChunk(chunk, vector);
+            chunk.setVectorPointId(String.valueOf(chunk.getId()));
+            chunk.setEmbeddingModel(embeddingModel());
+            chunk.setEmbeddingDim(vector.length);
+            chunk.setVectorStatus(VECTOR_INDEXED);
+            ragChunkMapper.updateById(chunk);
+        } catch (RuntimeException ex) {
+            chunk.setEmbeddingModel(embeddingModel());
+            chunk.setEmbeddingDim(embeddingDimensions());
+            chunk.setVectorStatus(VECTOR_FAILED);
+            ragChunkMapper.updateById(chunk);
+            log.warn("Vector RAG indexing failed for rag_chunk#{}; keep MySQL chunk available: {}",
+                    chunk.getId(), ex.getMessage());
+        }
+    }
+
+    private void deleteDocumentVectorChunks(Long documentId) {
+        if (!vectorEnabled() || documentId == null) {
+            return;
+        }
+        try {
+            ragVectorStore.deleteDocumentChunks(documentId);
+        } catch (RuntimeException ex) {
+            log.warn("Failed to delete old vector chunks for rag_document#{}; continue MySQL index update: {}",
+                    documentId, ex.getMessage());
+        }
     }
 
     private Map<Long, RagDocument> loadDocuments(List<RagChunk> chunks) {
@@ -337,7 +608,7 @@ public class RagServiceImpl implements RagService {
         return document == null || !StringUtils.hasText(document.getStatus()) || ACTIVE.equals(document.getStatus());
     }
 
-    private RagChunkHit toHit(RagChunk chunk, RagDocument document, int score) {
+    private RagChunkHit toHit(RagRetrieveQuery query, RagChunk chunk, RagDocument document, int score) {
         RagChunkHit hit = new RagChunkHit();
         hit.setChunkId(chunk.getId());
         hit.setDocumentId(chunk.getDocumentId());
@@ -350,7 +621,33 @@ public class RagServiceImpl implements RagService {
         hit.setErrorType(chunk.getErrorType());
         hit.setChunkText(chunk.getChunkText());
         hit.setScore(score);
+        hit.setMatchReason(matchReason(query, chunk, document));
         return hit;
+    }
+
+    private String matchReason(RagRetrieveQuery query, RagChunk chunk, RagDocument document) {
+        List<String> reasons = new ArrayList<>();
+        if (query.getUserId() != null && query.getUserId().equals(chunk.getUserId())) {
+            reasons.add("当前用户记忆");
+        }
+        if (query.getProblemId() != null && query.getProblemId().equals(chunk.getProblemId())) {
+            reasons.add("同题目");
+        }
+        if (sameText(query.getKnowledgePoint(), chunk.getKnowledgePoint())) {
+            reasons.add("同知识点");
+        }
+        if (sameText(query.getErrorType(), chunk.getErrorType())) {
+            reasons.add("同错误类型");
+        }
+        List<String> keywords = queryKeywords(query);
+        if (keywordHit(keywords, joinNonBlank(" ", document == null ? null : document.getTitle(),
+                chunk.getTags(), chunk.getKnowledgePoint(), chunk.getChunkText()))) {
+            reasons.add("关键词命中");
+        }
+        if (reasons.isEmpty()) {
+            reasons.add("候选召回");
+        }
+        return String.join("、", reasons);
     }
 
     private int score(RagRetrieveQuery query, RagChunk chunk, RagDocument document) {
@@ -458,6 +755,43 @@ public class RagServiceImpl implements RagService {
             return context.getProblem().getTitle();
         }
         return "problem#" + context.getProblemId();
+    }
+
+    private boolean vectorEnabled() {
+        return ragVectorProperties != null && ragVectorProperties.isEnabled()
+                && embeddingClient != null
+                && ragVectorStore != null;
+    }
+
+    private int vectorCandidateLimit() {
+        if (ragVectorProperties == null || ragVectorProperties.getVectorCandidateLimit() <= 0) {
+            return 30;
+        }
+        return ragVectorProperties.getVectorCandidateLimit();
+    }
+
+    private double vectorWeight() {
+        if (ragVectorProperties == null || ragVectorProperties.getHybridVectorWeight() == null) {
+            return 0.60;
+        }
+        return ragVectorProperties.getHybridVectorWeight().doubleValue();
+    }
+
+    private double ruleWeight() {
+        if (ragVectorProperties == null || ragVectorProperties.getHybridRuleWeight() == null) {
+            return 0.40;
+        }
+        return ragVectorProperties.getHybridRuleWeight().doubleValue();
+    }
+
+    private String embeddingModel() {
+        return embeddingProperties == null ? null : embeddingProperties.getModel();
+    }
+
+    private Integer embeddingDimensions() {
+        return embeddingProperties == null || embeddingProperties.getDimensions() <= 0
+                ? null
+                : embeddingProperties.getDimensions();
     }
 
     private String normalize(String value) {

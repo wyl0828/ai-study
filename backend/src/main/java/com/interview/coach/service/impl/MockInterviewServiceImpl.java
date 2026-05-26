@@ -234,6 +234,9 @@ public class MockInterviewServiceImpl implements MockInterviewService {
             item.setKnowledgeCardTitle(cardTitle(cardId, turns));
             item.setReason("来自模拟面试报告的推荐复盘项。");
             item.setReviewFocus(reviewFocus(weaknessTags));
+            item.setSourceType("MOCK_INTERVIEW_REPORT");
+            item.setSourceId(report.getId());
+            item.setSourceSummary("来自模拟面试报告 #" + report.getId() + " 的推荐复盘项。");
             result.getItems().add(item);
         }
         return result;

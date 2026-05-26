@@ -8,6 +8,10 @@ interface WeaknessListProps {
   weaknesses: AggregatedWeakness[];
 }
 
+function formatWeaknessDelta(value: number) {
+  return value > 0 ? `+${value}` : `${value}`;
+}
+
 export default function WeaknessList({ weaknesses }: WeaknessListProps) {
   const [showAll, setShowAll] = useState(false);
   const sorted = weaknesses;
@@ -70,7 +74,7 @@ export default function WeaknessList({ weaknesses }: WeaknessListProps) {
                 </div>
                 {typeof w.lastDeltaScore === "number" && (
                   <div className="text-[11px] text-on-surface-variant">
-                    最近变化 +{w.lastDeltaScore}
+                    最近变化 {formatWeaknessDelta(w.lastDeltaScore)}
                   </div>
                 )}
               </div>

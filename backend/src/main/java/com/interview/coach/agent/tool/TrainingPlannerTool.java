@@ -46,19 +46,19 @@ public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResul
         result.setSummary("围绕失败知识点、相邻题型、原题重做和后端知识卡片安排训练。");
         result.getItems().add(item(1, knowledgePoint, problemTitle,
                 "趁错误记忆还清晰，先复盘本次失败的知识点。",
-                "说明失败用例为什么会击穿当前思路。"));
+                "说明失败用例为什么会击穿当前思路。", context.getSubmissionId()));
         result.getItems().add(item(2, category, null,
                 "练习同类题目中的相邻知识点。",
-                "对比同类题型规律和原来的错误做法。"));
+                "对比同类题型规律和原来的错误做法。", context.getSubmissionId()));
         result.getItems().add(item(3, knowledgePoint, problemTitle,
                 "回顾错题卡后重新挑战原题。",
-                "编码前先写出不变量或边界条件。"));
+                "编码前先写出不变量或边界条件。", context.getSubmissionId()));
         addKnowledgeCards(context, result);
         return result;
     }
 
     private TrainingPlanItemResult item(Integer dayIndex, String knowledgePoint, String problemTitle,
-            String reason, String reviewFocus) {
+            String reason, String reviewFocus, Long submissionId) {
         TrainingPlanItemResult item = new TrainingPlanItemResult();
         item.setItemType("PROBLEM");
         item.setDayIndex(dayIndex);
@@ -66,6 +66,11 @@ public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResul
         item.setProblemTitle(problemTitle);
         item.setReason(reason);
         item.setReviewFocus(reviewFocus);
+        item.setSourceType("SUBMISSION_FAILED");
+        item.setSourceId(submissionId);
+        item.setSourceSummary(submissionId == null
+                ? "来自本次失败提交的 AI 诊断。"
+                : "来自失败提交 #" + submissionId + " 的 AI 诊断。");
         return item;
     }
 
@@ -82,6 +87,9 @@ public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResul
                 item.setKnowledgePoint(hit.getKnowledgePoint());
                 item.setReason("结合本次错误知识点检索到的后端知识卡片，补充面试表达训练。");
                 item.setReviewFocus(compact(hit.getChunkText()));
+                item.setSourceType("RAG_KNOWLEDGE_CARD");
+                item.setSourceId(hit.getSourceId());
+                item.setSourceSummary("来自 RAG 命中的知识卡片：" + title(hit));
                 result.getItems().add(item);
             }
             return;
@@ -98,6 +106,9 @@ public class TrainingPlannerTool implements Tool<AgentContext, TrainingPlanResul
                 item.setKnowledgePoint(card.getLabel());
                 item.setReason("穿插一个 Java 后端高频知识点，保持面试表达训练。");
                 item.setReviewFocus(String.join("、", card.getTags() == null ? List.of() : card.getTags()));
+                item.setSourceType("KNOWLEDGE_CARD_REVIEW");
+                item.setSourceId(card.getId());
+                item.setSourceSummary("来自后端知识卡复习池：" + card.getTitle());
                 result.getItems().add(item);
             }
         } catch (Exception ex) {

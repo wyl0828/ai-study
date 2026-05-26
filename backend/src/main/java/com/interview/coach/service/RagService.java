@@ -7,6 +7,7 @@ import com.interview.coach.entity.AiDiagnosis;
 import com.interview.coach.entity.KnowledgeCard;
 import com.interview.coach.entity.MistakeCard;
 import com.interview.coach.entity.Problem;
+import com.interview.coach.vo.RagHealthVO;
 
 public interface RagService {
 
@@ -15,6 +16,8 @@ public interface RagService {
     RagRetrieveResult retrieveForChat(Long userId, String question, int limit);
 
     RagRetrieveResult retrieve(RagRetrieveQuery query);
+
+    RagHealthVO checkHealth();
 
     void indexProblem(Problem problem);
 

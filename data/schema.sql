@@ -273,12 +273,17 @@ CREATE TABLE rag_chunk (
     error_type VARCHAR(64),
     tags VARCHAR(512),
     metadata_json TEXT,
+    vector_point_id VARCHAR(64),
+    embedding_model VARCHAR(128),
+    embedding_dim INT,
+    vector_status VARCHAR(32),
     created_at DATETIME NOT NULL,
     INDEX idx_rag_chunk_document (document_id, chunk_index),
     INDEX idx_rag_chunk_problem (problem_id, source_type),
     INDEX idx_rag_chunk_user (user_id, source_type),
     INDEX idx_rag_chunk_knowledge (knowledge_point, source_type),
-    INDEX idx_rag_chunk_error (error_type, source_type)
+    INDEX idx_rag_chunk_error (error_type, source_type),
+    INDEX idx_rag_chunk_vector_status (vector_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE user_knowledge_card_mastery (
@@ -394,7 +399,13 @@ CREATE TABLE training_plan_item (
     knowledge_card_title VARCHAR(128),
     reason TEXT NOT NULL,
     review_focus TEXT NOT NULL,
+    source_type VARCHAR(64),
+    source_id BIGINT,
+    source_summary TEXT,
     status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+    status_updated_at DATETIME,
     INDEX idx_training_plan_item_plan_id (plan_id, day_index),
-    INDEX idx_training_plan_item_type (plan_id, item_type)
+    INDEX idx_training_plan_item_type (plan_id, item_type),
+    INDEX idx_training_plan_item_source (source_type, source_id),
+    INDEX idx_training_plan_item_status_updated (plan_id, status, status_updated_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

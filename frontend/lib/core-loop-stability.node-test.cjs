@@ -72,15 +72,23 @@ test("Dashboard uses MySQL-backed userApi only and keeps empty states instead of
   assert.match(dashboard, /userApi\.weaknesses/);
   assert.match(dashboard, /userApi\.mistakes/);
   assert.match(dashboard, /userApi\.latestPlan/);
+  assert.match(dashboard, /userApi\.trainingPlanHistory/);
+  assert.match(dashboard, /userApi\.trainingPlanActivities/);
   assert.match(dashboard, /userApi\.recentSubmissions/);
   assert.match(dashboard, /userApi\.recentMockInterviews/);
+  assert.match(dashboard, /userApi\.mockInterviewTrends/);
   assert.match(dashboard, /userApi\.errorStats/);
   assert.match(dashboard, /最近模拟面试/);
+  assert.match(dashboard, /模拟面试趋势/);
+  assert.match(dashboard, /训练计划历史/);
+  assert.match(dashboard, /最近训练完成/);
   assert.match(dashboard, /继续面试|查看报告/);
   assert.match(dashboard, /groupWeaknesses\(weaknesses\)/);
   assert.match(dashboard, /groupMistakeCards\(mistakes\)/);
   assert.match(aggregation, /export function groupWeaknesses/);
   assert.match(aggregation, /export function groupMistakeCards/);
+  assert.match(weakness, /formatWeaknessDelta/);
+  assert.doesNotMatch(weakness, /最近变化 \+\{w\.lastDeltaScore\}/);
   for (const source of [weakness, mistakes, submissions, plan, stats]) {
     assert.match(source, /还没有|暂无/);
   }
@@ -125,6 +133,17 @@ test("Dashboard keeps one page scroll and training plan items link to their task
     "mistake cards should render after the command grid as a full-width review area"
   );
   assert.match(types, /problemId\?: number \| null/);
+  assert.match(types, /sourceType\?: string \| null/);
+  assert.match(types, /sourceId\?: number \| null/);
+  assert.match(types, /sourceSummary\?: string \| null/);
+  assert.match(types, /export interface TrainingPlanHistory/);
+  assert.match(types, /completedCount: number/);
+  assert.match(types, /export interface TrainingPlanActivity/);
+  assert.match(types, /statusUpdatedAt: string \| null/);
+  assert.match(types, /export interface MockInterviewTrend/);
+  assert.match(types, /deltaScore: number/);
+  assert.match(plan, /推荐来源/);
+  assert.match(plan, /item\.sourceSummary/);
   assert.match(`${plan}\n${learning}`, /item\.itemType === "PROBLEM"/);
   assert.match(learning, /trainingPlanItemHref/);
   assert.match(learning, /`\/problem\/\$\{item\.problemId \|\| inferredProblemId\(item\)\}`/);
@@ -147,6 +166,40 @@ test("Dashboard coach view avoids duplicate weak-point panels", () => {
   assert.match(plan, /完整训练计划/);
   assert.doesNotMatch(stats, /最薄弱知识点/);
   assert.doesNotMatch(stats, /TrendingDown/);
+});
+
+test("Mock interview report restores session and shows detailed turn review", () => {
+  const page = read("components/MockInterviewPage.tsx");
+  const report = read("components/InterviewReport.tsx");
+
+  assert.match(page, /useSearchParams/);
+  assert.match(page, /sessionId/);
+  assert.match(page, /mockInterviewApi\.get\(sessionId\)/);
+  assert.match(page, /<InterviewReport report=\{session\.report\} turns=\{session\.turns\} \/>/);
+  assert.match(report, /答题复盘/);
+  assert.match(report, /turns\.map/);
+  assert.match(report, /turn\.question/);
+  assert.match(report, /turn\.userAnswer/);
+  assert.match(report, /turn\.hitKeyPoints/);
+  assert.match(report, /turn\.missingKeyPoints/);
+  assert.match(report, /turn\.expressionIssue/);
+  assert.doesNotMatch(report, /完整 Java AC|class Solution/);
+});
+
+test("Rag chat stays a controlled learning-material QA entry with visible sources", () => {
+  const page = read("components/RagChatPage.tsx");
+  const sources = read("components/RagChatSources.tsx");
+  const message = read("components/RagChatMessage.tsx");
+  const api = read("lib/api.ts");
+
+  assert.match(page, /学习资料问答 V1/);
+  assert.match(page, /不替代做题页的提交诊断主流程/);
+  assert.doesNotMatch(page, /万能助手|通用聊天|联网搜索|上传文档/);
+  assert.match(api, /\/api\/rag\/chat/);
+  assert.match(sources, /引用来源/);
+  assert.match(sources, /命中原因：\{source\.matchReason\}/);
+  assert.match(message, /source\.matchReason/);
+  assert.match(sources, /题目资料|知识卡|学习记录|历史诊断|错题卡/);
 });
 
 test("Knowledge page keeps selection, breadcrumb, topic filtering, and training state centralized", () => {

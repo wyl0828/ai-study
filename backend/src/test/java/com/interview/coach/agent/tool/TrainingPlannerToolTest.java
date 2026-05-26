@@ -57,12 +57,20 @@ class TrainingPlannerToolTest {
                 .filteredOn(item -> "PROBLEM".equals(item.getItemType()))
                 .hasSize(3);
         assertThat(result.getItems())
+                .filteredOn(item -> "PROBLEM".equals(item.getItemType()))
+                .extracting(TrainingPlanResult.TrainingPlanItemResult::getSourceType)
+                .containsOnly("SUBMISSION_FAILED");
+        assertThat(result.getItems())
                 .filteredOn(item -> "KNOWLEDGE_CARD".equals(item.getItemType()))
                 .hasSize(3);
         assertThat(result.getItems())
                 .filteredOn(item -> "KNOWLEDGE_CARD".equals(item.getItemType()))
                 .extracting(TrainingPlanResult.TrainingPlanItemResult::getKnowledgeCardTitle)
                 .containsExactly("HashMap 底层结构", "MySQL 索引为什么能加速查询", "Spring Bean 生命周期");
+        assertThat(result.getItems())
+                .filteredOn(item -> "KNOWLEDGE_CARD".equals(item.getItemType()))
+                .extracting(TrainingPlanResult.TrainingPlanItemResult::getSourceType)
+                .containsOnly("KNOWLEDGE_CARD_REVIEW");
         assertThat(result.getSummary()).contains("后端知识卡片");
         verify(trainingPlanService).savePlan(any(), any());
     }
@@ -106,6 +114,14 @@ class TrainingPlannerToolTest {
                 .filteredOn(item -> "KNOWLEDGE_CARD".equals(item.getItemType()))
                 .extracting(TrainingPlanResult.TrainingPlanItemResult::getReason)
                 .containsExactly("结合本次错误知识点检索到的后端知识卡片，补充面试表达训练。");
+        assertThat(result.getItems())
+                .filteredOn(item -> "KNOWLEDGE_CARD".equals(item.getItemType()))
+                .extracting(TrainingPlanResult.TrainingPlanItemResult::getSourceType)
+                .containsExactly("RAG_KNOWLEDGE_CARD");
+        assertThat(result.getItems())
+                .filteredOn(item -> "KNOWLEDGE_CARD".equals(item.getItemType()))
+                .extracting(TrainingPlanResult.TrainingPlanItemResult::getSourceSummary)
+                .containsExactly("来自 RAG 命中的知识卡片：HashMap 查找顺序");
         verify(trainingPlanService).savePlan(eq(context), any());
     }
 
@@ -115,6 +131,7 @@ class TrainingPlannerToolTest {
         problem.setTitle("两数之和");
         problem.setCategory("HashMap");
         context.setProblem(problem);
+        context.setSubmissionId(101L);
         AiDiagnosisResult diagnosis = new AiDiagnosisResult();
         diagnosis.setKnowledgePoint("HashMap Lookup");
         context.setDiagnosis(diagnosis);

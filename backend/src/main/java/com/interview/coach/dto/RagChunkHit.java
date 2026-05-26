@@ -27,9 +27,11 @@ public class RagChunkHit {
 
     private int score;
 
+    private String matchReason;
+
     public String toPromptLine(int index) {
-        return "%d. [%s#%s score=%d] %s".formatted(
-                index, sourceType, sourceId, score, compact(chunkText));
+        return "%d. [%s#%s score=%d reason=%s] %s".formatted(
+                index, sourceType, sourceId, score, compact(matchReason), compact(chunkText));
     }
 
     private String compact(String value) {

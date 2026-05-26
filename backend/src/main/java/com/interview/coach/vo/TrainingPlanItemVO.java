@@ -1,5 +1,6 @@
 package com.interview.coach.vo;
 
+import java.time.LocalDateTime;
 import lombok.Data;
 
 @Data
@@ -25,5 +26,13 @@ public class TrainingPlanItemVO {
 
     private String reviewFocus;
 
+    private String sourceType;
+
+    private Long sourceId;
+
+    private String sourceSummary;
+
     private String status;
+
+    private LocalDateTime statusUpdatedAt;
 }

@@ -8,7 +8,10 @@ import type {
   ErrorStatsVO,
   MistakeCard as MistakeCardType,
   MockInterviewRecent,
+  MockInterviewTrend,
   SubmissionHistoryVO,
+  TrainingPlanActivity,
+  TrainingPlanHistory,
   TrainingPlan as TrainingPlanType,
   UserWeakness,
 } from "@/lib/types";
@@ -50,13 +53,34 @@ function mockInterviewStatusLabel(status: MockInterviewRecent["status"]) {
   return "进行中";
 }
 
+function trainingPlanStatusLabel(status: string) {
+  if (status === "ACTIVE") return "进行中";
+  if (status === "COMPLETED") return "已完成";
+  if (status === "REGENERATED") return "已重新生成";
+  return status;
+}
+
+function trainingActivityStatusLabel(status: TrainingPlanActivity["status"]) {
+  if (status === "COMPLETED") return "已完成";
+  if (status === "SKIPPED") return "已跳过";
+  return status;
+}
+
+function formatActivityTime(value: string | null) {
+  if (!value) return "";
+  return value.replace("T", " ").slice(0, 16);
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStatsVO>(emptyStats);
   const [weaknesses, setWeaknesses] = useState<UserWeakness[]>([]);
   const [mistakes, setMistakes] = useState<MistakeCardType[]>([]);
   const [trainingPlan, setTrainingPlan] = useState<TrainingPlanType | null>(null);
+  const [trainingPlanHistory, setTrainingPlanHistory] = useState<TrainingPlanHistory[]>([]);
+  const [trainingActivities, setTrainingActivities] = useState<TrainingPlanActivity[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionHistoryVO[]>([]);
   const [mockInterviews, setMockInterviews] = useState<MockInterviewRecent[]>([]);
+  const [mockInterviewTrends, setMockInterviewTrends] = useState<MockInterviewTrend[]>([]);
   const [errorStats, setErrorStats] = useState<ErrorStatsVO | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
@@ -75,16 +99,22 @@ export default function DashboardPage() {
           weaknessesResponse,
           mistakesResponse,
           planResponse,
+          planHistoryResponse,
+          planActivitiesResponse,
           submissionsResponse,
           mockInterviewsResponse,
+          mockInterviewTrendsResponse,
           errorStatsResponse,
         ] = await Promise.all([
           userApi.stats(DEMO_USER_ID),
           userApi.weaknesses(DEMO_USER_ID),
           userApi.mistakes(DEMO_USER_ID),
           userApi.latestPlan(DEMO_USER_ID),
+          userApi.trainingPlanHistory(DEMO_USER_ID),
+          userApi.trainingPlanActivities(DEMO_USER_ID),
           userApi.recentSubmissions(DEMO_USER_ID),
           userApi.recentMockInterviews(DEMO_USER_ID),
+          userApi.mockInterviewTrends(DEMO_USER_ID),
           userApi.errorStats(DEMO_USER_ID),
         ]);
 
@@ -96,8 +126,11 @@ export default function DashboardPage() {
         setWeaknesses(weaknessesResponse.data);
         setMistakes(mistakesResponse.data);
         setTrainingPlan(planResponse.data);
+        setTrainingPlanHistory(planHistoryResponse.data);
+        setTrainingActivities(planActivitiesResponse.data);
         setSubmissions(submissionsResponse.data);
         setMockInterviews(mockInterviewsResponse.data);
+        setMockInterviewTrends(mockInterviewTrendsResponse.data);
         setErrorStats(errorStatsResponse.data);
       } catch (err) {
         if (!cancelled) {
@@ -128,8 +161,14 @@ export default function DashboardPage() {
   });
 
   const refreshPlan = async () => {
-    const response = await userApi.latestPlan(DEMO_USER_ID);
-    setTrainingPlan(response.data);
+    const [planResponse, historyResponse, activitiesResponse] = await Promise.all([
+      userApi.latestPlan(DEMO_USER_ID),
+      userApi.trainingPlanHistory(DEMO_USER_ID),
+      userApi.trainingPlanActivities(DEMO_USER_ID),
+    ]);
+    setTrainingPlan(planResponse.data);
+    setTrainingPlanHistory(historyResponse.data);
+    setTrainingActivities(activitiesResponse.data);
   };
 
   const updatePlanItemStatus = async (
@@ -213,6 +252,49 @@ export default function DashboardPage() {
             updatingItemId={updatingItemId}
             onItemStatusChange={updatePlanItemStatus}
           />
+          <section className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5">
+            <h2 className="text-base font-semibold text-on-surface">最近训练完成</h2>
+            <p className="mt-1 text-xs text-on-surface-variant">
+              记录最近完成或跳过的训练项，帮助判断学习节奏是否持续。
+            </p>
+            {trainingActivities.length === 0 ? (
+              <p className="mt-4 text-sm text-on-surface-variant">
+                暂无最近完成的训练项，完成或跳过任务后会出现在这里。
+              </p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {trainingActivities.slice(0, 5).map((activity) => (
+                  <div
+                    key={activity.itemId}
+                    className="rounded-lg border border-outline-variant/30 px-4 py-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium text-on-surface">
+                          {activity.taskTitle}
+                        </div>
+                        <div className="mt-1 text-xs text-on-surface-variant">
+                          {trainingActivityStatusLabel(activity.status)}
+                          {activity.statusUpdatedAt
+                            ? ` · ${formatActivityTime(activity.statusUpdatedAt)}`
+                            : ""}
+                          {activity.planTitle ? ` · ${activity.planTitle}` : ""}
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-emerald-50 px-2 py-1 text-[11px] text-emerald-700">
+                        {activity.itemType === "KNOWLEDGE_CARD" ? "知识复习" : "算法复盘"}
+                      </span>
+                    </div>
+                    {activity.sourceSummary && (
+                      <p className="mt-2 text-xs text-on-surface-variant">
+                        {activity.sourceSummary}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
           <WeaknessList weaknesses={aggregatedWeaknesses} />
           <SubmissionHistory submissions={submissions} />
           <section className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5">
@@ -275,6 +357,56 @@ export default function DashboardPage() {
               </div>
             )}
           </section>
+          <section className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5">
+            <h2 className="text-base font-semibold text-on-surface">模拟面试趋势</h2>
+            <p className="mt-1 text-xs text-on-surface-variant">
+              同一知识点多次面试后的分数变化，用来判断复盘是否真的变稳。
+            </p>
+            {mockInterviewTrends.length === 0 ? (
+              <p className="mt-4 text-sm text-on-surface-variant">
+                暂无可比较的知识点趋势，完成同一知识点的多次面试后会显示变化。
+              </p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {mockInterviewTrends.slice(0, 5).map((trend) => (
+                  <div
+                    key={trend.knowledgeCardId}
+                    className="rounded-lg border border-outline-variant/30 px-4 py-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium text-on-surface">
+                          {trend.knowledgePoint}
+                        </div>
+                        <div className="mt-1 text-xs text-on-surface-variant">
+                          最近 {trend.latestScore} 分
+                          {trend.previousScore != null ? ` · 上次 ${trend.previousScore} 分` : ""}
+                          {trend.lastInterviewAt ? ` · ${formatActivityTime(trend.lastInterviewAt)}` : ""}
+                        </div>
+                      </div>
+                      <span
+                        className={`rounded-full px-2 py-1 text-[11px] ${
+                          trend.deltaScore >= 0
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-amber-50 text-amber-700"
+                        }`}
+                      >
+                        {trend.trendLabel}
+                      </span>
+                    </div>
+                    {trend.latestIssue && (
+                      <p className="mt-2 text-xs text-on-surface-variant">
+                        最近卡点：{trend.latestIssue}
+                      </p>
+                    )}
+                    <div className="mt-2 text-[11px] text-on-surface-variant">
+                      已面试 {trend.interviewCount} 次 · {mockInterviewCategoryLabels[trend.category] || trend.category}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
 
         <aside className="space-y-6 lg:sticky lg:top-24 xl:sticky xl:top-24 self-start">
@@ -285,6 +417,40 @@ export default function DashboardPage() {
             onItemStatusChange={updatePlanItemStatus}
             onRegenerate={regeneratePlan}
           />
+          <section className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5">
+            <h2 className="text-base font-semibold text-on-surface">训练计划历史</h2>
+            <p className="mt-1 text-xs text-on-surface-variant">
+              查看最近几轮训练计划的状态和完成情况。
+            </p>
+            {trainingPlanHistory.length === 0 ? (
+              <p className="mt-4 text-sm text-on-surface-variant">
+                暂无历史训练计划，完成一次诊断或手动生成后会出现在这里。
+              </p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {trainingPlanHistory.slice(0, 5).map((plan) => (
+                  <div
+                    key={plan.id}
+                    className="rounded-lg border border-outline-variant/30 px-3 py-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium text-on-surface">
+                          {plan.title}
+                        </div>
+                        <div className="mt-1 text-xs text-on-surface-variant">
+                          {trainingPlanStatusLabel(plan.status)}
+                          {" · "}
+                          完成 {plan.completedCount}/{plan.itemCount}
+                          {plan.skippedCount > 0 ? ` · 跳过 ${plan.skippedCount}` : ""}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
           <ErrorStats stats={errorStats} loading={loading} />
           <KnowledgeTrainingEntry />
 

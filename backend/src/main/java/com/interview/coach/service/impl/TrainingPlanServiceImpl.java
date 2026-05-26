@@ -5,15 +5,18 @@ import com.interview.coach.agent.AgentContext;
 import com.interview.coach.dto.TrainingPlanResult;
 import com.interview.coach.dto.TrainingPlanResult.TrainingPlanItemResult;
 import com.interview.coach.entity.UserWeakness;
+import com.interview.coach.entity.UserWeaknessEvent;
 import com.interview.coach.handler.BusinessException;
 import com.interview.coach.entity.TrainingPlan;
 import com.interview.coach.entity.TrainingPlanItem;
 import com.interview.coach.mapper.TrainingPlanItemMapper;
 import com.interview.coach.mapper.TrainingPlanMapper;
+import com.interview.coach.mapper.UserWeaknessEventMapper;
 import com.interview.coach.mapper.UserWeaknessMapper;
 import com.interview.coach.service.KnowledgeCardService;
 import com.interview.coach.service.TrainingPlanService;
 import com.interview.coach.vo.KnowledgeCardVO;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,11 +31,15 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
 
     private static final int PLAN_DAYS = 3;
 
+    private static final BigDecimal TRAINING_COMPLETION_DELTA = new BigDecimal("-2");
+
     private final TrainingPlanMapper trainingPlanMapper;
 
     private final TrainingPlanItemMapper trainingPlanItemMapper;
 
     private final UserWeaknessMapper userWeaknessMapper;
+
+    private final UserWeaknessEventMapper userWeaknessEventMapper;
 
     private final KnowledgeCardService knowledgeCardService;
 
@@ -69,6 +76,9 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
             item.setKnowledgeCardTitle(itemResult.getKnowledgeCardTitle());
             item.setReason(itemResult.getReason());
             item.setReviewFocus(itemResult.getReviewFocus());
+            item.setSourceType(itemResult.getSourceType());
+            item.setSourceId(itemResult.getSourceId());
+            item.setSourceSummary(itemResult.getSourceSummary());
             item.setStatus("PENDING");
             trainingPlanItemMapper.insert(item);
         }
@@ -87,13 +97,67 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
             throw new BusinessException(404, "training plan item not found");
         }
         item.setStatus(normalizedStatus);
+        item.setStatusUpdatedAt(LocalDateTime.now());
         trainingPlanItemMapper.updateById(item);
+        recordTrainingCompletion(userId, item, normalizedStatus, item.getStatusUpdatedAt());
         List<TrainingPlanItem> items = trainingPlanItemMapper.selectList(new LambdaQueryWrapper<TrainingPlanItem>()
                 .eq(TrainingPlanItem::getPlanId, plan.getId()));
         if (!items.isEmpty() && items.stream().allMatch(this::isTerminalItem)) {
             plan.setStatus("COMPLETED");
             trainingPlanMapper.updateById(plan);
         }
+    }
+
+    private void recordTrainingCompletion(Long userId, TrainingPlanItem item, String status, LocalDateTime now) {
+        if (!"COMPLETED".equals(status)
+                || item.getKnowledgePoint() == null
+                || item.getKnowledgePoint().isBlank()) {
+            return;
+        }
+
+        List<UserWeakness> weaknesses = userWeaknessMapper.selectList(new LambdaQueryWrapper<UserWeakness>()
+                .eq(UserWeakness::getUserId, userId)
+                .eq(UserWeakness::getKnowledgePoint, item.getKnowledgePoint())
+                .orderByDesc(UserWeakness::getWeaknessScore)
+                .last("LIMIT 1"));
+        if (weaknesses == null || weaknesses.isEmpty()) {
+            return;
+        }
+
+        UserWeakness weakness = weaknesses.get(0);
+        BigDecimal beforeScore = weakness.getWeaknessScore() == null ? BigDecimal.ZERO : weakness.getWeaknessScore();
+        BigDecimal afterScore = beforeScore.add(TRAINING_COMPLETION_DELTA).max(BigDecimal.ZERO);
+        BigDecimal effectiveDelta = afterScore.subtract(beforeScore);
+        if (effectiveDelta.compareTo(BigDecimal.ZERO) == 0) {
+            return;
+        }
+
+        weakness.setWeaknessScore(afterScore);
+        weakness.setUpdatedAt(now);
+        userWeaknessMapper.updateById(weakness);
+
+        UserWeaknessEvent event = new UserWeaknessEvent();
+        event.setUserId(userId);
+        event.setKnowledgePoint(weakness.getKnowledgePoint());
+        event.setErrorType(weakness.getErrorType());
+        event.setSourceType("TRAINING_PLAN_COMPLETED");
+        event.setSourceId(item.getId());
+        event.setDeltaScore(effectiveDelta);
+        event.setBeforeScore(beforeScore);
+        event.setAfterScore(afterScore);
+        event.setReason("完成训练项：" + trainingItemTitle(item));
+        event.setCreatedAt(now);
+        userWeaknessEventMapper.insert(event);
+    }
+
+    private String trainingItemTitle(TrainingPlanItem item) {
+        String title = "KNOWLEDGE_CARD".equalsIgnoreCase(item.getItemType())
+                ? item.getKnowledgeCardTitle()
+                : item.getProblemTitle();
+        if (title != null && !title.isBlank()) {
+            return title;
+        }
+        return item.getKnowledgePoint();
     }
 
     @Override
@@ -169,12 +233,13 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
             UserWeakness weakness, KnowledgeCardVO knowledgeCard, int dayIndex) {
         return List.of(
                 planItem(weakness.getKnowledgePoint(), weakness.getKnowledgePoint() + "专项复盘", dayIndex,
-                        primaryReasonForDay(dayIndex), primaryReviewFocusForDay(dayIndex)),
+                        primaryReasonForDay(dayIndex), primaryReviewFocusForDay(dayIndex),
+                        "USER_WEAKNESS", null, "来自当前薄弱点排行：" + weakness.getKnowledgePoint()),
                 knowledgeCardItem(knowledgeCard, weakness.getKnowledgePoint(), dayIndex));
     }
 
     private TrainingPlanItemResult planItem(String knowledgePoint, String problemTitle, int dayIndex,
-            String reason, String reviewFocus) {
+            String reason, String reviewFocus, String sourceType, Long sourceId, String sourceSummary) {
         TrainingPlanItemResult item = new TrainingPlanItemResult();
         item.setItemType("PROBLEM");
         item.setDayIndex(dayIndex);
@@ -182,13 +247,17 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         item.setProblemTitle(problemTitle);
         item.setReason(reason);
         item.setReviewFocus(reviewFocus);
+        item.setSourceType(sourceType);
+        item.setSourceId(sourceId);
+        item.setSourceSummary(sourceSummary);
         return item;
     }
 
     private List<TrainingPlanItemResult> defaultItems(int dayIndex, List<KnowledgeCardVO> reviewCards) {
         return List.of(
                 planItem("基础编码习惯", "近期错题复盘", dayIndex,
-                        primaryReasonForDay(dayIndex), primaryReviewFocusForDay(dayIndex)),
+                        primaryReasonForDay(dayIndex), primaryReviewFocusForDay(dayIndex),
+                        "GENERAL_REVIEW", null, "来自当前学习数据为空时的通用复盘安排。"),
                 knowledgeCardItem(knowledgeCardForDay(reviewCards, dayIndex), "基础编码习惯", dayIndex));
     }
 
@@ -201,6 +270,11 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         item.setKnowledgePoint(card == null ? fallbackKnowledgePoint : card.getLabel());
         item.setReason(knowledgeReasonForDay(dayIndex));
         item.setReviewFocus(card == null ? knowledgeReviewFocusForDay(dayIndex) : cardReviewFocus(card));
+        item.setSourceType("KNOWLEDGE_CARD_REVIEW");
+        item.setSourceId(card == null ? null : card.getId());
+        item.setSourceSummary(card == null
+                ? "来自通用后端知识卡复习安排。"
+                : "来自后端知识卡复习池：" + card.getTitle());
         return item;
     }
 

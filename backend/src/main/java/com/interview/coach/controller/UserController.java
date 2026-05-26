@@ -11,8 +11,11 @@ import com.interview.coach.vo.DashboardStatsVO;
 import com.interview.coach.vo.ErrorStatsVO;
 import com.interview.coach.vo.MistakeCardVO;
 import com.interview.coach.vo.MockInterviewRecentVO;
+import com.interview.coach.vo.MockInterviewTrendVO;
 import com.interview.coach.vo.SelfTestRecordVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
+import com.interview.coach.vo.TrainingPlanActivityVO;
+import com.interview.coach.vo.TrainingPlanHistoryVO;
 import com.interview.coach.vo.TrainingPlanVO;
 import com.interview.coach.vo.UserWeaknessEventVO;
 import com.interview.coach.vo.UserWeaknessVO;
@@ -66,6 +69,20 @@ public class UserController {
         return ApiResponse.success(userLearningService.getLatestTrainingPlan(userId));
     }
 
+    @GetMapping("/{userId}/training-plans/history")
+    public ApiResponse<List<TrainingPlanHistoryVO>> getTrainingPlanHistory(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "5") int limit) {
+        return ApiResponse.success(userLearningService.getTrainingPlanHistory(userId, limit));
+    }
+
+    @GetMapping("/{userId}/training-plans/activities/recent")
+    public ApiResponse<List<TrainingPlanActivityVO>> getRecentTrainingActivities(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "5") int limit) {
+        return ApiResponse.success(userLearningService.getRecentTrainingActivities(userId, limit));
+    }
+
     @PatchMapping("/{userId}/training-plans/items/{itemId}/status")
     public ApiResponse<Void> updateTrainingPlanItemStatus(
             @PathVariable Long userId,
@@ -111,6 +128,13 @@ public class UserController {
             @PathVariable Long userId,
             @RequestParam(defaultValue = "5") int limit) {
         return ApiResponse.success(userLearningService.getRecentMockInterviews(userId, limit));
+    }
+
+    @GetMapping("/{userId}/mock-interviews/trends")
+    public ApiResponse<List<MockInterviewTrendVO>> getMockInterviewTrends(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "5") int limit) {
+        return ApiResponse.success(userLearningService.getMockInterviewTrends(userId, limit));
     }
 
     @GetMapping("/{userId}/dashboard/error-stats")

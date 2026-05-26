@@ -5,26 +5,35 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.interview.coach.entity.MistakeCard;
+import com.interview.coach.entity.KnowledgeCard;
 import com.interview.coach.entity.MockInterviewReport;
 import com.interview.coach.entity.MockInterviewSession;
+import com.interview.coach.entity.MockInterviewTurn;
 import com.interview.coach.entity.Problem;
 import com.interview.coach.entity.Submission;
 import com.interview.coach.entity.TrainingPlan;
 import com.interview.coach.entity.TrainingPlanItem;
 import com.interview.coach.entity.UserWeakness;
+import com.interview.coach.entity.UserWeaknessEvent;
 import com.interview.coach.mapper.MistakeCardMapper;
+import com.interview.coach.mapper.KnowledgeCardMapper;
 import com.interview.coach.mapper.MockInterviewReportMapper;
 import com.interview.coach.mapper.MockInterviewSessionMapper;
+import com.interview.coach.mapper.MockInterviewTurnMapper;
 import com.interview.coach.mapper.ProblemMapper;
 import com.interview.coach.mapper.SubmissionMapper;
 import com.interview.coach.mapper.TrainingPlanItemMapper;
 import com.interview.coach.mapper.TrainingPlanMapper;
+import com.interview.coach.mapper.UserWeaknessEventMapper;
 import com.interview.coach.mapper.UserWeaknessMapper;
 import com.interview.coach.service.impl.UserLearningServiceImpl;
 import com.interview.coach.vo.DashboardStatsVO;
 import com.interview.coach.vo.MistakeCardVO;
 import com.interview.coach.vo.MockInterviewRecentVO;
+import com.interview.coach.vo.MockInterviewTrendVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
+import com.interview.coach.vo.TrainingPlanActivityVO;
+import com.interview.coach.vo.TrainingPlanHistoryVO;
 import com.interview.coach.vo.TrainingPlanVO;
 import com.interview.coach.vo.UserWeaknessVO;
 import com.interview.coach.vo.ErrorStatsVO;
@@ -48,6 +57,9 @@ class UserLearningServiceImplTest {
     private UserWeaknessMapper userWeaknessMapper;
 
     @Mock
+    private UserWeaknessEventMapper userWeaknessEventMapper;
+
+    @Mock
     private MistakeCardMapper mistakeCardMapper;
 
     @Mock
@@ -64,6 +76,12 @@ class UserLearningServiceImplTest {
 
     @Mock
     private MockInterviewReportMapper mockInterviewReportMapper;
+
+    @Mock
+    private MockInterviewTurnMapper mockInterviewTurnMapper;
+
+    @Mock
+    private KnowledgeCardMapper knowledgeCardMapper;
 
     @InjectMocks
     private UserLearningServiceImpl userLearningService;
@@ -176,6 +194,9 @@ class UserLearningServiceImplTest {
         item.setKnowledgePoint("Java 集合");
         item.setReason("复习 Java 后端高频知识点。");
         item.setReviewFocus("数组、链表、红黑树、扩容。");
+        item.setSourceType("RAG_KNOWLEDGE_CARD");
+        item.setSourceId(7L);
+        item.setSourceSummary("来自 RAG 命中的知识卡片。");
         item.setStatus("PENDING");
         when(trainingPlanMapper.selectOne(any())).thenReturn(plan);
         when(trainingPlanItemMapper.selectList(any())).thenReturn(List.of(item));
@@ -186,6 +207,87 @@ class UserLearningServiceImplTest {
         assertThat(result.getItems().get(0).getItemType()).isEqualTo("KNOWLEDGE_CARD");
         assertThat(result.getItems().get(0).getKnowledgeCardId()).isEqualTo(7L);
         assertThat(result.getItems().get(0).getKnowledgeCardTitle()).isEqualTo("HashMap 底层结构");
+        assertThat(result.getItems().get(0).getSourceType()).isEqualTo("RAG_KNOWLEDGE_CARD");
+        assertThat(result.getItems().get(0).getSourceId()).isEqualTo(7L);
+        assertThat(result.getItems().get(0).getSourceSummary()).contains("RAG");
+    }
+
+    @Test
+    void getTrainingPlanHistoryReturnsPlanSummariesWithItemCounts() {
+        TrainingPlan active = trainingPlan();
+        active.setId(100L);
+        active.setTitle("当前训练计划");
+        active.setStatus("ACTIVE");
+        TrainingPlan completed = trainingPlan();
+        completed.setId(99L);
+        completed.setTitle("上一轮训练计划");
+        completed.setStatus("COMPLETED");
+        when(trainingPlanMapper.selectList(any())).thenReturn(List.of(active, completed));
+
+        TrainingPlanItem pending = new TrainingPlanItem();
+        pending.setPlanId(100L);
+        pending.setStatus("PENDING");
+        TrainingPlanItem done = new TrainingPlanItem();
+        done.setPlanId(100L);
+        done.setStatus("COMPLETED");
+        TrainingPlanItem skipped = new TrainingPlanItem();
+        skipped.setPlanId(99L);
+        skipped.setStatus("SKIPPED");
+        when(trainingPlanItemMapper.selectList(any())).thenReturn(List.of(pending, done, skipped));
+
+        List<TrainingPlanHistoryVO> result = userLearningService.getTrainingPlanHistory(1L, 5);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getId()).isEqualTo(100L);
+        assertThat(result.get(0).getTitle()).isEqualTo("当前训练计划");
+        assertThat(result.get(0).getStatus()).isEqualTo("ACTIVE");
+        assertThat(result.get(0).getItemCount()).isEqualTo(2);
+        assertThat(result.get(0).getCompletedCount()).isEqualTo(1);
+        assertThat(result.get(0).getSkippedCount()).isEqualTo(0);
+        assertThat(result.get(1).getId()).isEqualTo(99L);
+        assertThat(result.get(1).getItemCount()).isEqualTo(1);
+        assertThat(result.get(1).getCompletedCount()).isEqualTo(0);
+        assertThat(result.get(1).getSkippedCount()).isEqualTo(1);
+    }
+
+    @Test
+    void getRecentTrainingActivitiesReturnsCompletedAndSkippedItemsWithPlanContext() {
+        TrainingPlan plan = trainingPlan();
+        plan.setId(100L);
+        plan.setTitle("3 天当前弱点专项训练");
+        when(trainingPlanMapper.selectList(any())).thenReturn(List.of(plan));
+
+        TrainingPlanItem completed = new TrainingPlanItem();
+        completed.setId(7L);
+        completed.setPlanId(100L);
+        completed.setItemType("PROBLEM");
+        completed.setKnowledgePoint("HashMap 在两数之和中的应用");
+        completed.setProblemTitle("两数之和专项复盘");
+        completed.setSourceSummary("来自失败提交 #42 的 AI 诊断。");
+        completed.setStatus("COMPLETED");
+        completed.setStatusUpdatedAt(LocalDateTime.of(2026, 5, 24, 20, 0));
+
+        TrainingPlanItem skipped = new TrainingPlanItem();
+        skipped.setId(8L);
+        skipped.setPlanId(100L);
+        skipped.setItemType("KNOWLEDGE_CARD");
+        skipped.setKnowledgePoint("Java 集合");
+        skipped.setKnowledgeCardTitle("HashMap 底层结构");
+        skipped.setStatus("SKIPPED");
+        skipped.setStatusUpdatedAt(LocalDateTime.of(2026, 5, 24, 19, 0));
+        when(trainingPlanItemMapper.selectList(any())).thenReturn(List.of(completed, skipped));
+
+        List<TrainingPlanActivityVO> result = userLearningService.getRecentTrainingActivities(1L, 5);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getItemId()).isEqualTo(7L);
+        assertThat(result.get(0).getPlanTitle()).isEqualTo("3 天当前弱点专项训练");
+        assertThat(result.get(0).getTaskTitle()).isEqualTo("两数之和专项复盘");
+        assertThat(result.get(0).getStatus()).isEqualTo("COMPLETED");
+        assertThat(result.get(0).getSourceSummary()).contains("失败提交");
+        assertThat(result.get(0).getStatusUpdatedAt()).isEqualTo(LocalDateTime.of(2026, 5, 24, 20, 0));
+        assertThat(result.get(1).getTaskTitle()).isEqualTo("HashMap 底层结构");
+        assertThat(result.get(1).getStatus()).isEqualTo("SKIPPED");
     }
 
     @Test
@@ -203,6 +305,25 @@ class UserLearningServiceImplTest {
         assertThat(result.get(0).getWeaknessScore()).isEqualByComparingTo("69.0");
         assertThat(result.get(0).getErrorType()).isEqualTo("LOGIC_ERROR");
         assertThat(result.get(1).getKnowledgePoint()).isEqualTo("HashMap 基础查找");
+    }
+
+    @Test
+    void getWeaknessesUsesTrainingCompletionEventAsImprovementTrend() {
+        when(userWeaknessMapper.selectList(any())).thenReturn(List.of(
+                weakness(1L, "HashMap 在两数之和中的应用", "LOGIC_ERROR", 3, "36.0")));
+        UserWeaknessEvent event = new UserWeaknessEvent();
+        event.setKnowledgePoint("HashMap 在两数之和中的应用");
+        event.setSourceType("TRAINING_PLAN_COMPLETED");
+        event.setDeltaScore(new BigDecimal("-2"));
+        event.setCreatedAt(LocalDateTime.of(2026, 5, 24, 21, 0));
+        when(userWeaknessEventMapper.selectList(any())).thenReturn(List.of(event));
+
+        List<UserWeaknessVO> result = userLearningService.getWeaknesses(1L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getTrendLabel()).isEqualTo("最近改善");
+        assertThat(result.get(0).getLastDeltaScore()).isEqualByComparingTo("-2");
+        assertThat(result.get(0).getLastEventAt()).isEqualTo(LocalDateTime.of(2026, 5, 24, 21, 0));
     }
 
     @Test
@@ -286,6 +407,42 @@ class UserLearningServiceImplTest {
         assertThat(result.get(1).getWeaknessTags()).isEmpty();
     }
 
+    @Test
+    void getMockInterviewTrendsShowsScoreDeltaByKnowledgeCard() {
+        MockInterviewSession latest = mockSession(40L, "REPORTED");
+        latest.setFinishedAt(LocalDateTime.of(2026, 5, 24, 20, 0));
+        latest.setCreatedAt(LocalDateTime.of(2026, 5, 24, 19, 45));
+        MockInterviewSession previous = mockSession(39L, "REPORTED");
+        previous.setFinishedAt(LocalDateTime.of(2026, 5, 23, 20, 0));
+        previous.setCreatedAt(LocalDateTime.of(2026, 5, 23, 19, 45));
+        when(mockInterviewSessionMapper.selectList(any())).thenReturn(List.of(latest, previous));
+        when(mockInterviewTurnMapper.selectList(any())).thenReturn(List.of(
+                mockTurn(1L, 40L, 7L, 80, "Bean 生命周期缺少销毁阶段",
+                        LocalDateTime.of(2026, 5, 24, 19, 50)),
+                mockTurn(2L, 40L, 7L, 70, "追问里没有说清楚 BeanPostProcessor",
+                        LocalDateTime.of(2026, 5, 24, 19, 55)),
+                mockTurn(3L, 39L, 7L, 60, "初始化流程顺序不清楚",
+                        LocalDateTime.of(2026, 5, 23, 19, 50))));
+        KnowledgeCard card = new KnowledgeCard();
+        card.setId(7L);
+        card.setCategory("SPRING");
+        card.setTitle("Spring Bean 生命周期");
+        when(knowledgeCardMapper.selectBatchIds(any())).thenReturn(List.of(card));
+
+        List<MockInterviewTrendVO> result = userLearningService.getMockInterviewTrends(1L, 5);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getKnowledgeCardId()).isEqualTo(7L);
+        assertThat(result.get(0).getKnowledgePoint()).isEqualTo("Spring Bean 生命周期");
+        assertThat(result.get(0).getLatestSessionId()).isEqualTo(40L);
+        assertThat(result.get(0).getLatestScore()).isEqualByComparingTo("75.0");
+        assertThat(result.get(0).getPreviousScore()).isEqualByComparingTo("60.0");
+        assertThat(result.get(0).getDeltaScore()).isEqualByComparingTo("15.0");
+        assertThat(result.get(0).getTrendLabel()).contains("提升");
+        assertThat(result.get(0).getInterviewCount()).isEqualTo(2);
+        assertThat(result.get(0).getLatestIssue()).contains("Bean 生命周期");
+    }
+
     private Submission submission(Long problemId, String status) {
         Submission submission = new Submission();
         submission.setUserId(1L);
@@ -327,6 +484,20 @@ class UserLearningServiceImplTest {
         session.setCreatedAt(LocalDateTime.now().minusMinutes(15));
         session.setUpdatedAt(LocalDateTime.now().minusMinutes(5));
         return session;
+    }
+
+    private MockInterviewTurn mockTurn(Long id, Long sessionId, Long knowledgeCardId, Integer score,
+            String missingKeyPoints, LocalDateTime createdAt) {
+        MockInterviewTurn turn = new MockInterviewTurn();
+        turn.setId(id);
+        turn.setSessionId(sessionId);
+        turn.setKnowledgeCardId(knowledgeCardId);
+        turn.setTurnOrder(id.intValue());
+        turn.setTurnType("MAIN");
+        turn.setScore(score);
+        turn.setMissingKeyPoints(missingKeyPoints);
+        turn.setCreatedAt(createdAt);
+        return turn;
     }
 
     private UserWeakness weakness(Long id, String knowledgePoint, String errorType,

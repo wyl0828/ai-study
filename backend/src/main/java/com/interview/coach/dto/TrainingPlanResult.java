@@ -31,5 +31,11 @@ public class TrainingPlanResult {
         private String reason;
 
         private String reviewFocus;
+
+        private String sourceType;
+
+        private Long sourceId;
+
+        private String sourceSummary;
     }
 }

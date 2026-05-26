@@ -35,5 +35,13 @@ public class RagChunk {
 
     private String metadataJson;
 
+    private String vectorPointId;
+
+    private String embeddingModel;
+
+    private Integer embeddingDim;
+
+    private String vectorStatus;
+
     private LocalDateTime createdAt;
 }
