@@ -3,6 +3,7 @@ package com.interview.coach.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
@@ -141,6 +142,34 @@ class TrainingPlanServiceImplTest {
     }
 
     @Test
+    void updateItemStatusTreatsLegacyNullItemStatusAsPendingWhenCheckingPlanCompletion() {
+        TrainingPlanItem item = new TrainingPlanItem();
+        item.setId(5L);
+        item.setPlanId(100L);
+        item.setStatus("PENDING");
+        TrainingPlan plan = new TrainingPlan();
+        plan.setId(100L);
+        plan.setUserId(1L);
+        plan.setStatus("ACTIVE");
+        TrainingPlanItem completed = new TrainingPlanItem();
+        completed.setId(5L);
+        completed.setPlanId(100L);
+        completed.setStatus("COMPLETED");
+        TrainingPlanItem legacyPending = new TrainingPlanItem();
+        legacyPending.setId(6L);
+        legacyPending.setPlanId(100L);
+        legacyPending.setStatus(null);
+        when(trainingPlanItemMapper.selectById(5L)).thenReturn(item);
+        when(trainingPlanMapper.selectById(100L)).thenReturn(plan);
+        when(trainingPlanItemMapper.selectList(any())).thenReturn(List.of(completed, legacyPending));
+
+        trainingPlanService.updateItemStatus(1L, 5L, "COMPLETED");
+
+        verify(trainingPlanItemMapper).updateById(any(TrainingPlanItem.class));
+        verify(trainingPlanMapper, never()).updateById(any(TrainingPlan.class));
+    }
+
+    @Test
     void updateItemStatusRecordsWeaknessImprovementWhenTrainingItemIsCompleted() {
         TrainingPlanItem item = new TrainingPlanItem();
         item.setId(5L);
@@ -173,6 +202,29 @@ class TrainingPlanServiceImplTest {
         assertThat(eventCaptor.getValue().getBeforeScore()).isEqualByComparingTo("38");
         assertThat(eventCaptor.getValue().getAfterScore()).isEqualByComparingTo("36");
         assertThat(eventCaptor.getValue().getReason()).contains("两数之和专项复盘");
+    }
+
+    @Test
+    void updateItemStatusDoesNotRecordDuplicateImprovementWhenItemAlreadyCompleted() {
+        TrainingPlanItem item = new TrainingPlanItem();
+        item.setId(5L);
+        item.setPlanId(100L);
+        item.setKnowledgePoint("HashMap 在两数之和中的应用");
+        item.setProblemTitle("两数之和专项复盘");
+        item.setStatus("COMPLETED");
+        TrainingPlan plan = new TrainingPlan();
+        plan.setId(100L);
+        plan.setUserId(1L);
+        plan.setStatus("ACTIVE");
+        when(trainingPlanItemMapper.selectById(5L)).thenReturn(item);
+        when(trainingPlanMapper.selectById(100L)).thenReturn(plan);
+        when(trainingPlanItemMapper.selectList(any())).thenReturn(List.of(item));
+
+        trainingPlanService.updateItemStatus(1L, 5L, "COMPLETED");
+
+        verify(userWeaknessMapper, never()).selectList(any());
+        verify(userWeaknessMapper, never()).updateById(any(UserWeakness.class));
+        verify(userWeaknessEventMapper, never()).insert(any(UserWeaknessEvent.class));
     }
 
     @Test

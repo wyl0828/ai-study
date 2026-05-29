@@ -509,7 +509,8 @@ function MockInterviewWorkspace({
 
 export default function MockInterviewPage() {
   const searchParams = useSearchParams();
-  const [category, setCategory] = useState("SPRING");
+  const categoryParam = searchParams.get("category");
+  const [category, setCategory] = useState(() => categoryParam || "SPRING");
   const [interviewerStyle, setInterviewerStyle] = useState<"GUIDED" | "BIG_TECH" | "FAST_SCREEN">("BIG_TECH");
   const [questionCount, setQuestionCount] = useState(3);
   const [session, setSession] = useState<MockInterviewSession | null>(null);
@@ -524,6 +525,12 @@ export default function MockInterviewPage() {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (categoryParam && categoryParam !== category && !session) {
+      setCategory(categoryParam);
+    }
+  }, [categoryParam, category, session]);
 
   useEffect(() => {
     if (!restoredSessionId || session?.sessionId === Number(restoredSessionId)) {

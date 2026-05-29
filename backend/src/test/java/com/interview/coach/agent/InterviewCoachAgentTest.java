@@ -12,6 +12,7 @@ import com.interview.coach.agent.tool.TrainingPlannerTool;
 import com.interview.coach.agent.tool.WeaknessTrackerTool;
 import com.interview.coach.dto.AgentExecutionObservation;
 import com.interview.coach.dto.AiDiagnosisResult;
+import com.interview.coach.dto.RagChunkHit;
 import com.interview.coach.dto.RagRetrieveResult;
 import com.interview.coach.dto.TrainingPlanResult;
 import com.interview.coach.enums.AgentState;
@@ -67,6 +68,10 @@ class InterviewCoachAgentTest {
         AiDiagnosisResult diagnosis = new AiDiagnosisResult();
         context.setDiagnosis(diagnosis);
         RagRetrieveResult ragResult = new RagRetrieveResult();
+        ragResult.setHits(List.of(
+                ragHit("PROBLEM", 1L),
+                ragHit("KNOWLEDGE_CARD", 2L),
+                ragHit("MISTAKE_CARD", 3L)));
         TrainingPlanResult plan = new TrainingPlanResult();
         when(codeExecutionTool.execute(eq(11L), eq(context))).thenReturn(observation);
         when(ragRetrieveTool.name()).thenReturn("RagRetrieveTool");
@@ -94,6 +99,11 @@ class InterviewCoachAgentTest {
                 AgentState.MEMORY_UPDATE,
                 AgentState.TRAINING_PLAN,
                 AgentState.COMPLETED);
+        assertThat(context.getSteps())
+                .filteredOn(step -> step.getState() == AgentState.RAG_RETRIEVAL)
+                .singleElement()
+                .satisfies(step -> assertThat(step.getOutputSummary())
+                        .contains("3 条 RAG 证据", "题目 1", "知识卡 1", "用户记忆 1", "MySQL-only"));
     }
 
     @Test
@@ -157,5 +167,13 @@ class InterviewCoachAgentTest {
                     assertThat(step.getStatus()).isEqualTo(AgentStepStatusEnum.FAILED);
                     assertThat(step.getErrorMessage()).isEqualTo("RAG unavailable");
                 });
+    }
+
+    private RagChunkHit ragHit(String sourceType, Long sourceId) {
+        RagChunkHit hit = new RagChunkHit();
+        hit.setSourceType(sourceType);
+        hit.setSourceId(sourceId);
+        hit.setScore(80);
+        return hit;
     }
 }

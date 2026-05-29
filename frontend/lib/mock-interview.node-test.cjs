@@ -95,6 +95,10 @@ test("page renders setup, conversation, turn feedback, and report states", () =>
   assert.match(feedback, /followUpReason/);
   assert.match(report, /averageScore/);
   assert.match(report, /recommendedCardIds/);
+  assert.match(report, /report\.recommendedCardIds\.length/);
+  assert.match(report, /同类面试复测/);
+  assert.match(report, /暂无推荐卡时，直接进入同类面试复测/);
+  assert.match(report, /href="\/mock-interview"/);
 });
 
 test("conversation uses an independently scrolling message area with fixed composer and auto-scroll", () => {

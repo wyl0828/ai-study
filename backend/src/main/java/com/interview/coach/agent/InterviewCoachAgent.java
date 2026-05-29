@@ -6,6 +6,7 @@ import com.interview.coach.agent.tool.ErrorClassifierTool;
 import com.interview.coach.agent.tool.RagRetrieveTool;
 import com.interview.coach.agent.tool.TrainingPlannerTool;
 import com.interview.coach.agent.tool.WeaknessTrackerTool;
+import com.interview.coach.dto.RagRetrieveResult;
 import com.interview.coach.entity.AgentRun;
 import com.interview.coach.entity.AgentStepEntity;
 import com.interview.coach.enums.AgentRunStatusEnum;
@@ -193,6 +194,9 @@ public class InterviewCoachAgent {
     }
 
     private String summarize(Object output, String fallback) {
+        if (output instanceof RagRetrieveResult ragRetrieveResult) {
+            return ragRetrieveResult.summary();
+        }
         return output == null ? fallback : fallback;
     }
 

@@ -22,7 +22,7 @@
 | 前端 | Next.js 14 + Tailwind CSS + Monaco Editor |
 | 后端 | Spring Boot 3 + Java 17 |
 | 持久层 | MySQL 8 + MyBatis-Plus |
-| 缓存 | Redis（题目列表、题目详情、题目模板热点缓存） |
+| 缓存 | Redis（题目与知识卡只读热点缓存） |
 | 代码执行 | Piston API（可替换为 Docker 沙箱） |
 | AI | Anthropic-compatible Messages API |
 | 流式通信 | Server-Sent Events |
@@ -35,7 +35,7 @@ ai-study/
 ├── frontend/                          # Next.js 前端
 ├── data/                              # 数据库脚本
 │   ├── schema.sql                     # 建表语句
-│   ├── problems.sql                   # Hot100 精选 12 题数据
+│   ├── problems.sql                   # Hot100 精选 20 题数据
 │   ├── hot100_solution_mode_migration.sql # 旧库统一 Solution 模式迁移
 │   ├── knowledge_cards.sql            # 后端知识卡片种子数据
 │   └── knowledge_training_migration.sql # 已有本地库升级脚本
@@ -60,7 +60,7 @@ ai-study/
 - Maven 3.8+
 - Node.js 18+
 - MySQL 8
-- Redis（题目热点缓存；不可用时自动降级 MySQL）
+- Redis（题目 / 知识卡热点缓存；不可用时自动降级 MySQL）
 - Piston（代码执行服务）
 
 ### 1. 数据库初始化
@@ -103,13 +103,17 @@ MYSQL_URL=jdbc:mysql://localhost:3306/ai_interview_coach?useUnicode=true&charact
 MYSQL_USERNAME=root
 MYSQL_PASSWORD=your_password
 
-# Redis（题目热点缓存；训练数据仍以 MySQL 为准）
+# Redis（题目 / 知识卡热点缓存；训练数据仍以 MySQL 为准）
 REDIS_HOST=localhost
 REDIS_PORT=6379
 PROBLEM_CACHE_ENABLED=true
 PROBLEM_CACHE_LIST_TTL=10m
 PROBLEM_CACHE_DETAIL_TTL=30m
 PROBLEM_CACHE_TEMPLATE_TTL=30m
+KNOWLEDGE_CACHE_ENABLED=true
+KNOWLEDGE_CACHE_CATEGORY_TTL=30m
+KNOWLEDGE_CACHE_LIST_TTL=30m
+KNOWLEDGE_CACHE_DETAIL_TTL=2h
 
 # Piston（代码执行）
 PISTON_BASE_URL=http://localhost:2000/api/v2
@@ -139,10 +143,11 @@ Redis 可用 Docker Compose 启动：
 docker compose up -d redis
 ```
 
-题目接口访问后可检查缓存 key：
+题目和知识卡接口访问后可检查缓存 key：
 
 ```powershell
 docker exec ai-study-redis redis-cli --scan --pattern "coach:problem:*"
+docker exec ai-study-redis redis-cli --scan --pattern "coach:knowledge:*"
 docker exec ai-study-redis redis-cli TTL coach:problem:list:v1
 ```
 
@@ -185,10 +190,16 @@ netsh interface ipv6 show excludedportrange protocol=tcp
 演示前建议运行完整验收脚本：
 
 ```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\local_dependency_preflight.ps1
+```
+
+预检脚本只读取本机状态，不写业务数据；它会检查 MySQL、Backend、Frontend、Piston、Redis、Qdrant 和 Docker，并输出 `READY_FOR_E2E_SMOKE` 与第一条 `NEXT_ACTION`。如果预检里 Piston / Qdrant / Redis / Docker 为 `MISSING`，先按 `NEXT_ACTION` 补齐运行时，再跑完整 smoke。
+
+```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_demo_smoke.ps1
 ```
 
-脚本会真实检查 MySQL、Piston、Qdrant、Embedding、后端、前端，并自动跑 Two Sum 错误提交、SSE AI 诊断、AC 提交代码点评、Dashboard、RAG Chat 和向量落库检查。
+脚本会真实检查 MySQL、Piston、Qdrant、Embedding、后端、前端，并自动跑 Two Sum 错误提交、SSE AI 诊断、AC 提交代码点评、Problem / Knowledge Cache Status / Refresh、Dashboard、RAG Health、RAG Vector Retry、RAG Chat 和向量落库检查。最终输出会包含 `goal_coverage`，形如 `training=...; rag=...; mockInterview=...; cache=...`，用一行汇总训练闭环、RAG 维护、模拟面试闭环和 Redis 缓存层四个大目标的当前验收证据。
 
 如果只想先验证主链路，可临时跳过外部 embedding 或前端页面：
 
@@ -197,18 +208,24 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_demo_smoke.ps1 -
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_demo_smoke.ps1 -SkipFrontend
 ```
 
+RAG 系统索引重建会在启用向量 RAG 时触发较多 embedding 调用，默认不在 smoke 中执行；需要验证维护链路时再显式开启：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_demo_smoke.ps1 -RunRagRebuild
+```
+
 完整验收标准见 `docs/FINAL_ACCEPTANCE_CHECKLIST.md`。
 
 ## 核心功能
 
 ### 1. 题目与提交
 
-- 内置 Hot100 精选 12 道 Java 算法题（数组、哈希表、链表、二叉树、动态规划、贪心）
+- 内置 Hot100 精选 20 道 Java 算法题（数组、哈希表、链表、二叉树、动态规划、贪心、区间、网格等）
 - 当前题库统一使用 LeetCode 风格 Solution 模式（用户提交非 `public` 的 `class Solution`）
 - 题面使用“任务说明 / 返回要求 / 约束与边界”的面试式描述；左侧题解包含解题思路、易错点、复杂度和完整 Java 参考实现
 - Monaco Editor 代码编辑器
 - 后端在送入 Piston 前通过 `CodeWrapper` 注册表包装为 `Main.java`，数据库保存用户原始 Solution 代码
-- Redis 缓存只接入题目列表、题目详情和题目模板这三类读多写少数据；Redis 失败时自动降级 MySQL，不影响提交、诊断和训练计划。
+- Redis 缓存只接入题目列表、题目详情、题目模板、知识卡分类、知识卡列表和知识卡详情这类读多写少数据；Redis 失败时自动降级 MySQL，不影响提交、诊断、训练计划、自测和模拟面试。
 
 ### 1.1 Redis 热点缓存边界
 
@@ -218,6 +235,9 @@ Redis 是加速层，不是事实源。当前缓存 key：
 coach:problem:list:v1
 coach:problem:detail:v1:{problemId}
 coach:problem:template:v1:{problemId}
+coach:knowledge:categories:v1
+coach:knowledge:cards:v1:{category|ALL}
+coach:knowledge:card:v1:{cardId}
 ```
 
 默认 TTL：
@@ -226,12 +246,17 @@ coach:problem:template:v1:{problemId}
 题目列表：10 分钟
 题目详情：30 分钟
 题目模板：30 分钟
+知识卡分类：30 分钟
+知识卡列表：30 分钟
+知识卡详情：2 小时
 ```
+
+可通过 `GET /api/cache/status` 查看 Redis 是否启用、ping 是否可用、最近检查时间 `checkedAt`、建议维护动作 `maintenanceAction`、命中率、MySQL 回源次数、最近降级原因、状态探测告警 `probeWarning`，以及题目 / 知识卡只读热点缓存当前匹配到的 `cachedKeyCount`。题目状态会拆出 `listCached`、`detailCachedKeyCount`、`templateCachedKeyCount`，知识卡状态会拆出 `categoryCached`、`listCachedKeyCount`、`detailCachedKeyCount`，便于定位到底是哪一层没有预热；如果 Redis ping 正常但 key 扫描 / hasKey 探测失败，统一状态会合并子缓存状态探测告警并标记为 `PARTIAL_DEGRADED`。通过 `POST /api/cache/refresh` 可以统一预热题目和知识卡缓存，响应里的 `refreshedAt` 记录本次刷新时间，`message` / `summary` 说明刷新结果，`totalWarmAttemptedCount` / `failedCount` 表示本次尝试覆盖的只读热点 key 数量和失败数量；Redis 不可用时 refresh 会跳过预热并保持 MySQL 事实源。Dashboard 可直接触发热点缓存刷新、刷新缓存状态和空态重试；刷新成功但状态回读失败时会保留刷新摘要并提示单独刷新状态。上述计数只用于演示预热和排障，不返回缓存内容，也不作为业务正确性的判断来源。
 
 不会放入 Redis 的数据：
 
 - 提交记录、判题结果、AI 诊断
-- 弱点、错题卡、训练计划
+- 弱点、错题卡、训练计划、知识卡自测记录和掌握度
 - 模拟面试会话、报告和用户回答
 - RAG 用户记忆、AgentContext 和 SSE 状态
 
@@ -259,7 +284,7 @@ coach:problem:template:v1:{problemId}
 - **弱点记忆**：按知识点统计错误次数、薄弱分数和最近变化事件
 - **错题卡片**：记录错误原因和正确思路，并按 fingerprint 合并重复错误；前端再按题目、知识点和用户可读错误模式聚合成复盘卡片
 - **训练计划**：根据弱点生成 3 天针对性训练，每天包含 1 个算法复盘任务和 1 个后端知识卡复习任务，支持完成、跳过和重新生成
-- **Dashboard / 学习中心**：按“统计 -> 今日优先训练 -> 完整训练计划 -> 薄弱点与错误分布 -> 最近提交 -> 合并错题卡 -> AI 教练建议”组织真实学习数据，完整训练计划按第 1/2/3 天分页展示，优先回答“今天该练什么”
+- **Dashboard / 学习中心**：按“统计 -> 今日优先训练 -> 下一步动作 -> 训练计划追踪 -> 完整训练计划 -> 薄弱点与错误分布 -> 最近提交 -> 最近模拟面试 -> 模拟面试闭环追踪 / 趋势 -> 合并错题卡 -> 缓存层状态 -> RAG 索引状态 -> AI 教练建议”组织真实学习数据。训练计划追踪、最近模拟面试、模拟面试闭环追踪、趋势、缓存状态和 RAG health 都是辅助卡片，首屏失败时降级为空态，不阻断主数据；手动刷新时 trace / trend 单点失败只影响对应卡片。
 
 ### 4. 后端知识训练
 
@@ -323,6 +348,10 @@ com.interview.coach
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/api/problems` | 获取题目列表 |
+| GET | `/api/cache/status` | 题目 / 知识卡统一 Redis 缓存状态摘要 |
+| POST | `/api/cache/refresh` | 刷新并预热题目 / 知识卡只读热点缓存 |
+| GET | `/api/problems/cache/status` | 题目 Redis 缓存状态摘要 |
+| POST | `/api/problems/cache/refresh` | 刷新并预热题目 Redis 缓存 |
 | GET | `/api/problems/{id}` | 获取题目详情 |
 | GET | `/api/problems/{id}/template` | 获取代码模板 |
 | POST | `/api/submissions` | 提交代码并判题 |
@@ -335,11 +364,13 @@ com.interview.coach
 | GET | `/api/users/{id}/training-plans/latest` | 最新训练计划 |
 | GET | `/api/users/{id}/training-plans/history` | 训练计划历史摘要 |
 | GET | `/api/users/{id}/training-plans/activities/recent` | 最近完成 / 跳过的训练项 |
+| GET | `/api/users/{id}/training-plans/trace` | 最新训练计划追踪摘要 |
 | PATCH | `/api/users/{id}/training-plans/items/{itemId}/status` | 更新训练计划条目状态 |
 | POST | `/api/users/{id}/training-plans/regenerate` | 手动重新生成训练计划 |
 | GET | `/api/users/{id}/dashboard/error-stats` | 错误统计 |
 | GET | `/api/users/{id}/submissions/recent` | 最近提交记录 |
 | GET | `/api/users/{id}/mock-interviews/recent` | 最近模拟面试记录 |
+| GET | `/api/users/{id}/mock-interviews/trace` | 模拟面试闭环追踪摘要 |
 | GET | `/api/users/{id}/mock-interviews/trends` | 模拟面试知识点趋势 |
 | GET | `/api/knowledge/categories` | 后端知识分类 |
 | GET | `/api/knowledge/cards` | 后端知识卡片列表 |
@@ -347,6 +378,9 @@ com.interview.coach
 | POST | `/api/users/{id}/knowledge/cards/{cardId}/self-tests` | 提交知识卡自测 |
 | GET | `/api/users/{id}/knowledge/cards/{cardId}/self-tests/recent` | 获取最近知识卡自测 |
 | POST | `/api/rag/chat` | 受控学习资料问答 |
+| GET | `/api/rag/health` | RAG 索引健康检查摘要 |
+| POST | `/api/rag/system-index/rebuild` | 重建系统题目 / 知识卡 RAG 索引 |
+| POST | `/api/rag/vector/retry-failed` | 重试失败 RAG 向量索引 |
 | POST | `/api/mock-interviews` | 创建模拟面试会话 |
 | GET | `/api/mock-interviews/{sessionId}` | 获取 / 恢复模拟面试会话 |
 | POST | `/api/mock-interviews/{sessionId}/answers` | 提交面试回答 |

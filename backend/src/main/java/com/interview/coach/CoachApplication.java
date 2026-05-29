@@ -3,6 +3,7 @@ package com.interview.coach;
 import com.interview.coach.config.PistonProperties;
 import com.interview.coach.config.AiProperties;
 import com.interview.coach.config.EmbeddingProperties;
+import com.interview.coach.config.KnowledgeCacheProperties;
 import com.interview.coach.config.ProblemCacheProperties;
 import com.interview.coach.config.RagVectorProperties;
 import org.mybatis.spring.annotation.MapperScan;
@@ -16,6 +17,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
         PistonProperties.class,
         AiProperties.class,
         EmbeddingProperties.class,
+        KnowledgeCacheProperties.class,
         ProblemCacheProperties.class,
         RagVectorProperties.class
 })

@@ -13,6 +13,7 @@ import com.interview.coach.entity.KnowledgeCard;
 import com.interview.coach.entity.MockInterviewReport;
 import com.interview.coach.entity.MockInterviewSession;
 import com.interview.coach.entity.MockInterviewTurn;
+import com.interview.coach.entity.TrainingPlanItem;
 import com.interview.coach.entity.UserWeaknessEvent;
 import com.interview.coach.enums.MockInterviewSessionStatusEnum;
 import com.interview.coach.enums.MockInterviewTurnTypeEnum;
@@ -22,6 +23,7 @@ import com.interview.coach.mapper.KnowledgeCardMapper;
 import com.interview.coach.mapper.MockInterviewReportMapper;
 import com.interview.coach.mapper.MockInterviewSessionMapper;
 import com.interview.coach.mapper.MockInterviewTurnMapper;
+import com.interview.coach.mapper.TrainingPlanItemMapper;
 import com.interview.coach.mapper.UserWeaknessEventMapper;
 import com.interview.coach.service.MockInterviewService;
 import com.interview.coach.service.TrainingPlanService;
@@ -70,6 +72,8 @@ public class MockInterviewServiceImpl implements MockInterviewService {
     private final AnthropicCompatibleClient aiClient;
 
     private final TrainingPlanService trainingPlanService;
+
+    private final TrainingPlanItemMapper trainingPlanItemMapper;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -195,25 +199,27 @@ public class MockInterviewServiceImpl implements MockInterviewService {
         List<MockInterviewTurn> turns = turns(sessionId);
         MockInterviewReport report = buildReport(session, turns);
         reportMapper.insert(report);
-        saveTrainingPlan(session, report, turns);
+        int trainingPlanItemCount = saveTrainingPlan(session, report, turns);
         session.setStatus(MockInterviewSessionStatusEnum.REPORTED.name());
         session.setUpdatedAt(LocalDateTime.now());
         sessionMapper.updateById(session);
-        return buildSessionVO(session, turns, report, currentCard(session));
+        return buildSessionVO(session, turns, report, currentCard(session), trainingPlanItemCount);
     }
 
-    private void saveTrainingPlan(MockInterviewSession session, MockInterviewReport report,
+    private int saveTrainingPlan(MockInterviewSession session, MockInterviewReport report,
             List<MockInterviewTurn> turns) {
         TrainingPlanResult result = buildTrainingPlanResult(report, turns);
         if (result.getItems().isEmpty()) {
-            return;
+            return 0;
         }
         AgentContext context = new AgentContext();
         context.setUserId(session.getUserId());
         try {
             trainingPlanService.savePlan(context, result);
+            return result.getItems().size();
         } catch (RuntimeException ignored) {
             // Training-plan persistence should not block report generation.
+            return 0;
         }
     }
 
@@ -478,7 +484,7 @@ public class MockInterviewServiceImpl implements MockInterviewService {
         Set<String> weaknessTags = new LinkedHashSet<>();
         Set<String> expressionIssues = new LinkedHashSet<>();
         for (MockInterviewTurn turn : turns) {
-            if (turn.getKnowledgeCardId() != null) {
+            if (shouldRecommendCard(turn) && turn.getKnowledgeCardId() != null) {
                 recommendedIds.add(turn.getKnowledgeCardId());
             }
             weaknessTags.addAll(splitLines(turn.getMissingKeyPoints()));
@@ -506,8 +512,23 @@ public class MockInterviewServiceImpl implements MockInterviewService {
         return report;
     }
 
+    private boolean shouldRecommendCard(MockInterviewTurn turn) {
+        if (turn == null) {
+            return false;
+        }
+        Integer score = turn.getScore();
+        return (score != null && score < 80)
+                || StringUtils.hasText(turn.getMissingKeyPoints())
+                || StringUtils.hasText(turn.getExpressionIssue());
+    }
+
     private MockInterviewSessionVO buildSessionVO(MockInterviewSession session, List<MockInterviewTurn> turns,
             MockInterviewReport report, KnowledgeCard currentCard) {
+        return buildSessionVO(session, turns, report, currentCard, null);
+    }
+
+    private MockInterviewSessionVO buildSessionVO(MockInterviewSession session, List<MockInterviewTurn> turns,
+            MockInterviewReport report, KnowledgeCard currentCard, Integer trainingPlanItemCount) {
         MockInterviewSessionVO vo = new MockInterviewSessionVO();
         vo.setSessionId(session.getId());
         vo.setStatus(session.getStatus());
@@ -519,7 +540,7 @@ public class MockInterviewServiceImpl implements MockInterviewService {
         vo.setCurrentQuestion(currentQuestion(session, turns, currentCard));
         vo.setCurrentTurnType(currentTurnType(session));
         vo.setTurns(turns.stream().map(this::toTurnVO).toList());
-        vo.setReport(report == null ? null : toReportVO(report));
+        vo.setReport(report == null ? null : toReportVO(report, trainingPlanItemCount));
         vo.setStartedAt(session.getStartedAt());
         vo.setFinishedAt(session.getFinishedAt());
         return vo;
@@ -550,6 +571,10 @@ public class MockInterviewServiceImpl implements MockInterviewService {
     }
 
     private MockInterviewReportVO toReportVO(MockInterviewReport report) {
+        return toReportVO(report, null);
+    }
+
+    private MockInterviewReportVO toReportVO(MockInterviewReport report, Integer trainingPlanItemCountOverride) {
         MockInterviewReportVO vo = new MockInterviewReportVO();
         vo.setId(report.getId());
         vo.setAverageScore(report.getAverageScore());
@@ -559,8 +584,35 @@ public class MockInterviewServiceImpl implements MockInterviewService {
         vo.setExpressionAdvice(report.getExpressionAdvice());
         vo.setRecommendedCardIds(splitLongs(report.getRecommendedCardIds()));
         vo.setWeaknessTags(splitComma(report.getWeaknessTags()));
+        int trainingPlanItemCount = trainingPlanItemCountOverride == null
+                ? mockInterviewReportTrainingPlanItemCount(report.getId())
+                : trainingPlanItemCountOverride;
+        vo.setTrainingPlanItemCount(trainingPlanItemCount);
+        vo.setTrainingPlanLinked(trainingPlanItemCount > 0);
+        vo.setReviewPathSummary(mockInterviewReportReviewPathSummary(vo));
         vo.setCreatedAt(report.getCreatedAt());
         return vo;
+    }
+
+    private int mockInterviewReportTrainingPlanItemCount(Long reportId) {
+        if (reportId == null) {
+            return 0;
+        }
+        Long count = trainingPlanItemMapper.selectCount(new LambdaQueryWrapper<TrainingPlanItem>()
+                .eq(TrainingPlanItem::getSourceType, "MOCK_INTERVIEW_REPORT")
+                .eq(TrainingPlanItem::getSourceId, reportId));
+        return count == null ? 0 : count.intValue();
+    }
+
+    private String mockInterviewReportReviewPathSummary(MockInterviewReportVO report) {
+        int linkedCount = report.getTrainingPlanItemCount() == null ? 0 : report.getTrainingPlanItemCount();
+        if (linkedCount > 0) {
+            return "已进入训练计划：" + linkedCount + " 个复盘项，可在学习中心继续追踪。";
+        }
+        if (report.getRecommendedCardIds() != null && !report.getRecommendedCardIds().isEmpty()) {
+            return "已生成推荐知识卡，训练计划写入未确认；可在学习中心查看下一步动作。";
+        }
+        return "本次报告暂无需要写入训练计划的推荐项，可直接进行同类面试复测。";
     }
 
     private String currentQuestion(MockInterviewSession session, List<MockInterviewTurn> turns, KnowledgeCard currentCard) {

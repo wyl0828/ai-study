@@ -7,12 +7,14 @@ import type { TrainingPlan as TrainingPlanType } from "@/lib/types";
 import {
   trainingPlanItemAction,
   trainingPlanItemPrefix,
+  trainingPlanSourceText,
   trainingPlanItemTitle,
 } from "@/lib/learningView";
 import {
   trainingPlanText,
   trainingPlanTitle,
 } from "@/lib/i18n";
+import type { TrainingPlanItem } from "@/lib/types";
 
 interface TrainingPlanProps {
   plan: TrainingPlanType | null;
@@ -69,25 +71,6 @@ export default function TrainingPlan({
       return { label: "需要重做", className: "text-amber-600" };
     }
       return { label: "待完成", className: "text-primary" };
-  };
-
-  const sourceLabel = (sourceType?: string | null) => {
-    switch (sourceType) {
-      case "SUBMISSION_FAILED":
-        return "失败提交";
-      case "RAG_KNOWLEDGE_CARD":
-        return "RAG 知识卡";
-      case "USER_WEAKNESS":
-        return "薄弱点";
-      case "KNOWLEDGE_CARD_REVIEW":
-        return "知识卡复习";
-      case "MOCK_INTERVIEW_REPORT":
-        return "模拟面试报告";
-      case "GENERAL_REVIEW":
-        return "通用复盘";
-      default:
-        return sourceType || "学习记录";
-    }
   };
 
   const dayIndexes = Object.keys(grouped).map(Number);
@@ -184,21 +167,7 @@ export default function TrainingPlan({
                       {getStatus(item.status).label}
                     </span>
                   </div>
-                  <p className="text-xs text-on-surface-variant">
-                    {trainingPlanText(item.reason)}
-                  </p>
-                  {(item.sourceSummary || item.sourceType) && (
-                    <p className="mt-2 rounded-md border border-outline-variant/30 bg-surface-container px-2 py-1.5 text-xs text-on-surface-variant">
-                      <span className="font-medium text-on-surface">推荐来源：</span>
-                      {trainingPlanText(item.sourceSummary || sourceLabel(item.sourceType))}
-                    </p>
-                  )}
-                  {item.reviewFocus && (
-                    <p className="mt-2 rounded-md border border-primary/15 bg-primary/5 px-2 py-1.5 text-xs text-on-surface-variant">
-                      <span className="font-medium text-primary">复习重点：</span>
-                      {trainingPlanText(item.reviewFocus)}
-                    </p>
-                  )}
+                  <TrainingPlanItemInsights item={item} compact />
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Link
                       href={action.href}
@@ -237,5 +206,39 @@ export default function TrainingPlan({
         </div>
       </div>
     </section>
+  );
+}
+
+export function TrainingPlanItemInsights({
+  item,
+  compact = false,
+}: {
+  item: TrainingPlanItem;
+  compact?: boolean;
+}) {
+  const textSize = compact ? "text-xs" : "text-sm";
+  const boxClass = compact
+    ? "rounded-md px-2 py-1.5"
+    : "rounded-lg px-3 py-2";
+
+  return (
+    <div className="mt-2 space-y-2">
+      <p className={`${boxClass} border border-outline-variant/30 bg-surface-container ${textSize} text-on-surface-variant`}>
+        <span className="font-medium text-on-surface">为什么推荐：</span>
+        {trainingPlanText(item.reason)}
+      </p>
+      {(item.sourceSummary || item.sourceType) && (
+        <p className={`${boxClass} border border-outline-variant/30 bg-surface-container ${textSize} text-on-surface-variant`}>
+          <span className="font-medium text-on-surface">来自哪里：</span>
+          {trainingPlanSourceText(item)}
+        </p>
+      )}
+      {item.reviewFocus && (
+        <p className={`${boxClass} border border-primary/15 bg-primary/5 ${textSize} text-on-surface-variant`}>
+          <span className="font-medium text-primary">今天怎么练：</span>
+          {trainingPlanText(item.reviewFocus)}
+        </p>
+      )}
+    </div>
   );
 }

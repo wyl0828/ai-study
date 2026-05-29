@@ -27,5 +27,9 @@ public class MockInterviewTrendVO {
 
     private String latestIssue;
 
+    private String latestIssueType;
+
+    private String latestIssueTypeLabel;
+
     private LocalDateTime lastInterviewAt;
 }

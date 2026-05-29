@@ -1,5 +1,8 @@
 import type {
   ApiResponse,
+  CacheMaintenanceRefreshResult,
+  CacheMaintenanceStatus,
+  RagHealth,
   ProblemListItem,
   ProblemDetail,
   ProblemTemplate,
@@ -21,12 +24,16 @@ import type {
   MockInterviewAnswerRequest,
   MockInterviewCreateRequest,
   MockInterviewRecent,
+  MockInterviewTrace,
   MockInterviewSession,
   MockInterviewTrend,
+  RagSystemRebuildResult,
+  RagVectorRetryResult,
   SelfTestRecord,
   SelfTestSubmitRequest,
   TrainingPlanActivity,
   TrainingPlanHistory,
+  TrainingPlanTrace,
 } from "./types";
 
 const API_BASE = "http://localhost:8080";
@@ -258,6 +265,8 @@ export const userApi = {
     request<ApiResponse<TrainingPlanActivity[]>>(
       `/api/users/${userId}/training-plans/activities/recent`
     ),
+  trainingPlanTrace: (userId: number) =>
+    request<ApiResponse<TrainingPlanTrace>>(`/api/users/${userId}/training-plans/trace`),
   updateTrainingPlanItemStatus: (
     userId: number,
     itemId: number,
@@ -288,10 +297,34 @@ export const userApi = {
     request<ApiResponse<SubmissionHistoryVO[]>>(`/api/users/${userId}/submissions/recent`),
   recentMockInterviews: (userId: number) =>
     request<ApiResponse<MockInterviewRecent[]>>(`/api/users/${userId}/mock-interviews/recent`),
+  mockInterviewTrace: (userId: number) =>
+    request<ApiResponse<MockInterviewTrace>>(`/api/users/${userId}/mock-interviews/trace`),
   mockInterviewTrends: (userId: number) =>
     request<ApiResponse<MockInterviewTrend[]>>(`/api/users/${userId}/mock-interviews/trends`),
   errorStats: (userId: number) =>
     request<ApiResponse<ErrorStatsVO>>(`/api/users/${userId}/dashboard/error-stats`),
+};
+
+export const cacheApi = {
+  status: () =>
+    request<ApiResponse<CacheMaintenanceStatus>>("/api/cache/status"),
+  refresh: () =>
+    request<ApiResponse<CacheMaintenanceRefreshResult>>("/api/cache/refresh", {
+      method: "POST",
+    }),
+};
+
+export const ragMaintenanceApi = {
+  health: () =>
+    request<ApiResponse<RagHealth>>("/api/rag/health"),
+  rebuildSystemIndex: () =>
+    request<ApiResponse<RagSystemRebuildResult>>("/api/rag/system-index/rebuild", {
+      method: "POST",
+    }),
+  retryFailedVectors: (limit = 50) =>
+    request<ApiResponse<RagVectorRetryResult>>(`/api/rag/vector/retry-failed?limit=${limit}`, {
+      method: "POST",
+    }),
 };
 
 export const knowledgeApi = {

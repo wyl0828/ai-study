@@ -8,6 +8,8 @@ import com.interview.coach.entity.KnowledgeCard;
 import com.interview.coach.entity.MistakeCard;
 import com.interview.coach.entity.Problem;
 import com.interview.coach.vo.RagHealthVO;
+import com.interview.coach.vo.RagSystemRebuildVO;
+import com.interview.coach.vo.RagVectorRetryVO;
 
 public interface RagService {
 
@@ -18,6 +20,10 @@ public interface RagService {
     RagRetrieveResult retrieve(RagRetrieveQuery query);
 
     RagHealthVO checkHealth();
+
+    RagVectorRetryVO retryFailedVectors(int limit);
+
+    RagSystemRebuildVO rebuildSystemIndexForMaintenance();
 
     void indexProblem(Problem problem);
 

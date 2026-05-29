@@ -31,7 +31,7 @@ Primary resume focus:
 - Agent Workflow, Tool Calling, Observation, RAG Retrieval, and Memory design
 - MySQL data modeling
 - MyBatis-Plus mapper and SQL-layer design
-- Redis configuration reservation and future cache/temporary-state extension design
+- Redis problem hot-cache design with MySQL fallback
 - SSE streaming
 - Agent step / trace recording
 - Clear demo flow
@@ -123,7 +123,7 @@ Backend:
 - Java 17
 - MySQL 8
 - MyBatis-Plus
-- Redis (configuration reserved; hot-cache wiring is future work)
+- Redis (problem list, problem detail, and problem template hot cache)
 - Server-Sent Events
 
 AI:
@@ -135,7 +135,7 @@ AI:
 
 RAG:
 
-- V1 uses MySQL structured retrieval, not embeddings or a vector database.
+- V1 uses MySQL structured retrieval. Optional Qdrant vector retrieval can be enabled for enhanced recall, while MySQL remains the source of truth.
 - RAG sources are `problem`, `knowledge_card`, `ai_diagnosis`, and `mistake_card`.
 - `RagRetrieveTool` is an internal Agent Tool. `/api/rag/chat` is a controlled learning-material QA entry that reuses MySQL RAG and existing learning memory without becoming a general chat product.
 - Knowledge QA V1 only answers questions about problems, knowledge cards, AI diagnoses, mistake cards, and the current user's learning records. It does not use web search, upload documents, generate complete Java AC code, or replace the code-submission diagnosis flow.
@@ -427,12 +427,13 @@ RAG persistence rules:
 - `RagService.rebuildSystemIndex()` may rebuild system problem / knowledge-card chunks, but must not delete user-memory chunks.
 - Old databases need `data/rag_mysql_migration.sql`; new databases get RAG tables through `data/schema.sql`.
 
-Redis currently only has reserved configuration. Future Redis wiring may be used for:
+Redis is currently wired for read-only problem hot-cache data:
 
 - hot problem list cache
 - problem detail cache
-- temporary Agent context
-- user recent training state
+- problem template cache
+
+Future Redis wiring may be used for temporary Agent context or short-lived UI state, but do not cache durable learning state there.
 
 Do not rely on Redis as the only storage for anything needed in the resume demo.
 
@@ -538,7 +539,7 @@ Do not add:
 - decorative UI animation as a blocker
 - full accepted answer generation as the default AI behavior
 - general-purpose RAG chat / public raw RAG retrieval REST endpoint
-- embedding, vector database, Elasticsearch, pgvector, Qdrant, Milvus, or similar retrieval stack in V1
+- broad retrieval-stack expansion beyond the optional Qdrant enhancement already scoped for RAG; do not add Elasticsearch, pgvector, Milvus, or multiple vector stores without explicit direction
 
 ## Development Style
 
@@ -548,7 +549,7 @@ Add abstractions only when they protect a planned extension:
 
 - Piston now, Docker later
 - Anthropic-compatible API now, model provider swap later
-- MySQL structured RAG now, vector retrieval later
+- MySQL structured RAG as source of truth, optional Qdrant vector retrieval as enhancement
 - list dashboard now, charts later
 
 Keep names aligned with the project docs. If a service or concept appears in `docs/IMPLEMENTATION_PLAN.md`, reuse that naming unless there is a strong reason not to.
@@ -596,7 +597,7 @@ Near-term work should follow `docs/PROJECT_STATUS.md`:
    - Single-hint lookup endpoint.
    - Standalone accepted-code review REST endpoint.
    - General-purpose RAG chat / public raw RAG retrieval REST endpoint.
-   - Vector / embedding retrieval upgrade.
-   - Real Redis hot-cache wiring.
+   - Additional vector-store alternatives beyond the current optional Qdrant path.
+   - Redis caching beyond read-only problem hot data.
 
 Final-stage-only work: full `1` / `206` / `121` demo replay, screenshots or recording, broad document polish, `hint_record` final strategy, and interview Q&A.

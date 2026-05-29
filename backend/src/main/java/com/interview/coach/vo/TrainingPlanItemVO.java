@@ -32,6 +32,10 @@ public class TrainingPlanItemVO {
 
     private String sourceSummary;
 
+    private String targetHref;
+
+    private String targetLabel;
+
     private String status;
 
     private LocalDateTime statusUpdatedAt;

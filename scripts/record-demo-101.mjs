@@ -25,21 +25,21 @@ function loadPlaywright() {
 
 const { chromium } = loadPlaywright();
 
-const appUrl = process.env.APP_URL ?? "http://localhost:3000/problem/101";
+const appUrl = process.env.APP_URL ?? "http://localhost:3000/problem/1";
 const outputDir = path.resolve(rootDir, "output", "playwright", "videos");
 const tempVideoDir = path.join(outputDir, ".tmp");
-const rawWebmPath = path.join(outputDir, "101-two-sum-real-demo-raw.webm");
-const finalWebmPath = path.join(outputDir, "101-two-sum-real-demo.webm");
-const finalMp4Path = path.join(outputDir, "101-two-sum-real-demo.mp4");
+const rawWebmPath = path.join(outputDir, "1-two-sum-real-demo-raw.webm");
+const finalWebmPath = path.join(outputDir, "1-two-sum-real-demo.webm");
+const finalMp4Path = path.join(outputDir, "1-two-sum-real-demo.mp4");
 const viewport = { width: 1440, height: 900 };
 const diagnosisGapSeconds = 10;
 
 const bugCode = fs.readFileSync(
-  path.join(rootDir, "docs", "demo-cases", "101-two-sum-bug.java"),
+  path.join(rootDir, "docs", "demo-cases", "1-two-sum-bug.java"),
   "utf8"
 );
 const fixedCode = fs.readFileSync(
-  path.join(rootDir, "docs", "demo-cases", "101-two-sum-fixed.java"),
+  path.join(rootDir, "docs", "demo-cases", "1-two-sum-fixed.java"),
   "utf8"
 );
 
@@ -130,7 +130,7 @@ async function main() {
   try {
     recordStartedAt = Date.now();
     await page.goto(appUrl, { waitUntil: "networkidle" });
-    await setCaption(page, "Demo Case 101：两数之和", "真实页面录制：错误提交 -> 判题失败 -> AI 诊断 -> 修正通过");
+    await setCaption(page, "Demo Case 1：两数之和", "真实页面录制：错误提交 -> 判题失败 -> AI 诊断 -> 修正通过");
     await page.waitForTimeout(1800);
 
     await setCaption(page, "1. 粘贴错误代码", "bug：先写入 HashMap，再查询 complement，重复元素时可能自匹配。");

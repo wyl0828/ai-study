@@ -14,5 +14,7 @@ public class TrainingPlanVO {
 
     private String status;
 
+    private String statusLabel;
+
     private List<TrainingPlanItemVO> items;
 }

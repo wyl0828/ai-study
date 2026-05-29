@@ -96,10 +96,13 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
         if (plan == null || !userId.equals(plan.getUserId())) {
             throw new BusinessException(404, "training plan item not found");
         }
+        String previousStatus = item.getStatus();
         item.setStatus(normalizedStatus);
         item.setStatusUpdatedAt(LocalDateTime.now());
         trainingPlanItemMapper.updateById(item);
-        recordTrainingCompletion(userId, item, normalizedStatus, item.getStatusUpdatedAt());
+        if (!"COMPLETED".equalsIgnoreCase(previousStatus)) {
+            recordTrainingCompletion(userId, item, normalizedStatus, item.getStatusUpdatedAt());
+        }
         List<TrainingPlanItem> items = trainingPlanItemMapper.selectList(new LambdaQueryWrapper<TrainingPlanItem>()
                 .eq(TrainingPlanItem::getPlanId, plan.getId()));
         if (!items.isEmpty() && items.stream().allMatch(this::isTerminalItem)) {
@@ -202,6 +205,9 @@ public class TrainingPlanServiceImpl implements TrainingPlanService {
     }
 
     private boolean isTerminalItem(TrainingPlanItem item) {
+        if (item == null || item.getStatus() == null || item.getStatus().isBlank()) {
+            return false;
+        }
         return Set.of("COMPLETED", "SKIPPED").contains(normalizeStatus(item.getStatus()));
     }
 

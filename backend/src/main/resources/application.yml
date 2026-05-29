@@ -38,6 +38,11 @@ coach:
       list-ttl: ${PROBLEM_CACHE_LIST_TTL:10m}
       detail-ttl: ${PROBLEM_CACHE_DETAIL_TTL:30m}
       template-ttl: ${PROBLEM_CACHE_TEMPLATE_TTL:30m}
+    knowledge:
+      enabled: ${KNOWLEDGE_CACHE_ENABLED:true}
+      category-ttl: ${KNOWLEDGE_CACHE_CATEGORY_TTL:30m}
+      list-ttl: ${KNOWLEDGE_CACHE_LIST_TTL:30m}
+      detail-ttl: ${KNOWLEDGE_CACHE_DETAIL_TTL:2h}
   rag:
     vector:
       enabled: ${RAG_VECTOR_ENABLED:false}

@@ -9,7 +9,7 @@ import {
   trainingPlanItemPrefix,
   trainingPlanItemTitle,
 } from "@/lib/learningView";
-import { trainingPlanText } from "@/lib/i18n";
+import { TrainingPlanItemInsights } from "@/components/TrainingPlan";
 
 interface TodayTrainingFocusProps {
   plan: TrainingPlanType | null;
@@ -66,15 +66,7 @@ export default function TodayTrainingFocus({
           <h2 className="text-xl font-semibold text-on-surface">
             {trainingPlanItemTitle(item)}
           </h2>
-          <p className="mt-2 text-sm text-on-surface-variant leading-relaxed">
-            {trainingPlanText(item.reason)}
-          </p>
-          {item.reviewFocus && (
-            <p className="mt-2 text-sm text-on-surface-variant leading-relaxed">
-              <span className="font-medium text-primary">复习重点：</span>
-              {trainingPlanText(item.reviewFocus)}
-            </p>
-          )}
+          <TrainingPlanItemInsights item={item} />
         </div>
 
         <div className="flex shrink-0 flex-wrap gap-2">

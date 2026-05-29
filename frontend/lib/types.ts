@@ -125,6 +125,149 @@ export interface DashboardStatsVO {
   mistakeCount: number;
 }
 
+export interface CacheChildStatus {
+  enabled: boolean;
+  provider: string | null;
+  redisAvailable: boolean;
+  statusLabel: string | null;
+  summary: string | null;
+  checkedAt: string | null;
+  maintenanceAction: string | null;
+  cachedKeyCount: number;
+  hitCount: number;
+  missCount: number;
+  fallbackCount: number;
+  hitRate: number;
+  lastFallbackReason: string | null;
+  probeWarning: string | null;
+  fallback: string | null;
+}
+
+export interface CacheMaintenanceStatus {
+  provider: string;
+  problem: CacheChildStatus | null;
+  knowledge: CacheChildStatus | null;
+  allEnabled: boolean;
+  allRedisAvailable: boolean;
+  cachedKeyCount: number;
+  hitCount: number;
+  missCount: number;
+  fallbackCount: number;
+  hitRate: number;
+  lastFallbackReason: string | null;
+  probeWarning: string | null;
+  statusLabel: string | null;
+  summary: string | null;
+  cacheBenefitSummary: string | null;
+  fallbackRiskSummary: string | null;
+  protectedDataSummary: string | null;
+  checkedAt: string | null;
+  maintenanceAction: string | null;
+  boundary: string | null;
+}
+
+export interface CacheRefreshChildResult {
+  enabled: boolean;
+  redisAvailable: boolean;
+  listWarmAttempted?: boolean;
+  categoryWarmAttempted?: boolean;
+  listWarmAttemptedCount?: number;
+  detailWarmAttemptedCount?: number;
+  templateWarmAttemptedCount?: number;
+  totalWarmAttemptedCount: number;
+  failedCount: number;
+  message: string | null;
+  summary: string | null;
+  statusLabel: string | null;
+  maintenanceAction: string | null;
+  refreshedAt: string | null;
+}
+
+export interface CacheMaintenanceRefreshResult {
+  problem: CacheRefreshChildResult | null;
+  knowledge: CacheRefreshChildResult | null;
+  totalWarmAttemptedCount: number;
+  failedCount: number;
+  statusLabel: string | null;
+  maintenanceAction: string | null;
+  message: string | null;
+  summary: string | null;
+  refreshScopeSummary: string | null;
+  warmupResultSummary: string | null;
+  protectedDataSummary: string | null;
+  refreshedAt: string | null;
+  boundary: string | null;
+}
+
+export interface RagHealth {
+  healthy: boolean;
+  tablesAvailable: boolean;
+  statusLabel: string | null;
+  maintenanceSummary: string | null;
+  preferredMaintenanceAction: string | null;
+  nextMaintenanceEndpoint: string | null;
+  maintenancePriority: string | null;
+  maintenanceReason: string | null;
+  systemDocumentCount: number;
+  systemChunkCount: number;
+  enabledProblemCount: number;
+  enabledKnowledgeCardCount: number;
+  missingSystemProblemDocumentCount: number;
+  missingSystemKnowledgeCardDocumentCount: number;
+  userMemoryDocumentCount: number;
+  userMemoryChunkCount: number;
+  duplicateSystemDocumentCount: number;
+  staleProblemDocumentCount: number;
+  staleKnowledgeCardDocumentCount: number;
+  documentSourceTypeCounts: Record<string, number>;
+  chunkSourceTypeCounts: Record<string, number>;
+  vectorEnabled: boolean;
+  vectorIndexedChunkCount: number;
+  vectorFailedChunkCount: number;
+  vectorPendingChunkCount: number;
+  warnings: string[];
+  maintenanceActions: string[];
+  checkedAt: string | null;
+}
+
+export interface RagSystemRebuildResult {
+  attempted: boolean;
+  success: boolean;
+  vectorEnabled: boolean;
+  indexedProblemCount: number;
+  indexedKnowledgeCardCount: number;
+  beforeSystemDocumentCount: number;
+  afterSystemDocumentCount: number;
+  beforeSystemChunkCount: number;
+  afterSystemChunkCount: number;
+  beforeUserMemoryDocumentCount: number;
+  afterUserMemoryDocumentCount: number;
+  beforeUserMemoryChunkCount: number;
+  afterUserMemoryChunkCount: number;
+  warnings: string[];
+  rebuiltAt: string | null;
+  statusLabel: string | null;
+  maintenanceAction: string | null;
+  message: string | null;
+  summary: string | null;
+}
+
+export interface RagVectorRetryResult {
+  enabled: boolean;
+  requestedLimit: number;
+  effectiveLimit: number;
+  attemptedCount: number;
+  matchedRetryableCount: number;
+  indexedCount: number;
+  failedCount: number;
+  skippedCount: number;
+  retriedAt: string | null;
+  statusLabel: string | null;
+  maintenanceAction: string | null;
+  message: string | null;
+  summary: string | null;
+}
+
 export interface UserWeakness {
   id: number;
   knowledgePoint: string;
@@ -154,6 +297,7 @@ export interface TrainingPlan {
   title: string;
   summary: string;
   status: string;
+  statusLabel: string | null;
   items: TrainingPlanItem[];
 }
 
@@ -162,11 +306,16 @@ export interface TrainingPlanHistory {
   title: string;
   summary: string | null;
   status: string;
+  statusLabel: string | null;
   startDate: string | null;
   endDate: string | null;
   itemCount: number;
   completedCount: number;
   skippedCount: number;
+  pendingCount: number;
+  handledCount: number;
+  completionRate: number;
+  handledRate: number;
   createdAt: string | null;
 }
 
@@ -179,8 +328,43 @@ export interface TrainingPlanActivity {
   knowledgePoint: string;
   sourceType?: string | null;
   sourceSummary?: string | null;
+  learningImpactSummary?: string | null;
   status: "COMPLETED" | "SKIPPED";
+  statusLabel: string | null;
   statusUpdatedAt: string | null;
+}
+
+export interface TrainingPlanTrace {
+  planId: number | null;
+  title: string | null;
+  summary: string | null;
+  status: string | null;
+  statusLabel: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  planCreatedAt: string | null;
+  daysSinceCreated: number;
+  daysRemaining: number;
+  overdue: boolean;
+  itemCount: number;
+  pendingCount: number;
+  completedCount: number;
+  skippedCount: number;
+  handledCount: number;
+  completionRate: number;
+  handledRate: number;
+  progressSummary: string | null;
+  sourceTypeCounts: Record<string, number>;
+  sourceTypeSummary: string | null;
+  nextItem: TrainingPlanItem | null;
+  nextAction: string | null;
+  nextActionReason: string | null;
+  nextActionPriority: string | null;
+  nextTargetHref: string | null;
+  nextTargetLabel: string | null;
+  recentActivities: TrainingPlanActivity[];
+  latestActivitySummary: string | null;
+  latestActivityAt: string | null;
 }
 
 export interface TrainingPlanItem {
@@ -197,6 +381,8 @@ export interface TrainingPlanItem {
   sourceType?: string | null;
   sourceId?: number | null;
   sourceSummary?: string | null;
+  targetHref?: string | null;
+  targetLabel?: string | null;
   status: string;
   statusUpdatedAt?: string | null;
 }
@@ -335,6 +521,9 @@ export interface MockInterviewReport {
   expressionAdvice: string;
   recommendedCardIds: number[];
   weaknessTags: string[];
+  trainingPlanLinked: boolean;
+  trainingPlanItemCount: number;
+  reviewPathSummary: string;
   createdAt: string | null;
 }
 
@@ -371,7 +560,39 @@ export interface MockInterviewTrend {
   trendLabel: string;
   interviewCount: number;
   latestIssue: string | null;
+  latestIssueType: string | null;
+  latestIssueTypeLabel: string | null;
   lastInterviewAt: string | null;
+}
+
+export interface MockInterviewTrace {
+  sessionCount: number;
+  reportedSessionCount: number;
+  latestSessionId: number | null;
+  latestSessionStatus: string | null;
+  latestSessionStatusLabel: string | null;
+  latestCategory: string | null;
+  latestReportId: number | null;
+  latestAverageScore: number | null;
+  latestWeaknessTags: string[];
+  recommendedCardIds: number[];
+  answeredTurnCount: number;
+  lowScoreTurnCount: number;
+  weaknessEventCount: number;
+  trainingPlanItemCount: number;
+  reportTrainingPlanLinked: boolean;
+  latestInterviewAt: string | null;
+  closureStatus: string | null;
+  closureStatusLabel: string | null;
+  nextAction: string | null;
+  nextActionReason: string | null;
+  nextActionPriority: string | null;
+  nextTargetHref: string | null;
+  nextTargetLabel: string | null;
+  reportReviewHref: string | null;
+  reportReviewLabel: string | null;
+  closureSummary: string | null;
+  reviewPathSummary: string | null;
 }
 
 export interface MockInterviewSession {

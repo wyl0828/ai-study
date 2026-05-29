@@ -22,7 +22,11 @@ public class TrainingPlanActivityVO {
 
     private String sourceSummary;
 
+    private String learningImpactSummary;
+
     private String status;
+
+    private String statusLabel;
 
     private LocalDateTime statusUpdatedAt;
 }

@@ -2,11 +2,14 @@ package com.interview.coach.service;
 
 import com.interview.coach.vo.ProblemDetailVO;
 import com.interview.coach.vo.ProblemListItemVO;
+import com.interview.coach.vo.ProblemCacheStatusVO;
 import com.interview.coach.vo.ProblemTemplateVO;
 import java.util.List;
 import java.util.Optional;
 
 public interface ProblemCacheService {
+
+    ProblemCacheStatusVO status();
 
     Optional<List<ProblemListItemVO>> getProblemList();
 

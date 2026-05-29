@@ -2,6 +2,7 @@ package com.interview.coach.service;
 
 import com.interview.coach.vo.KnowledgeCardVO;
 import com.interview.coach.vo.KnowledgeCategoryVO;
+import com.interview.coach.vo.KnowledgeCacheRefreshVO;
 import java.util.List;
 
 public interface KnowledgeCardService {
@@ -13,4 +14,6 @@ public interface KnowledgeCardService {
     KnowledgeCardVO getCardDetail(Long id);
 
     List<KnowledgeCardVO> listReviewCards(int limit);
+
+    KnowledgeCacheRefreshVO refreshKnowledgeCache();
 }

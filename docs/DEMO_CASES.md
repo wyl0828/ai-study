@@ -15,7 +15,7 @@
 
 ## 使用方式
 
-1. 启动 MySQL、Piston、Spring Boot 后端和 Next.js 前端；Redis 当前只有配置预留，核心 demo 不依赖缓存读写。
+1. 启动 MySQL、Piston、Spring Boot 后端和 Next.js 前端；建议同时启动 Redis，用于题目列表、题目详情和模板热点缓存。Redis 不可用时题目接口会降级 MySQL，核心 demo 不依赖 Redis 作为事实源。
 2. 打开对应题目页，例如 `/problem/1`。
 3. 先展示左侧完整题面、预设提示和题解区域，说明题目内容与 AI 诊断边界。
 4. 将 bug 代码复制到 Monaco Editor。

@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,6 +29,7 @@ import com.interview.coach.mapper.KnowledgeCardMapper;
 import com.interview.coach.mapper.MockInterviewReportMapper;
 import com.interview.coach.mapper.MockInterviewSessionMapper;
 import com.interview.coach.mapper.MockInterviewTurnMapper;
+import com.interview.coach.mapper.TrainingPlanItemMapper;
 import com.interview.coach.mapper.UserWeaknessEventMapper;
 import com.interview.coach.service.TrainingPlanService;
 import com.interview.coach.vo.MockInterviewSessionVO;
@@ -64,6 +66,9 @@ class MockInterviewServiceImplTest {
     @Mock
     private TrainingPlanService trainingPlanService;
 
+    @Mock
+    private TrainingPlanItemMapper trainingPlanItemMapper;
+
     private MockInterviewServiceImpl service;
 
     @BeforeEach
@@ -75,7 +80,8 @@ class MockInterviewServiceImplTest {
                 reportMapper,
                 weaknessEventMapper,
                 aiClient,
-                trainingPlanService);
+                trainingPlanService,
+                trainingPlanItemMapper);
     }
 
     @Test
@@ -107,6 +113,23 @@ class MockInterviewServiceImplTest {
         assertThat(restored.getCurrentQuestion()).isEqualTo("Spring Bean 生命周期是什么？");
         assertThat(restored.getTurns()).isEmpty();
         assertThat(restored.getReport()).isNull();
+    }
+
+    @Test
+    void getSessionRestoresReportTrainingPlanLinkage() {
+        when(sessionMapper.selectById(9L)).thenReturn(session(9L, "REPORTED", 1831L, 1));
+        when(knowledgeCardMapper.selectById(1831L)).thenReturn(card(1831L));
+        when(turnMapper.selectList(any())).thenReturn(List.of(mainTurn(21L), followUpTurn(22L)));
+        when(reportMapper.selectOne(any())).thenReturn(report(31L));
+        when(trainingPlanItemMapper.selectCount(any())).thenReturn(2L);
+
+        MockInterviewSessionVO restored = service.getSession(9L);
+
+        assertThat(restored.getReport()).isNotNull();
+        assertThat(reportValue(restored, "trainingPlanLinked")).isEqualTo(true);
+        assertThat(reportValue(restored, "trainingPlanItemCount")).isEqualTo(2);
+        assertThat(reportValue(restored, "reviewPathSummary")).asString()
+                .contains("已进入训练计划", "2 个复盘项");
     }
 
     @Test
@@ -143,6 +166,29 @@ class MockInterviewServiceImplTest {
         assertThat(result.getStatus()).isEqualTo("ASKING_FOLLOW_UP");
         assertThat(result.getCurrentQuestion()).isEqualTo("为什么 BeanPostProcessor 能影响初始化前后？");
         assertThat(result.getCurrentTurnType()).isEqualTo("FOLLOW_UP");
+    }
+
+    @Test
+    void submitMainAnswerWritesWeaknessEventWhenScorePassesButKeyPointsAreMissing() {
+        when(sessionMapper.selectById(9L)).thenReturn(session(9L, "ASKING_MAIN", 1831L, 0));
+        when(knowledgeCardMapper.selectById(1831L)).thenReturn(card(1831L));
+        when(aiClient.askJson(anyString(), anyString(), eq(MockInterviewAiEvaluationResponse.class)))
+                .thenReturn(aiResponse(72, "为什么 BeanPostProcessor 能影响初始化前后？"));
+        doAnswer(invocation -> {
+            MockInterviewTurn turn = invocation.getArgument(0);
+            turn.setId(21L);
+            return 1;
+        }).when(turnMapper).insert(any(MockInterviewTurn.class));
+        when(turnMapper.selectList(any())).thenReturn(List.of(mainTurn(21L)));
+
+        service.answer(9L, answer("提到了实例化、依赖注入和初始化。"));
+
+        ArgumentCaptor<UserWeaknessEvent> eventCaptor = ArgumentCaptor.forClass(UserWeaknessEvent.class);
+        verify(weaknessEventMapper).insert(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getSourceType()).isEqualTo("MOCK_INTERVIEW");
+        assertThat(eventCaptor.getValue().getSourceId()).isEqualTo(21L);
+        assertThat(eventCaptor.getValue().getKnowledgePoint()).isEqualTo("Spring Bean 生命周期");
+        assertThat(eventCaptor.getValue().getReason()).contains("缺失", "销毁");
     }
 
     @Test
@@ -427,6 +473,56 @@ class MockInterviewServiceImplTest {
         assertThat(sessionCaptor.getValue().getStatus()).isEqualTo("REPORTED");
         assertThat(result.getStatus()).isEqualTo("REPORTED");
         assertThat(result.getReport().getAverageScore()).isEqualByComparingTo("61.00");
+        assertThat(reportValue(result, "trainingPlanLinked")).isEqualTo(true);
+        assertThat(reportValue(result, "trainingPlanItemCount")).isEqualTo(1);
+        assertThat(reportValue(result, "reviewPathSummary")).asString()
+                .contains("已进入训练计划", "1 个复盘项");
+    }
+
+    @Test
+    void finishStillReturnsReportWhenTrainingPlanPersistenceFails() {
+        MockInterviewSession finished = session(9L, "FINISHED", 1831L, 1);
+        when(sessionMapper.selectById(9L)).thenReturn(finished);
+        when(turnMapper.selectList(any())).thenReturn(List.of(mainTurn(21L), followUpTurn(22L)));
+        doAnswer(invocation -> {
+            MockInterviewReport report = invocation.getArgument(0);
+            report.setId(31L);
+            return 1;
+        }).when(reportMapper).insert(any(MockInterviewReport.class));
+        doThrow(new IllegalStateException("training plan database down"))
+                .when(trainingPlanService).savePlan(any(AgentContext.class), any(TrainingPlanResult.class));
+
+        MockInterviewSessionVO result = service.finish(9L);
+
+        verify(trainingPlanService).savePlan(any(AgentContext.class), any(TrainingPlanResult.class));
+        ArgumentCaptor<MockInterviewSession> sessionCaptor = ArgumentCaptor.forClass(MockInterviewSession.class);
+        verify(sessionMapper).updateById(sessionCaptor.capture());
+        assertThat(sessionCaptor.getValue().getStatus()).isEqualTo("REPORTED");
+        assertThat(result.getStatus()).isEqualTo("REPORTED");
+        assertThat(result.getReport()).isNotNull();
+        assertThat(result.getReport().getAverageScore()).isEqualByComparingTo("61.00");
+    }
+
+    @Test
+    void finishDoesNotRecommendCardsOrTrainingPlanWhenAllAnswersAreStrongWithoutGaps() {
+        MockInterviewSession finished = session(9L, "FINISHED", 1831L, 1);
+        when(sessionMapper.selectById(9L)).thenReturn(finished);
+        when(turnMapper.selectList(any())).thenReturn(List.of(strongTurn(21L)));
+        doAnswer(invocation -> {
+            MockInterviewReport report = invocation.getArgument(0);
+            report.setId(31L);
+            return 1;
+        }).when(reportMapper).insert(any(MockInterviewReport.class));
+
+        MockInterviewSessionVO result = service.finish(9L);
+
+        ArgumentCaptor<MockInterviewReport> reportCaptor = ArgumentCaptor.forClass(MockInterviewReport.class);
+        verify(reportMapper).insert(reportCaptor.capture());
+        assertThat(reportCaptor.getValue().getAverageScore()).isEqualByComparingTo("92.00");
+        assertThat(reportCaptor.getValue().getRecommendedCardIds()).isBlank();
+        assertThat(reportCaptor.getValue().getWeaknessTags()).isBlank();
+        assertThat(result.getReport().getRecommendedCardIds()).isEmpty();
+        verify(trainingPlanService, never()).savePlan(any(AgentContext.class), any(TrainingPlanResult.class));
     }
 
     private MockInterviewCreateRequest createRequest() {
@@ -519,10 +615,51 @@ class MockInterviewServiceImplTest {
         return turn;
     }
 
+    private MockInterviewTurn strongTurn(Long id) {
+        MockInterviewTurn turn = mainTurn(id);
+        turn.setScore(92);
+        turn.setFeedback("回答结构清晰，核心流程和扩展点覆盖完整。");
+        turn.setHitKeyPoints("实例化\n依赖注入\n初始化\n销毁\nBeanPostProcessor");
+        turn.setMissingKeyPoints("");
+        turn.setExpressionIssue("");
+        turn.setGapSummary("");
+        turn.setExpressionFeedback("表达结构清晰。");
+        return turn;
+    }
+
+    private MockInterviewReport report(Long id) {
+        MockInterviewReport report = new MockInterviewReport();
+        report.setId(id);
+        report.setSessionId(9L);
+        report.setUserId(1L);
+        report.setAverageScore(new java.math.BigDecimal("61.00"));
+        report.setSummary("本次模拟面试平均分 61.00，建议围绕缺失要点继续复盘。");
+        report.setStrengths("能覆盖部分主流程，具备基础表达能力。");
+        report.setWeaknesses("销毁\nBeanPostProcessor");
+        report.setExpressionAdvice("表达偏罗列。");
+        report.setRecommendedCardIds("1831");
+        report.setWeaknessTags("销毁,BeanPostProcessor");
+        return report;
+    }
+
     private MockInterviewTurn firstFollowUpTurn(Long id) {
         MockInterviewTurn turn = followUpTurn(id);
         turn.setScore(58);
         turn.setAiRawJson("{\"followUpQuestion\":\"那 Spring AOP 为什么依赖 BeanPostProcessor？\"}");
         return turn;
+    }
+
+    private Object reportValue(MockInterviewSessionVO session, String fieldName) {
+        try {
+            Object report = session.getReport();
+            assertThat(report).isNotNull();
+            java.lang.reflect.Field field = report.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(report);
+        } catch (NoSuchFieldException e) {
+            throw new AssertionError("Missing mock interview report field: " + fieldName, e);
+        } catch (IllegalAccessException e) {
+            throw new AssertionError("Cannot access mock interview report field: " + fieldName, e);
+        }
     }
 }

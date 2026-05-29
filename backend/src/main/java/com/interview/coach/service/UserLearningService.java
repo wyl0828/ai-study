@@ -4,10 +4,12 @@ import com.interview.coach.vo.DashboardStatsVO;
 import com.interview.coach.vo.ErrorStatsVO;
 import com.interview.coach.vo.MistakeCardVO;
 import com.interview.coach.vo.MockInterviewRecentVO;
+import com.interview.coach.vo.MockInterviewTraceVO;
 import com.interview.coach.vo.MockInterviewTrendVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
 import com.interview.coach.vo.TrainingPlanActivityVO;
 import com.interview.coach.vo.TrainingPlanHistoryVO;
+import com.interview.coach.vo.TrainingPlanTraceVO;
 import com.interview.coach.vo.TrainingPlanVO;
 import com.interview.coach.vo.UserWeaknessEventVO;
 import com.interview.coach.vo.UserWeaknessVO;
@@ -29,9 +31,13 @@ public interface UserLearningService {
 
     List<TrainingPlanActivityVO> getRecentTrainingActivities(Long userId, int limit);
 
+    TrainingPlanTraceVO getTrainingPlanTrace(Long userId);
+
     List<SubmissionHistoryVO> getRecentSubmissions(Long userId);
 
     List<MockInterviewRecentVO> getRecentMockInterviews(Long userId, int limit);
+
+    MockInterviewTraceVO getMockInterviewTrace(Long userId);
 
     List<MockInterviewTrendVO> getMockInterviewTrends(Long userId, int limit);
 

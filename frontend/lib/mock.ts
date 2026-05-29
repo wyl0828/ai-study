@@ -57,6 +57,7 @@ export const mockTrainingPlan: TrainingPlan = {
   summary:
     "根据你最近的错误记录，系统检测到 HashMap 查找和链表指针操作是主要薄弱点。",
   status: "ACTIVE",
+  statusLabel: "进行中",
   items: [
     {
       id: 1,

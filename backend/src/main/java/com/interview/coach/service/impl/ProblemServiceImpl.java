@@ -12,10 +12,13 @@ import com.interview.coach.mapper.ProblemMapper;
 import com.interview.coach.mapper.TestCaseMapper;
 import com.interview.coach.service.ProblemCacheService;
 import com.interview.coach.service.ProblemService;
+import com.interview.coach.vo.ProblemCacheRefreshVO;
+import com.interview.coach.vo.ProblemCacheStatusVO;
 import com.interview.coach.vo.ProblemDetailVO;
 import com.interview.coach.vo.ProblemListItemVO;
 import com.interview.coach.vo.ProblemTemplateVO;
 import com.interview.coach.vo.TestCaseVO;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +49,77 @@ public class ProblemServiceImpl implements ProblemService {
             log.warn("Problem list cache read failed; downgrade to MySQL: {}", ex.getMessage());
             return listProblemsFromMysqlAndCache();
         }
+    }
+
+    @Override
+    public ProblemCacheRefreshVO refreshProblemCache() {
+        ProblemCacheRefreshVO result = new ProblemCacheRefreshVO();
+        result.setRefreshedAt(LocalDateTime.now());
+        ProblemCacheStatusVO status = problemCacheService.status();
+        result.setEnabled(status.getEnabled());
+        result.setRedisAvailable(status.getRedisAvailable());
+        if (!Boolean.TRUE.equals(status.getEnabled()) || !Boolean.TRUE.equals(status.getRedisAvailable())) {
+            result.setMessage("Problem cache is disabled or Redis is unavailable; refresh skipped.");
+            result.setSummary("Problem cache refresh skipped: Redis unavailable or disabled.");
+            fillProblemCacheRefreshMaintenance(result);
+            return result;
+        }
+
+        try {
+            problemCacheService.evictAll();
+        } catch (Exception ex) {
+            result.setFailedCount(result.getFailedCount() + 1);
+            log.warn("Problem cache evict failed before refresh; continue warm-up from MySQL: {}", ex.getMessage());
+        }
+
+        List<ProblemListItemVO> problems = listProblemsFromMysqlAndCache();
+        result.setListWarmAttempted(true);
+        for (ProblemListItemVO problem : problems) {
+            if (problem == null || problem.getId() == null) {
+                continue;
+            }
+            try {
+                getProblemDetailFromMysqlAndCache(problem.getId());
+                result.setDetailWarmAttemptedCount(result.getDetailWarmAttemptedCount() + 1);
+            } catch (Exception ex) {
+                result.setFailedCount(result.getFailedCount() + 1);
+                log.warn("Problem detail cache warm-up failed: problemId={}, error={}",
+                        problem.getId(), ex.getMessage());
+            }
+            try {
+                getProblemTemplateFromMysqlAndCache(problem.getId());
+                result.setTemplateWarmAttemptedCount(result.getTemplateWarmAttemptedCount() + 1);
+            } catch (Exception ex) {
+                result.setFailedCount(result.getFailedCount() + 1);
+                log.warn("Problem template cache warm-up failed: problemId={}, error={}",
+                        problem.getId(), ex.getMessage());
+            }
+        }
+        result.setTotalWarmAttemptedCount((Boolean.TRUE.equals(result.getListWarmAttempted()) ? 1 : 0)
+                + result.getDetailWarmAttemptedCount()
+                + result.getTemplateWarmAttemptedCount());
+        result.setMessage("Problem cache refresh attempted from MySQL source.");
+        result.setSummary("Problem cache warm-up attempted " + result.getTotalWarmAttemptedCount()
+                + " keys, failed " + result.getFailedCount() + ".");
+        fillProblemCacheRefreshMaintenance(result);
+        return result;
+    }
+
+    private void fillProblemCacheRefreshMaintenance(ProblemCacheRefreshVO result) {
+        if (!Boolean.TRUE.equals(result.getEnabled()) || !Boolean.TRUE.equals(result.getRedisAvailable())) {
+            result.setStatusLabel("SKIPPED");
+            result.setMaintenanceAction(
+                    "Enable PROBLEM_CACHE_ENABLED and Redis, then retry POST /api/problems/cache/refresh.");
+            return;
+        }
+        if (result.getFailedCount() != null && result.getFailedCount() > 0) {
+            result.setStatusLabel("PARTIAL_FAILED");
+            result.setMaintenanceAction("Check cache warm-up warnings, then retry POST /api/problems/cache/refresh.");
+            return;
+        }
+        result.setStatusLabel("READY");
+        result.setMaintenanceAction(
+                "Problem cache refreshed; use GET /api/problems/cache/status to confirm warmed keys.");
     }
 
     private List<ProblemListItemVO> listProblemsFromMysqlAndCache() {

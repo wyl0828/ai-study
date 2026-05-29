@@ -24,5 +24,11 @@ public class MockInterviewReportVO {
 
     private List<String> weaknessTags;
 
+    private Boolean trainingPlanLinked;
+
+    private Integer trainingPlanItemCount;
+
+    private String reviewPathSummary;
+
     private LocalDateTime createdAt;
 }

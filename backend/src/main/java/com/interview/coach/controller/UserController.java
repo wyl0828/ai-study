@@ -11,11 +11,13 @@ import com.interview.coach.vo.DashboardStatsVO;
 import com.interview.coach.vo.ErrorStatsVO;
 import com.interview.coach.vo.MistakeCardVO;
 import com.interview.coach.vo.MockInterviewRecentVO;
+import com.interview.coach.vo.MockInterviewTraceVO;
 import com.interview.coach.vo.MockInterviewTrendVO;
 import com.interview.coach.vo.SelfTestRecordVO;
 import com.interview.coach.vo.SubmissionHistoryVO;
 import com.interview.coach.vo.TrainingPlanActivityVO;
 import com.interview.coach.vo.TrainingPlanHistoryVO;
+import com.interview.coach.vo.TrainingPlanTraceVO;
 import com.interview.coach.vo.TrainingPlanVO;
 import com.interview.coach.vo.UserWeaknessEventVO;
 import com.interview.coach.vo.UserWeaknessVO;
@@ -83,6 +85,11 @@ public class UserController {
         return ApiResponse.success(userLearningService.getRecentTrainingActivities(userId, limit));
     }
 
+    @GetMapping("/{userId}/training-plans/trace")
+    public ApiResponse<TrainingPlanTraceVO> getTrainingPlanTrace(@PathVariable Long userId) {
+        return ApiResponse.success(userLearningService.getTrainingPlanTrace(userId));
+    }
+
     @PatchMapping("/{userId}/training-plans/items/{itemId}/status")
     public ApiResponse<Void> updateTrainingPlanItemStatus(
             @PathVariable Long userId,
@@ -128,6 +135,11 @@ public class UserController {
             @PathVariable Long userId,
             @RequestParam(defaultValue = "5") int limit) {
         return ApiResponse.success(userLearningService.getRecentMockInterviews(userId, limit));
+    }
+
+    @GetMapping("/{userId}/mock-interviews/trace")
+    public ApiResponse<MockInterviewTraceVO> getMockInterviewTrace(@PathVariable Long userId) {
+        return ApiResponse.success(userLearningService.getMockInterviewTrace(userId));
     }
 
     @GetMapping("/{userId}/mock-interviews/trends")
