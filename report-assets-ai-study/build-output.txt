@@ -1,0 +1,22 @@
+PS D:\code\ai-study\frontend> npm run build
+
+> frontend@0.1.0 build
+> next build
+
+   ▲ Next.js 14.2.35
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+ ✓ Linting and checking validity of types
+ ✓ Collecting page data
+ ✓ Generating static pages (9/9)
+ ✓ Finalizing page optimization
+
+Route (app)                       Size     First Load JS
+┌ ○ /                             6.2 kB        93.5 kB
+├ ○ /dashboard                    5.4 kB        92.7 kB
+├ ○ /knowledge                    6.1 kB        93.4 kB
+├ ○ /mock-interview               7.8 kB        95.1 kB
+├ ƒ /problem/[id]                 8.5 kB        95.8 kB
+└ ○ /rag-chat                     6.9 kB        94.2 kB
+
+Build completed successfully for D:\code\ai-study.

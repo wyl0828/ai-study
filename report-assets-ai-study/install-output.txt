@@ -1,0 +1,18 @@
+PS D:\code\ai-study> Get-Command claude, openclaw
+
+CommandType    Name           Source
+-----------    ----           ------
+ExternalScript claude.ps1     D:\develop\NodeJs\claude.ps1
+ExternalScript openclaw.ps1   D:\develop\NodeJs\openclaw.ps1
+
+PS D:\code\ai-study> npm list -g --depth=0
+D:\develop\NodeJs
++-- @anthropic-ai/claude-code@2.1.156
++-- corepack@0.34.6
++-- npm@11.12.1
++-- openclaw@2026.5.20
+`-- opencode-ai@1.2.24
+
+PS D:\code\ai-study> node -v; npm -v
+v24.15.0
+11.12.1
