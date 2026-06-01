@@ -11,6 +11,8 @@ assert.match(api, /authApi/);
 assert.match(api, /window\.location\.href = "\/login"/);
 assert.match(api, /streamDiagnosis/);
 assert.match(api, /Authorization: `Bearer \$\{options\.token\}`/);
+assert.doesNotMatch(api, /const API_BASE = "http:\/\/localhost:8080"/);
+assert.match(api, /function apiBase\(\)/);
 
 const files = [
   "frontend/components/ProblemWorkspace.tsx",

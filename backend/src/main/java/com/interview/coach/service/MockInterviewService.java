@@ -10,6 +10,8 @@ public interface MockInterviewService {
 
     MockInterviewSessionVO getSession(Long sessionId);
 
+    void requireOwnedSession(Long sessionId, Long userId);
+
     MockInterviewSessionVO answer(Long sessionId, MockInterviewAnswerRequest request);
 
     MockInterviewSessionVO finish(Long sessionId);

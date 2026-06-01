@@ -159,6 +159,12 @@ MYSQL_PASSWORD=your_password
 AUTH_JWT_SECRET=replace_with_a_long_random_secret
 AUTH_JWT_EXPIRE_HOURS=168
 
+# Frontend / API proxy
+# 浏览器端默认使用相对 /api，由 Next.js rewrite 转发到后端；部署同机时通常留空。
+NEXT_PUBLIC_API_BASE=
+# Next.js 服务端渲染时访问后端的内部地址。
+INTERNAL_API_BASE=http://localhost:8080
+
 # Redis（题目 / 知识卡热点缓存；训练数据仍以 MySQL 为准）
 REDIS_HOST=localhost
 REDIS_PORT=6379

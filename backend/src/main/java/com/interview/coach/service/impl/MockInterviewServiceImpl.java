@@ -114,6 +114,14 @@ public class MockInterviewServiceImpl implements MockInterviewService {
     }
 
     @Override
+    public void requireOwnedSession(Long sessionId, Long userId) {
+        MockInterviewSession session = requireSession(sessionId);
+        if (!userId.equals(session.getUserId())) {
+            throw new BusinessException(403, "cannot access another user's mock interview");
+        }
+    }
+
+    @Override
     @Transactional
     public MockInterviewSessionVO answer(Long sessionId, MockInterviewAnswerRequest request) {
         if (request == null || !StringUtils.hasText(request.getUserAnswer())) {

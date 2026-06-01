@@ -39,7 +39,16 @@ import type {
 } from "./types";
 import { clearAuthSession, getAuthToken } from "./auth";
 
-const API_BASE = "http://localhost:8080";
+function apiBase(): string {
+  if (typeof window !== "undefined") {
+    return process.env.NEXT_PUBLIC_API_BASE || "";
+  }
+  return (
+    process.env.INTERNAL_API_BASE ||
+    process.env.NEXT_PUBLIC_API_BASE ||
+    "http://localhost:8080"
+  );
+}
 
 type ApiErrorContext =
   | "backend"
@@ -125,7 +134,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${url}`, {
+    res = await fetch(`${apiBase()}${url}`, {
       ...init,
       headers,
       cache: "no-store",
@@ -188,7 +197,7 @@ export const agentApi = {
   ): AbortController => {
     const controller = new AbortController();
 
-    fetch(`${API_BASE}/api/submissions/${submissionId}/diagnosis/stream`, {
+    fetch(`${apiBase()}/api/submissions/${submissionId}/diagnosis/stream`, {
       method: "GET",
       headers: {
         Accept: "text/event-stream",

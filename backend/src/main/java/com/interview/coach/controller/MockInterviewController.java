@@ -32,17 +32,20 @@ public class MockInterviewController {
 
     @GetMapping("/{sessionId}")
     public ApiResponse<MockInterviewSessionVO> getSession(@PathVariable Long sessionId) {
+        mockInterviewService.requireOwnedSession(sessionId, currentUserContext.requireUserId());
         return ApiResponse.success(mockInterviewService.getSession(sessionId));
     }
 
     @PostMapping("/{sessionId}/answers")
     public ApiResponse<MockInterviewSessionVO> answer(@PathVariable Long sessionId,
             @Valid @RequestBody MockInterviewAnswerRequest request) {
+        mockInterviewService.requireOwnedSession(sessionId, currentUserContext.requireUserId());
         return ApiResponse.success(mockInterviewService.answer(sessionId, request));
     }
 
     @PostMapping("/{sessionId}/finish")
     public ApiResponse<MockInterviewSessionVO> finish(@PathVariable Long sessionId) {
+        mockInterviewService.requireOwnedSession(sessionId, currentUserContext.requireUserId());
         return ApiResponse.success(mockInterviewService.finish(sessionId));
     }
 }

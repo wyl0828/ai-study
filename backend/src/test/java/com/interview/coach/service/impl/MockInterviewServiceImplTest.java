@@ -133,6 +133,22 @@ class MockInterviewServiceImplTest {
     }
 
     @Test
+    void requireOwnedSessionRejectsAnotherUserSession() {
+        when(sessionMapper.selectById(9L)).thenReturn(session(9L, "ASKING_MAIN", 1831L, 0));
+
+        assertThatThrownBy(() -> service.requireOwnedSession(9L, 2L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("cannot access another user's mock interview");
+    }
+
+    @Test
+    void requireOwnedSessionAllowsOwner() {
+        when(sessionMapper.selectById(9L)).thenReturn(session(9L, "ASKING_MAIN", 1831L, 0));
+
+        service.requireOwnedSession(9L, 1L);
+    }
+
+    @Test
     void submitMainAnswerPersistsMainTurnAndMovesToFollowUp() {
         when(sessionMapper.selectById(9L)).thenReturn(session(9L, "ASKING_MAIN", 1831L, 0));
         when(knowledgeCardMapper.selectById(1831L)).thenReturn(card(1831L));
