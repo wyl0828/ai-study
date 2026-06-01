@@ -135,6 +135,7 @@ cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < da
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\learning_memory_continuity_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\rag_mysql_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\rag_vector_migration.sql"
+cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\auth_user_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\training_plan_source_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\training_plan_activity_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\knowledge_cards.sql"
@@ -153,6 +154,10 @@ PowerShell 不支持直接使用 Bash 风格的 `<` 输入重定向，所以 Win
 MYSQL_URL=jdbc:mysql://localhost:3306/ai_interview_coach?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
 MYSQL_USERNAME=root
 MYSQL_PASSWORD=your_password
+
+# Auth
+AUTH_JWT_SECRET=replace_with_a_long_random_secret
+AUTH_JWT_EXPIRE_HOURS=168
 
 # Redis（题目 / 知识卡热点缓存；训练数据仍以 MySQL 为准）
 REDIS_HOST=localhost
@@ -250,7 +255,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\local_dependency_pre
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_demo_smoke.ps1
 ```
 
-脚本会真实检查 MySQL、Piston、Qdrant、Embedding、后端、前端，并自动跑 Two Sum 错误提交、SSE AI 诊断、AC 提交代码点评、Problem / Knowledge Cache Status / Refresh、Dashboard、RAG Health、RAG Vector Retry、RAG Chat 和向量落库检查。最终输出会包含 `goal_coverage`，形如 `training=...; rag=...; mockInterview=...; cache=...`，用一行汇总训练闭环、RAG 维护、模拟面试闭环和 Redis 缓存层四个大目标的当前验收证据。
+脚本会真实检查 MySQL、Piston、Qdrant、Embedding、后端、前端，并自动注册或登录 smoke 测试账号、携带 bearer token 跑 Two Sum 错误提交、SSE AI 诊断、AC 提交代码点评、Problem / Knowledge Cache Status / Refresh、Dashboard、RAG Health、RAG Vector Retry、RAG Chat 和向量落库检查。最终输出会包含 `goal_coverage`，形如 `training=...; rag=...; mockInterview=...; cache=...`，用一行汇总训练闭环、RAG 维护、模拟面试闭环和 Redis 缓存层四个大目标的当前验收证据。
 
 如果只想先验证主链路，可临时跳过外部 embedding 或前端页面：
 
@@ -402,6 +407,10 @@ com.interview.coach
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
+| POST | `/api/auth/register` | 注册 demo 测试账号并返回 token |
+| POST | `/api/auth/login` | 登录并返回 token |
+| GET | `/api/auth/me` | 获取当前认证用户 |
+| POST | `/api/auth/logout` | 客户端登出辅助接口 |
 | GET | `/api/problems` | 获取题目列表 |
 | GET | `/api/cache/status` | 题目 / 知识卡统一 Redis 缓存状态摘要 |
 | POST | `/api/cache/refresh` | 刷新并预热题目 / 知识卡只读热点缓存 |

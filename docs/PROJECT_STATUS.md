@@ -37,6 +37,7 @@
 - **训练计划接入知识卡片**：`training_plan_item` 已支持 `PROBLEM` 和 `KNOWLEDGE_CARD` 两类条目；Agent 自动训练计划保留 3 条算法复盘项并最多选取 3 张 RAG 命中的知识卡，手动重新生成会创建 3 天计划且每天包含 1 个算法复盘任务和 1 个知识卡复习任务，不根据算法错因强行推荐八股。`GET /api/users/{id}/training-plans/trace` 已提供最新计划的完成率、已处理率、计划创建时间、已运行天数、剩余天数 / 逾期状态、来源分布、下一条待练任务、后端 `nextAction` / `nextActionReason` / `nextActionPriority` 建议、最近完成 / 跳过动作、最近推进时间和最近动作摘要，Dashboard 训练计划追踪卡会直接展示这些节奏证据，并可直接进入下一项训练；训练追踪暂不可用时 Dashboard 仍保留刷新训练追踪入口，便于演示训练闭环可追踪。
 - **学习记忆连续化**：失败诊断会写入弱点事件，错题卡按 fingerprint 合并重复错误；知识卡自测写入 `self_test_record` 并更新 `user_knowledge_card_mastery`，低分自测也会进入弱点事件。
 - **固定演示样例**：主线演示已切换为 `1 两数之和`、`206 反转链表` 和 `121 买卖股票的最佳时机`，使用说明见 `docs/DEMO_CASES.md`。
+- **登录与用户隔离**：已新增最小化用户名/密码登录系统，每个测试者有独立的学习数据。后端使用 HMAC-SHA256 JWT 认证，前端通过 localStorage 存储 token；`AuthInterceptor` 拦截所有 `/api/**` 请求（公开接口除外），OPTIONS 预检请求自动放行；`SubmissionController`、`AgentController`、`UserController`、`RagChatController`、`MockInterviewController` 均已接入认证用户上下文，提交归属校验、用户数据隔离和 RAG 用户记忆隔离均已生效。登录是 demo 级测试账号系统，不是完整身份平台：邮箱验证、密码重置、OAuth、角色管理和权限控制不在 MVP 范围内。
 
 ## 1.1 最新验收状态
 

@@ -49,6 +49,7 @@ docker run -d --name ai-study-qdrant-16333 -p 127.0.0.1:16333:6333 -p 127.0.0.1:
 ```powershell
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\rag_mysql_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\rag_vector_migration.sql"
+cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\auth_user_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\training_plan_source_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\training_plan_activity_migration.sql"
 cmd /c "mysql --default-character-set=utf8mb4 -u root -p ai_interview_coach < data\mock_interview_migration.sql"
@@ -80,6 +81,8 @@ node frontend/lib/core-loop-stability.node-test.cjs
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\e2e_demo_smoke.ps1
 ```
 
+脚本会先调用 `/api/auth/register` 或 `/api/auth/login` 获取 smoke 测试账号 token，并在提交、SSE、Dashboard、RAG、缓存维护和模拟面试等受保护接口上携带 `Authorization: Bearer <token>`。可通过 `SMOKE_USERNAME` / `SMOKE_PASSWORD` 环境变量覆盖默认测试账号。
+
 如果只想验证主链路、不调用外部 embedding：
 
 ```powershell
@@ -109,6 +112,7 @@ qdrant_collection: ai_study_rag_chunks => 200
 
 - 后端 `/api/problems` 可访问。
 - `/api/problems` 至少返回 20 道稳定训练题，并包含核心演示题 `1` / `206` / `121`。
+- `/api/auth/register` 或 `/api/auth/login` 能返回当前 smoke 用户 token，且 `/api/auth/me` 可回读同一用户。
 - Piston `/runtimes` 可访问。
 - Qdrant `/healthz` 和 `ai_study_rag_chunks` collection 可访问。
 - Embedding smoke 返回真实 1536 维向量。
