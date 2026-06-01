@@ -2,13 +2,15 @@ param(
     [int] $UserId = 1,
     [int] $ProblemId = 1,
     [string] $BackendUrl = $(if ($env:BACKEND_URL) { $env:BACKEND_URL } else { "http://127.0.0.1:8080" }),
-    [string[]] $FrontendUrls = $(if ($env:FRONTEND_URL) { @($env:FRONTEND_URL) } else { @("http://127.0.0.1:3000", "http://127.0.0.1:4000") }),
+    [string[]] $FrontendUrls = $(if ($env:FRONTEND_URL) { @($env:FRONTEND_URL) } else { @("http://127.0.0.1:4000", "http://127.0.0.1:3000") }),
     [string] $PistonBaseUrl = $(if ($env:PISTON_BASE_URL) { $env:PISTON_BASE_URL } else { "http://127.0.0.1:2238/api/v2" }),
     [string] $QdrantUrl = $(if ($env:QDRANT_REST_URL) { $env:QDRANT_REST_URL } else { "http://127.0.0.1:6333" }),
     [string] $MysqlExe = $(if ($env:MYSQL_EXE) { $env:MYSQL_EXE } else { "D:\develop\mysql-8.0.34-winx64\bin\mysql.exe" }),
     [string] $MysqlUser = $(if ($env:MYSQL_USERNAME) { $env:MYSQL_USERNAME } else { "root" }),
     [string] $MysqlPassword = $(if ($env:MYSQL_PASSWORD) { $env:MYSQL_PASSWORD } else { "123456" }),
     [string] $MysqlDatabase = $(if ($env:MYSQL_DATABASE) { $env:MYSQL_DATABASE } else { "ai_interview_coach" }),
+    [string] $SmokeUsername = $(if ($env:SMOKE_USERNAME) { $env:SMOKE_USERNAME } else { "e2e_smoke_user" }),
+    [string] $SmokePassword = $(if ($env:SMOKE_PASSWORD) { $env:SMOKE_PASSWORD } else { "e2e_smoke_password_123" }),
     [int] $EmbeddingTimeoutSeconds = 60,
     [switch] $StartQdrant,
     [switch] $RunRagRebuild,
@@ -23,6 +25,7 @@ $OutputEncoding = [System.Text.Encoding]::UTF8
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $TempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("ai-study-e2e-demo-" + [System.Guid]::NewGuid())
 $Evidence = [ordered]@{}
+$AuthToken = $null
 
 New-Item -ItemType Directory -Path $TempDir | Out-Null
 
@@ -102,7 +105,8 @@ function ConvertTo-DemoJson {
 function Invoke-JsonPost {
     param(
         [string] $Url,
-        [object] $Body
+        [object] $Body,
+        [switch] $NoAuth
     )
     $bodyPath = Join-Path $TempDir ([System.Guid]::NewGuid().ToString() + ".json")
     $outputPath = Join-Path $TempDir ([System.Guid]::NewGuid().ToString() + ".json.out")
@@ -110,10 +114,18 @@ function Invoke-JsonPost {
     $json = ConvertTo-DemoJson $Body
     Set-Content -LiteralPath $bodyPath -Value $json -NoNewline -Encoding utf8
     Write-Host "calling POST $Url ..."
-    & curl.exe --noproxy "*" -sS --max-time 240 -o $outputPath `
-        "-H" "Content-Type: application/json" `
-        "--data-binary" "@$bodyPath" `
-        $Url
+    $curlArgs = @(
+        "--noproxy", "*",
+        "-sS",
+        "--max-time", "240",
+        "-o", $outputPath,
+        "-H", "Content-Type: application/json"
+    )
+    if (-not $NoAuth -and -not [string]::IsNullOrWhiteSpace($script:AuthToken)) {
+        $curlArgs += @("-H", "Authorization: Bearer $script:AuthToken")
+    }
+    $curlArgs += @("--data-binary", "@$bodyPath", $Url)
+    & curl.exe @curlArgs
     if ($LASTEXITCODE -ne 0) {
         throw "curl POST failed with exit code $LASTEXITCODE`: $Url"
     }
@@ -123,14 +135,55 @@ function Invoke-JsonPost {
 }
 
 function Invoke-JsonGet {
-    param([string] $Url)
+    param(
+        [string] $Url,
+        [switch] $NoAuth
+    )
     $outputPath = Join-Path $TempDir ([System.Guid]::NewGuid().ToString() + ".json.out")
-    & curl.exe --noproxy "*" -sS --max-time 240 -o $outputPath $Url
+    $curlArgs = @(
+        "--noproxy", "*",
+        "-sS",
+        "--max-time", "240",
+        "-o", $outputPath
+    )
+    if (-not $NoAuth -and -not [string]::IsNullOrWhiteSpace($script:AuthToken)) {
+        $curlArgs += @("-H", "Authorization: Bearer $script:AuthToken")
+    }
+    $curlArgs += $Url
+    & curl.exe @curlArgs
     if ($LASTEXITCODE -ne 0) {
         throw "curl GET failed with exit code $LASTEXITCODE`: $Url"
     }
     $text = Get-Content -LiteralPath $outputPath -Raw -Encoding utf8
     return $text | ConvertFrom-Json
+}
+
+function Initialize-SmokeAuth {
+    Write-Host "authenticating smoke user $SmokeUsername ..."
+    $register = Invoke-JsonPost -Url "$BackendUrl/api/auth/register" -Body @{
+        username = $SmokeUsername
+        password = $SmokePassword
+    } -NoAuth
+
+    $auth = $register
+    if ($register.code -ne 0) {
+        Write-Host "register returned code=$($register.code), trying login ..."
+        $auth = Invoke-JsonPost -Url "$BackendUrl/api/auth/login" -Body @{
+            username = $SmokeUsername
+            password = $SmokePassword
+        } -NoAuth
+    }
+
+    Assert-ApiSuccess $auth "smoke auth"
+    Assert-True (-not [string]::IsNullOrWhiteSpace($auth.data.token)) "Smoke auth did not return a token."
+    Assert-True ($null -ne $auth.data.user.id) "Smoke auth did not return a user id."
+    $script:AuthToken = [string] $auth.data.token
+    $script:UserId = [int] $auth.data.user.id
+
+    $me = Invoke-JsonGet "$BackendUrl/api/auth/me"
+    Assert-ApiSuccess $me "auth me"
+    Assert-True ([int] $me.data.id -eq $script:UserId) "Auth me returned a different user id."
+    return $me.data
 }
 
 function Invoke-MysqlScalar {
@@ -203,7 +256,6 @@ function Submit-Code {
     $code = Get-Content -LiteralPath $CodePath -Raw
     Write-Host "submitting $([System.IO.Path]::GetFileName($CodePath)) ..."
     $response = Invoke-JsonPost -Url "$BackendUrl/api/submissions" -Body @{
-        userId = $UserId
         problemId = $ProblemId
         language = "JAVA"
         code = $code
@@ -218,7 +270,18 @@ function Read-Sse {
     param([long] $SubmissionId)
     Write-Host "reading SSE for submissionId=$SubmissionId ..."
     $outputPath = Join-Path $TempDir ([System.Guid]::NewGuid().ToString() + ".sse.out")
-    & curl.exe --noproxy "*" -sS --no-buffer --max-time 180 -o $outputPath "$BackendUrl/api/submissions/$SubmissionId/diagnosis/stream"
+    $curlArgs = @(
+        "--noproxy", "*",
+        "-sS",
+        "--no-buffer",
+        "--max-time", "180",
+        "-o", $outputPath
+    )
+    if (-not [string]::IsNullOrWhiteSpace($script:AuthToken)) {
+        $curlArgs += @("-H", "Authorization: Bearer $script:AuthToken")
+    }
+    $curlArgs += "$BackendUrl/api/submissions/$SubmissionId/diagnosis/stream"
+    & curl.exe @curlArgs
     if ($LASTEXITCODE -ne 0) {
         throw "curl SSE failed with exit code $LASTEXITCODE for submissionId=$SubmissionId"
     }
@@ -297,6 +360,10 @@ try {
     $problem = Invoke-JsonGet "$BackendUrl/api/problems/$ProblemId"
     Assert-ApiSuccess $problem "problem detail"
     Assert-True ($null -ne $problem.data.presetHints) "Problem detail did not include presetHints."
+
+    $authUser = Initialize-SmokeAuth
+    $Evidence["auth"] = "userId=$($authUser.id), username=$($authUser.username)"
+
     $unifiedCacheStatus = Invoke-JsonGet "$BackendUrl/api/cache/status"
     Assert-ApiSuccess $unifiedCacheStatus "unified cache status"
     Assert-True ($unifiedCacheStatus.data.provider -eq "Redis") "Unified cache provider is not Redis."
@@ -694,7 +761,6 @@ try {
     Assert-True ($null -ne $ragVectorRetry.data.message) "RAG vector retry missing message."
     Assert-True ($ragVectorRetry.data.summary -match "Vector retry summary|Vector RAG disabled") "RAG vector retry missing readable summary."
     $chat = Invoke-JsonPost -Url "$BackendUrl/api/rag/chat" -Body @{
-        userId = $UserId
         question = "Why should Two Sum check the HashMap before inserting the current element?"
     }
     Assert-ApiSuccess $chat "rag chat"

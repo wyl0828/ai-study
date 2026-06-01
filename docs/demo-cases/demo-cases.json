@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "problemId": 1,
+      "title": "Two Sum",
+      "bugFile": "1-two-sum-bug.java",
+      "fixedFile": "1-two-sum-fixed.java",
+      "expectedFailedCase": "[3,3], target=6 returns [0,0] instead of [0,1]",
+      "expectedErrorType": "LOGIC_ERROR",
+      "expectedKnowledgePoint": "HashMap lookup order"
+    },
+    {
+      "problemId": 206,
+      "title": "Reverse Linked List",
+      "bugFile": "206-reverse-list-bug.java",
+      "fixedFile": "206-reverse-list-fixed.java",
+      "expectedFailedCase": "[1,2,3,4,5] returns [1] instead of [5,4,3,2,1]",
+      "expectedErrorType": "LOGIC_ERROR",
+      "expectedKnowledgePoint": "Linked list pointer reversal"
+    },
+    {
+      "problemId": 121,
+      "title": "Best Time to Buy and Sell Stock",
+      "bugFile": "121-best-time-stock-bug.java",
+      "fixedFile": "121-best-time-stock-fixed.java",
+      "expectedFailedCase": "[7,1,5,3,6,4] returns 0 instead of 5",
+      "expectedErrorType": "LOGIC_ERROR",
+      "expectedKnowledgePoint": "One-pass minimum tracking"
+    }
+  ]
+}
