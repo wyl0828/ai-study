@@ -1,7 +1,9 @@
 package com.interview.coach.controller;
 
+import com.interview.coach.auth.CurrentUserContext;
 import com.interview.coach.dto.AgentAnalyzeRequest;
 import com.interview.coach.service.AgentService;
+import com.interview.coach.service.SubmissionService;
 import com.interview.coach.vo.AgentAnalyzeVO;
 import com.interview.coach.vo.ApiResponse;
 import jakarta.validation.Valid;
@@ -28,16 +30,24 @@ public class AgentController {
 
     private final AgentService agentService;
 
+    private final SubmissionService submissionService;
+
+    private final CurrentUserContext currentUserContext;
+
     @Qualifier("agentTaskExecutor")
     private final Executor agentTaskExecutor;
 
     @PostMapping("/agent/analyze")
     public ApiResponse<AgentAnalyzeVO> analyze(@Valid @RequestBody AgentAnalyzeRequest request) {
+        Long currentUserId = currentUserContext.requireUserId();
+        submissionService.requireOwnedSubmission(request.getSubmissionId(), currentUserId);
         return ApiResponse.success(agentService.analyze(request.getSubmissionId()));
     }
 
     @GetMapping("/submissions/{submissionId}/diagnosis/stream")
     public SseEmitter streamDiagnosis(@PathVariable Long submissionId) {
+        Long currentUserId = currentUserContext.requireUserId();
+        submissionService.requireOwnedSubmission(submissionId, currentUserId);
         SseEmitter emitter = new SseEmitter(0L);
         CompletableFuture.runAsync(() -> runDiagnosisStream(submissionId, emitter), agentTaskExecutor);
         return emitter;

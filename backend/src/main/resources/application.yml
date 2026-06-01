@@ -54,6 +54,9 @@ coach:
       hybrid-vector-weight: ${RAG_HYBRID_VECTOR_WEIGHT:0.60}
       hybrid-rule-weight: ${RAG_HYBRID_RULE_WEIGHT:0.40}
       vector-candidate-limit: ${RAG_VECTOR_CANDIDATE_LIMIT:30}
+  auth:
+    jwt-secret: ${AUTH_JWT_SECRET:dev-change-this-secret-for-deploy}
+    jwt-expire-hours: ${AUTH_JWT_EXPIRE_HOURS:168}
   ai:
     base-url: ${AI_BASE_URL:https://api.anthropic.com}
     api-key: ${AI_API_KEY:}

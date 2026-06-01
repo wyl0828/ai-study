@@ -7,7 +7,6 @@ import lombok.Data;
 @Data
 public class RagChatRequest {
 
-    @NotNull(message = "userId is required")
     private Long userId;
 
     @NotBlank(message = "question is required")

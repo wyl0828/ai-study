@@ -69,6 +69,17 @@ public class SubmissionServiceImpl implements SubmissionService {
     }
 
     @Override
+    public void requireOwnedSubmission(Long submissionId, Long userId) {
+        Submission submission = submissionMapper.selectById(submissionId);
+        if (submission == null) {
+            throw new BusinessException(404, "submission not found");
+        }
+        if (!userId.equals(submission.getUserId())) {
+            throw new BusinessException(403, "cannot access another user's submission");
+        }
+    }
+
+    @Override
     @Transactional
     public JudgeResult rejudge(Long submissionId) {
         Submission submission = getSubmissionOrThrow(submissionId);

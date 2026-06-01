@@ -1,5 +1,6 @@
 package com.interview.coach.controller;
 
+import com.interview.coach.auth.CurrentUserContext;
 import com.interview.coach.dto.RagChatRequest;
 import com.interview.coach.service.RagChatService;
 import com.interview.coach.service.RagService;
@@ -26,6 +27,8 @@ public class RagChatController {
 
     private final RagService ragService;
 
+    private final CurrentUserContext currentUserContext;
+
     @GetMapping("/health")
     public ApiResponse<RagHealthVO> health() {
         return ApiResponse.success(ragService.checkHealth());
@@ -44,6 +47,6 @@ public class RagChatController {
 
     @PostMapping("/chat")
     public ApiResponse<RagChatResponseVO> chat(@Valid @RequestBody RagChatRequest request) {
-        return ApiResponse.success(ragChatService.ask(request.getUserId(), request.getQuestion()));
+        return ApiResponse.success(ragChatService.ask(currentUserContext.requireUserId(), request.getQuestion()));
     }
 }

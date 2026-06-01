@@ -1,8 +1,8 @@
 USE ai_interview_coach;
 
 INSERT INTO `user` (id, username, password_hash, email, created_at, updated_at) VALUES
-(1, 'demo', 'demo-only-not-for-production', 'demo@example.com', NOW(), NOW())
-ON DUPLICATE KEY UPDATE username = VALUES(username), email = VALUES(email), updated_at = NOW();
+(1, 'demo', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'demo@example.com', NOW(), NOW())
+ON DUPLICATE KEY UPDATE username = VALUES(username), password_hash = VALUES(password_hash), email = VALUES(email), updated_at = NOW();
 
 DELETE FROM test_case;
 DELETE FROM problem_knowledge_point;

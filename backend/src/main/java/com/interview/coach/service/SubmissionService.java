@@ -12,4 +12,6 @@ public interface SubmissionService {
     Submission getSubmissionOrThrow(Long submissionId);
 
     JudgeResult rejudge(Long submissionId);
+
+    void requireOwnedSubmission(Long submissionId, Long userId);
 }

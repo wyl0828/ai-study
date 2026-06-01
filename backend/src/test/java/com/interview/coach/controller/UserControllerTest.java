@@ -1,9 +1,12 @@
 package com.interview.coach.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.interview.coach.auth.CurrentUserContext;
+import com.interview.coach.handler.BusinessException;
 import com.interview.coach.service.KnowledgeLearningService;
 import com.interview.coach.service.TrainingPlanService;
 import com.interview.coach.service.UserLearningService;
@@ -15,6 +18,7 @@ import com.interview.coach.vo.TrainingPlanTraceVO;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -30,8 +34,15 @@ class UserControllerTest {
     @Mock
     private KnowledgeLearningService knowledgeLearningService;
 
+    @Mock
+    private CurrentUserContext currentUserContext;
+
+    @InjectMocks
+    private UserController controller;
+
     @Test
     void trainingPlanTraceReturnsServiceSummary() {
+        when(currentUserContext.requireUserId()).thenReturn(1L);
         TrainingPlanTraceVO trace = new TrainingPlanTraceVO();
         trace.setPlanId(100L);
         trace.setItemCount(3);
@@ -39,10 +50,6 @@ class UserControllerTest {
         trace.setNextActionReason("优先处理该项，因为它来自失败提交。");
         trace.setNextActionPriority("HIGH");
         when(userLearningService.getTrainingPlanTrace(1L)).thenReturn(trace);
-        UserController controller = new UserController(
-                userLearningService,
-                trainingPlanService,
-                knowledgeLearningService);
 
         ApiResponse<TrainingPlanTraceVO> response = controller.getTrainingPlanTrace(1L);
 
@@ -56,6 +63,7 @@ class UserControllerTest {
 
     @Test
     void trainingPlanHistoryReturnsServiceSummaries() {
+        when(currentUserContext.requireUserId()).thenReturn(1L);
         TrainingPlanHistoryVO active = new TrainingPlanHistoryVO();
         active.setId(100L);
         active.setTitle("第 1 轮训练计划");
@@ -72,10 +80,6 @@ class UserControllerTest {
         regenerated.setSkippedCount(0);
         when(userLearningService.getTrainingPlanHistory(1L, 5))
                 .thenReturn(List.of(active, regenerated));
-        UserController controller = new UserController(
-                userLearningService,
-                trainingPlanService,
-                knowledgeLearningService);
 
         ApiResponse<List<TrainingPlanHistoryVO>> response = controller.getTrainingPlanHistory(1L, 5);
 
@@ -88,6 +92,7 @@ class UserControllerTest {
 
     @Test
     void recentTrainingActivitiesReturnLearningImpactSummaries() {
+        when(currentUserContext.requireUserId()).thenReturn(1L);
         TrainingPlanActivityVO completed = new TrainingPlanActivityVO();
         completed.setItemId(10L);
         completed.setPlanId(100L);
@@ -102,10 +107,6 @@ class UserControllerTest {
         skipped.setLearningImpactSummary("跳过只记录训练节奏。");
         when(userLearningService.getRecentTrainingActivities(1L, 5))
                 .thenReturn(List.of(completed, skipped));
-        UserController controller = new UserController(
-                userLearningService,
-                trainingPlanService,
-                knowledgeLearningService);
 
         ApiResponse<List<TrainingPlanActivityVO>> response = controller.getRecentTrainingActivities(1L, 5);
 
@@ -118,6 +119,7 @@ class UserControllerTest {
 
     @Test
     void mockInterviewTraceReturnsServiceSummary() {
+        when(currentUserContext.requireUserId()).thenReturn(1L);
         MockInterviewTraceVO trace = new MockInterviewTraceVO();
         trace.setLatestSessionId(30L);
         trace.setLatestReportId(7L);
@@ -125,10 +127,6 @@ class UserControllerTest {
         trace.setNextActionReason("最近报告已推荐知识卡并接入训练计划。");
         trace.setNextActionPriority("HIGH");
         when(userLearningService.getMockInterviewTrace(1L)).thenReturn(trace);
-        UserController controller = new UserController(
-                userLearningService,
-                trainingPlanService,
-                knowledgeLearningService);
 
         ApiResponse<MockInterviewTraceVO> response = controller.getMockInterviewTrace(1L);
 
@@ -138,5 +136,14 @@ class UserControllerTest {
         assertThat(response.getData().getNextActionReason()).contains("推荐知识卡");
         assertThat(response.getData().getNextActionPriority()).isEqualTo("HIGH");
         verify(userLearningService).getMockInterviewTrace(1L);
+    }
+
+    @Test
+    void rejectsDifferentUserDashboardAccess() {
+        when(currentUserContext.requireUserId()).thenReturn(2L);
+
+        assertThatThrownBy(() -> controller.getDashboardStats(1L))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("cannot access another user's learning data");
     }
 }

@@ -1,8 +1,10 @@
 package com.interview.coach.controller;
 
+import com.interview.coach.auth.CurrentUserContext;
 import com.interview.coach.dto.SelfTestSubmitRequest;
 import com.interview.coach.dto.TrainingPlanItemStatusRequest;
 import com.interview.coach.dto.TrainingPlanRegenerateRequest;
+import com.interview.coach.handler.BusinessException;
 import com.interview.coach.service.KnowledgeLearningService;
 import com.interview.coach.service.TrainingPlanService;
 import com.interview.coach.service.UserLearningService;
@@ -44,13 +46,24 @@ public class UserController {
 
     private final KnowledgeLearningService knowledgeLearningService;
 
+    private final CurrentUserContext currentUserContext;
+
+    private void requireSameUser(Long userId) {
+        Long currentUserId = currentUserContext.requireUserId();
+        if (!currentUserId.equals(userId)) {
+            throw new BusinessException(403, "cannot access another user's learning data");
+        }
+    }
+
     @GetMapping("/{userId}/dashboard/stats")
     public ApiResponse<DashboardStatsVO> getDashboardStats(@PathVariable Long userId) {
+        requireSameUser(userId);
         return ApiResponse.success(userLearningService.getDashboardStats(userId));
     }
 
     @GetMapping("/{userId}/weaknesses")
     public ApiResponse<List<UserWeaknessVO>> getWeaknesses(@PathVariable Long userId) {
+        requireSameUser(userId);
         return ApiResponse.success(userLearningService.getWeaknesses(userId));
     }
 
@@ -58,16 +71,19 @@ public class UserController {
     public ApiResponse<List<UserWeaknessEventVO>> getRecentWeaknessEvents(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "20") int limit) {
+        requireSameUser(userId);
         return ApiResponse.success(userLearningService.getRecentWeaknessEvents(userId, limit));
     }
 
     @GetMapping("/{userId}/mistakes")
     public ApiResponse<List<MistakeCardVO>> getMistakes(@PathVariable Long userId) {
+        requireSameUser(userId);
         return ApiResponse.success(userLearningService.getMistakes(userId));
     }
 
     @GetMapping("/{userId}/training-plans/latest")
     public ApiResponse<TrainingPlanVO> getLatestTrainingPlan(@PathVariable Long userId) {
+        requireSameUser(userId);
         return ApiResponse.success(userLearningService.getLatestTrainingPlan(userId));
     }
 
@@ -75,6 +91,7 @@ public class UserController {
     public ApiResponse<List<TrainingPlanHistoryVO>> getTrainingPlanHistory(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "5") int limit) {
+        requireSameUser(userId);
         return ApiResponse.success(userLearningService.getTrainingPlanHistory(userId, limit));
     }
 
@@ -82,11 +99,13 @@ public class UserController {
     public ApiResponse<List<TrainingPlanActivityVO>> getRecentTrainingActivities(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "5") int limit) {
+        requireSameUser(userId);
         return ApiResponse.success(userLearningService.getRecentTrainingActivities(userId, limit));
     }
 
     @GetMapping("/{userId}/training-plans/trace")
     public ApiResponse<TrainingPlanTraceVO> getTrainingPlanTrace(@PathVariable Long userId) {
+        requireSameUser(userId);
         return ApiResponse.success(userLearningService.getTrainingPlanTrace(userId));
     }
 
@@ -95,6 +114,7 @@ public class UserController {
             @PathVariable Long userId,
             @PathVariable Long itemId,
             @Valid @RequestBody TrainingPlanItemStatusRequest request) {
+        requireSameUser(userId);
         trainingPlanService.updateItemStatus(userId, itemId, request.getStatus());
         return ApiResponse.success(null);
     }
@@ -103,6 +123,7 @@ public class UserController {
     public ApiResponse<Void> regenerateTrainingPlan(
             @PathVariable Long userId,
             @RequestBody(required = false) TrainingPlanRegenerateRequest request) {
+        requireSameUser(userId);
         boolean replaceCurrentPlan = request == null || !Boolean.FALSE.equals(request.getReplaceCurrentPlan());
         String reason = request == null ? null : request.getReason();
         trainingPlanService.regenerate(userId, replaceCurrentPlan, reason);
@@ -114,6 +135,7 @@ public class UserController {
             @PathVariable Long userId,
             @PathVariable Long cardId,
             @Valid @RequestBody SelfTestSubmitRequest request) {
+        requireSameUser(userId);
         return ApiResponse.success(knowledgeLearningService.submitSelfTest(userId, cardId, request));
     }
 
@@ -122,11 +144,13 @@ public class UserController {
             @PathVariable Long userId,
             @PathVariable Long cardId,
             @RequestParam(defaultValue = "5") int limit) {
+        requireSameUser(userId);
         return ApiResponse.success(knowledgeLearningService.getRecentSelfTests(userId, cardId, limit));
     }
 
     @GetMapping("/{userId}/submissions/recent")
     public ApiResponse<List<SubmissionHistoryVO>> getRecentSubmissions(@PathVariable Long userId) {
+        requireSameUser(userId);
         return ApiResponse.success(userLearningService.getRecentSubmissions(userId));
     }
 
@@ -134,11 +158,13 @@ public class UserController {
     public ApiResponse<List<MockInterviewRecentVO>> getRecentMockInterviews(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "5") int limit) {
+        requireSameUser(userId);
         return ApiResponse.success(userLearningService.getRecentMockInterviews(userId, limit));
     }
 
     @GetMapping("/{userId}/mock-interviews/trace")
     public ApiResponse<MockInterviewTraceVO> getMockInterviewTrace(@PathVariable Long userId) {
+        requireSameUser(userId);
         return ApiResponse.success(userLearningService.getMockInterviewTrace(userId));
     }
 
@@ -146,11 +172,13 @@ public class UserController {
     public ApiResponse<List<MockInterviewTrendVO>> getMockInterviewTrends(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "5") int limit) {
+        requireSameUser(userId);
         return ApiResponse.success(userLearningService.getMockInterviewTrends(userId, limit));
     }
 
     @GetMapping("/{userId}/dashboard/error-stats")
     public ApiResponse<ErrorStatsVO> getErrorStats(@PathVariable Long userId) {
+        requireSameUser(userId);
         return ApiResponse.success(userLearningService.getErrorStats(userId));
     }
 }

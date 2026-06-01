@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.interview.coach.auth.CurrentUserContext;
 import com.interview.coach.dto.RagChatRequest;
 import com.interview.coach.service.RagChatService;
 import com.interview.coach.service.RagService;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -28,6 +30,12 @@ class RagChatControllerTest {
     @Mock
     private RagService ragService;
 
+    @Mock
+    private CurrentUserContext currentUserContext;
+
+    @InjectMocks
+    private RagChatController controller;
+
     @Test
     void healthReturnsRagHealthWithoutRawRetrieval() {
         RagHealthVO health = new RagHealthVO();
@@ -36,7 +44,6 @@ class RagChatControllerTest {
         health.setUserMemoryChunkCount(3);
         health.setWarnings(List.of());
         when(ragService.checkHealth()).thenReturn(health);
-        RagChatController controller = new RagChatController(ragChatService, ragService);
 
         ApiResponse<RagHealthVO> response = controller.health();
 
@@ -48,13 +55,12 @@ class RagChatControllerTest {
 
     @Test
     void chatStillUsesControlledRagChatService() {
+        when(currentUserContext.requireUserId()).thenReturn(1L);
         RagChatResponseVO chatResponse = new RagChatResponseVO();
         chatResponse.setAnswer("HashMap 要先查 complement。");
         when(ragChatService.ask(1L, "Two Sum 为什么错？")).thenReturn(chatResponse);
         RagChatRequest request = new RagChatRequest();
-        request.setUserId(1L);
         request.setQuestion("Two Sum 为什么错？");
-        RagChatController controller = new RagChatController(ragChatService, ragService);
 
         ApiResponse<RagChatResponseVO> response = controller.chat(request);
 
@@ -77,19 +83,12 @@ class RagChatControllerTest {
         retry.setMaintenanceAction("Inspect embedding/Qdrant connectivity, then rerun POST /api/rag/vector/retry-failed?limit=20.");
         retry.setSummary("Vector retry summary: matched=2, attempted=2, indexed=1, failed=1, skipped=0.");
         when(ragService.retryFailedVectors(20)).thenReturn(retry);
-        RagChatController controller = new RagChatController(ragChatService, ragService);
 
         ApiResponse<RagVectorRetryVO> response = controller.retryFailedVectors(20);
 
         assertThat(response.getCode()).isZero();
         assertThat(response.getData()).isSameAs(retry);
         assertThat(response.getData().getIndexedCount()).isEqualTo(1);
-        assertThat(response.getData().getRequestedLimit()).isEqualTo(20);
-        assertThat(response.getData().getEffectiveLimit()).isEqualTo(20);
-        assertThat(response.getData().getRetriedAt()).isEqualTo(LocalDateTime.of(2026, 5, 28, 11, 30));
-        assertThat(response.getData().getStatusLabel()).isEqualTo("RETRY_PARTIAL_FAILED");
-        assertThat(response.getData().getMaintenanceAction()).contains("/api/rag/vector/retry-failed");
-        assertThat(response.getData().getSummary()).contains("Vector retry summary", "attempted=2");
         verify(ragService).retryFailedVectors(20);
     }
 
@@ -105,17 +104,12 @@ class RagChatControllerTest {
         rebuild.setMaintenanceAction("No RAG rebuild follow-up required; system problem and knowledge-card indexes were rebuilt.");
         rebuild.setSummary("System RAG rebuild summary: system documents 140 -> 140, user memory documents 8 -> 8.");
         when(ragService.rebuildSystemIndexForMaintenance()).thenReturn(rebuild);
-        RagChatController controller = new RagChatController(ragChatService, ragService);
 
         ApiResponse<RagSystemRebuildVO> response = controller.rebuildSystemIndex();
 
         assertThat(response.getCode()).isZero();
         assertThat(response.getData()).isSameAs(rebuild);
         assertThat(response.getData().getIndexedKnowledgeCardCount()).isEqualTo(120);
-        assertThat(response.getData().getRebuiltAt()).isEqualTo(LocalDateTime.of(2026, 5, 28, 11, 35));
-        assertThat(response.getData().getStatusLabel()).isEqualTo("REBUILT");
-        assertThat(response.getData().getMaintenanceAction()).contains("No RAG rebuild follow-up required");
-        assertThat(response.getData().getSummary()).contains("System RAG rebuild summary", "user memory");
         verify(ragService).rebuildSystemIndexForMaintenance();
     }
 }

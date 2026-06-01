@@ -1,5 +1,6 @@
 package com.interview.coach.controller;
 
+import com.interview.coach.auth.CurrentUserContext;
 import com.interview.coach.dto.MockInterviewAnswerRequest;
 import com.interview.coach.dto.MockInterviewCreateRequest;
 import com.interview.coach.service.MockInterviewService;
@@ -21,8 +22,11 @@ public class MockInterviewController {
 
     private final MockInterviewService mockInterviewService;
 
+    private final CurrentUserContext currentUserContext;
+
     @PostMapping
     public ApiResponse<MockInterviewSessionVO> create(@Valid @RequestBody MockInterviewCreateRequest request) {
+        request.setUserId(currentUserContext.requireUserId());
         return ApiResponse.success(mockInterviewService.create(request));
     }
 

@@ -7,7 +7,6 @@ import lombok.Data;
 @Data
 public class SubmitCodeRequest {
 
-    @NotNull(message = "userId is required")
     private Long userId;
 
     @NotNull(message = "problemId is required")

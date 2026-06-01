@@ -1,5 +1,6 @@
 package com.interview.coach.controller;
 
+import com.interview.coach.auth.CurrentUserContext;
 import com.interview.coach.dto.SubmitCodeRequest;
 import com.interview.coach.service.SubmissionService;
 import com.interview.coach.vo.ApiResponse;
@@ -18,8 +19,11 @@ public class SubmissionController {
 
     private final SubmissionService submissionService;
 
+    private final CurrentUserContext currentUserContext;
+
     @PostMapping
     public ApiResponse<SubmissionResultVO> submit(@Valid @RequestBody SubmitCodeRequest request) {
+        request.setUserId(currentUserContext.requireUserId());
         return ApiResponse.success(submissionService.submit(request));
     }
 }
