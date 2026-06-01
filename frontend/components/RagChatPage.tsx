@@ -7,8 +7,6 @@ import type { RagChatSource } from "@/lib/types";
 import RagChatMessage from "@/components/RagChatMessage";
 import RagChatSources from "@/components/RagChatSources";
 
-const DEMO_USER_ID = 1;
-
 const exampleQuestions = [
   "HashMap 查询和写入顺序为什么会出错？",
   "反转链表为什么最后要返回 prev？",
@@ -23,7 +21,7 @@ interface ChatMessage {
   sources?: RagChatSource[];
 }
 
-export default function RagChatPage() {
+export default function RagChatPage({ userId }: { userId: number }) {
   const [question, setQuestion] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
@@ -55,7 +53,7 @@ export default function RagChatPage() {
 
     try {
       const response = await ragChatApi.ask({
-        userId: DEMO_USER_ID,
+        userId: userId,
         question: text,
       });
       const assistantId = Date.now() + 1;

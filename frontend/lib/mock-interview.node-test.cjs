@@ -25,9 +25,9 @@ test("mock interview page exists and is positioned as interview training", () =>
   assert.match(component, /提前结束并生成报告/);
   assert.match(component, /本场面试预览/);
   assert.match(component, /训练边界/);
-  assert.match(component, /max-w-\[1280px\]/);
+  assert.match(component, /max-w-\[1320px\]/);
   assert.match(component, /max-w-\[1500px\]/);
-  assert.match(component, /lg:grid-cols-\[minmax\(0,1fr\)_420px\]/);
+  assert.match(component, /xl:grid-cols-\[minmax\(0,1fr\)_380px\]/);
   assert.match(component, /grid-cols-\[minmax\(0,1fr\)_380px\]/);
   assert.match(navbar, /href:\s*"\/mock-interview"/);
   assert.match(navbar, /label:\s*"模拟面试"/);

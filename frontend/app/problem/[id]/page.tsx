@@ -1,7 +1,9 @@
 import { formatApiError, problemApi } from "@/lib/api";
 import ProblemDescription from "@/components/ProblemDescription";
-import ProblemWorkspace from "@/components/ProblemWorkspace";
+import AuthenticatedProblemWorkspace from "@/components/AuthenticatedProblemWorkspace";
 import type { ProblemDetail } from "@/lib/types";
+
+export const dynamic = "force-dynamic";
 
 interface ProblemPageProps {
   params: { id: string };
@@ -25,7 +27,7 @@ export default async function ProblemPage({ params }: ProblemPageProps) {
   return (
     <main className="h-[calc(100vh-56px)] flex overflow-hidden bg-background">
       <ProblemDescription problem={problem} />
-      <ProblemWorkspace problemId={problem.id} />
+      <AuthenticatedProblemWorkspace problemId={problem.id} />
     </main>
   );
 }

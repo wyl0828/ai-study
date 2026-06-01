@@ -65,6 +65,7 @@ test("Dashboard uses MySQL-backed userApi only and keeps empty states instead of
   const submissions = read("components/SubmissionHistory.tsx");
   const plan = read("components/TrainingPlan.tsx");
   const stats = read("components/ErrorStats.tsx");
+  const systemHealth = read("components/SystemHealthPanel.tsx");
   const api = read("lib/api.ts");
   const aggregation = read("lib/dashboardAggregation.ts");
 
@@ -76,22 +77,22 @@ test("Dashboard uses MySQL-backed userApi only and keeps empty states instead of
   assert.match(dashboard, /userApi\.trainingPlanHistory/);
   assert.match(dashboard, /userApi\.trainingPlanActivities/);
   assert.match(dashboard, /userApi\.trainingPlanTrace/);
-  assert.match(dashboard, /userApi\.trainingPlanTrace\(DEMO_USER_ID\)\.catch\(\(\) => null\)/);
+  assert.match(dashboard, /userApi\.trainingPlanTrace\(userId\)\.catch\(\(\) => null\)/);
   assert.match(dashboard, /loadTrainingPlanState/);
-  assert.match(dashboard, /userApi\.trainingPlanTrace\(DEMO_USER_ID\)\.catch\(\(\) => null\)/);
+  assert.match(dashboard, /userApi\.trainingPlanTrace\(userId\)\.catch\(\(\) => null\)/);
   assert.match(dashboard, /setTrainingPlanTrace\(traceResponse\?\.data \?\? null\)/);
   assert.match(dashboard, /setTrainingPlanRefreshing\(true\)/);
   assert.match(dashboard, /userApi\.recentSubmissions/);
   assert.match(dashboard, /userApi\.recentMockInterviews/);
   assert.match(dashboard, /userApi\.mockInterviewTrace/);
   assert.match(dashboard, /userApi\.mockInterviewTrends/);
-  assert.match(dashboard, /userApi\.recentMockInterviews\(DEMO_USER_ID\)\.catch\(\(\) => null\)/);
-  assert.match(dashboard, /userApi\.mockInterviewTrace\(DEMO_USER_ID\)\.catch\(\(\) => null\)/);
-  assert.match(dashboard, /userApi\.mockInterviewTrends\(DEMO_USER_ID\)\.catch\(\(\) => null\)/);
+  assert.match(dashboard, /userApi\.recentMockInterviews\(userId\)\.catch\(\(\) => null\)/);
+  assert.match(dashboard, /userApi\.mockInterviewTrace\(userId\)\.catch\(\(\) => null\)/);
+  assert.match(dashboard, /userApi\.mockInterviewTrends\(userId\)\.catch\(\(\) => null\)/);
   assert.match(dashboard, /loadMockInterviewState/);
-  assert.match(dashboard, /userApi\.recentMockInterviews\(DEMO_USER_ID\)\.catch\(\(\) => null\)/);
-  assert.match(dashboard, /userApi\.mockInterviewTrace\(DEMO_USER_ID\)\.catch\(\(\) => null\)/);
-  assert.match(dashboard, /userApi\.mockInterviewTrends\(DEMO_USER_ID\)\.catch\(\(\) => null\)/);
+  assert.match(dashboard, /userApi\.recentMockInterviews\(userId\)\.catch\(\(\) => null\)/);
+  assert.match(dashboard, /userApi\.mockInterviewTrace\(userId\)\.catch\(\(\) => null\)/);
+  assert.match(dashboard, /userApi\.mockInterviewTrends\(userId\)\.catch\(\(\) => null\)/);
   assert.match(dashboard, /setMockInterviews\(recentResponse\?\.data \?\? \[\]\)/);
   assert.match(dashboard, /setMockInterviewTrace\(traceResponse\?\.data \?\? null\)/);
   assert.match(dashboard, /setMockInterviewTrends\(trendsResponse\?\.data \?\? \[\]\)/);
@@ -119,10 +120,17 @@ test("Dashboard uses MySQL-backed userApi only and keeps empty states instead of
   assert.match(dashboard, /RAG 维护已完成，但状态回读失败/);
   assert.match(dashboard, /ragMaintenanceApi\.rebuildSystemIndex/);
   assert.match(dashboard, /ragMaintenanceApi\.retryFailedVectors/);
+  assert.match(dashboard, /<SystemHealthPanel/);
+  assert.match(systemHealth, /系统诊断/);
+  assert.match(systemHealth, /useState\(false\)/);
+  assert.match(systemHealth, /系统加速状态/);
+  assert.match(systemHealth, /AI 知识库状态/);
+  assert.match(systemHealth, /用于加快题目和知识卡片加载/);
+  assert.match(systemHealth, /用于支持 AI 诊断检索题目知识/);
+  assert.match(systemHealth, /cacheStatus\?\.statusLabel/);
+  assert.match(systemHealth, /ragHealth\?\.statusLabel/);
   assert.match(dashboard, /缓存层状态/);
   assert.match(dashboard, /RAG 索引状态/);
-  assert.match(dashboard, /cacheStatus\.statusLabel/);
-  assert.match(dashboard, /ragHealth\.statusLabel/);
   assert.match(dashboard, /ragHealth\.maintenanceSummary/);
   assert.match(dashboard, /ragHealth\.maintenancePriority/);
   assert.match(dashboard, /ragHealth\.maintenanceReason/);
@@ -139,6 +147,7 @@ test("Dashboard uses MySQL-backed userApi only and keeps empty states instead of
     dashboard.indexOf("重试 RAG 状态") < dashboard.indexOf("ragHealth.statusLabel"),
     "Dashboard RAG empty state should expose a retry action before rendering RAG details."
   );
+  assert.match(systemHealth, /cacheStatus\?\.cachedKeyCount/);
   assert.match(dashboard, /cacheStatus\.cachedKeyCount/);
   assert.match(dashboard, /cacheStatus\.hitCount/);
   assert.match(dashboard, /cacheStatus\.missCount/);
@@ -217,9 +226,12 @@ test("Dashboard keeps one page scroll and training plan items link to their task
   const trainingPlanIndex = dashboard.indexOf("<TrainingPlan\n");
   const errorStatsIndex = dashboard.indexOf("<ErrorStats stats");
 
-  assert.doesNotMatch(dashboard, /overflow-y-auto|h-screen|max-h-screen/);
-  assert.match(dashboard, /xl:grid-cols-\[minmax\(0,1\.35fr\)_minmax\(360px,0\.95fr\)\]/);
+  assert.doesNotMatch(dashboard, /h-screen|max-h-screen/);
+  assert.match(dashboard, /xl:grid-cols-\[minmax\(0,1\.15fr\)_minmax\(360px,0\.85fr\)\]/);
   assert.match(dashboard, /lg:sticky lg:top-24 xl:sticky xl:top-24 self-start/);
+  assert.match(dashboard, /max-h-\[calc\(100vh-7rem\)\]/);
+  assert.match(dashboard, /overflow-y-auto/);
+  assert.match(dashboard, /overscroll-contain/);
   assert.ok(todayFocusIndex >= 0, "Dashboard should render today's priority training");
   assert.ok(weaknessIndex >= 0, "Dashboard should still render weakness ranking");
   assert.ok(submissionsIndex >= 0, "Dashboard should render recent submissions");
@@ -330,6 +342,40 @@ test("Dashboard keeps one page scroll and training plan items link to their task
   assert.match(`${plan}\n${learning}`, /去复习/);
   assert.match(knowledgePage, /useSearchParams/);
   assert.match(knowledgePage, /cardId/);
+});
+
+test("problem list uses a wide layout with an isolated training sidebar", () => {
+  const home = read("components/HomeClient.tsx");
+  const sidebar = read("components/ProblemTrainingSidebar.tsx");
+  const dashboard = read("app/dashboard/page.tsx");
+
+  assert.match(home, /max-w-\[1440px\]/);
+  assert.match(home, /xl:grid-cols-\[minmax\(0,1fr\)_320px\]/);
+  assert.match(home, /<section className="min-w-0"/);
+  assert.match(home, /<ProblemTrainingSidebar userId=\{getStoredUser\(\)\?\.id\} \/>/);
+  assert.match(home, /grid-cols-1 md:grid-cols-2 2xl:grid-cols-3/);
+  assert.doesNotMatch(home, /userApi\./);
+
+  assert.match(sidebar, /export default function ProblemTrainingSidebar/);
+  assert.match(sidebar, /hidden xl:block/);
+  assert.match(sidebar, /sticky top-20/);
+  assert.match(sidebar, /userApi\.latestPlan\(userId\)/);
+  assert.match(sidebar, /userApi\.recentSubmissions\(userId\)/);
+  assert.match(sidebar, /userApi\.weaknesses\(userId\)/);
+  assert.match(sidebar, /targetHref \|\| \(item\.problemId \? `\/problem\/\$\{item\.problemId\}` : "\/dashboard"\)/);
+  assert.match(sidebar, /targetLabel \|\| \(item\.problemId \? "去做题" : "查看学习中心"\)/);
+  assert.match(sidebar, /今日优先训练/);
+  assert.match(sidebar, /最近一次诊断/);
+  assert.match(sidebar, /薄弱知识点/);
+  assert.match(sidebar, /planLoading/);
+  assert.match(sidebar, /submissionsLoading/);
+  assert.match(sidebar, /weaknessLoading/);
+  assert.match(sidebar, /planError/);
+  assert.match(sidebar, /submissionsError/);
+  assert.match(sidebar, /weaknessError/);
+
+  assert.match(dashboard, /max-w-\[1360px\]/);
+  assert.match(dashboard, /xl:grid-cols-\[minmax\(0,1\.15fr\)_minmax\(360px,0\.85fr\)\]/);
 });
 
 test("Dashboard coach view avoids duplicate weak-point panels", () => {

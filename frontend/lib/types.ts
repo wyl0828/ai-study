@@ -51,7 +51,7 @@ export interface ProblemTemplate {
 
 // 提交
 export interface SubmitCodeRequest {
-  userId: number;
+  userId?: number;
   problemId: number;
   language: string;
   code: string;
@@ -617,4 +617,15 @@ export interface MockInterviewSession {
   report: MockInterviewReport | null;
   startedAt: string | null;
   finishedAt: string | null;
+}
+
+// Auth
+export interface AuthUser {
+  id: number;
+  username: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: AuthUser;
 }

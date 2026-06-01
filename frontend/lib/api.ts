@@ -1,5 +1,7 @@
 import type {
   ApiResponse,
+  AuthResponse,
+  AuthUser,
   CacheMaintenanceRefreshResult,
   CacheMaintenanceStatus,
   RagHealth,
@@ -35,6 +37,7 @@ import type {
   TrainingPlanHistory,
   TrainingPlanTrace,
 } from "./types";
+import { clearAuthSession, getAuthToken } from "./auth";
 
 const API_BASE = "http://localhost:8080";
 
@@ -114,14 +117,28 @@ export function formatApiError(
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const token = typeof window === "undefined" ? null : getAuthToken();
+  const headers = new Headers(init?.headers);
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
   let res: Response;
   try {
     res = await fetch(`${API_BASE}${url}`, {
       ...init,
+      headers,
       cache: "no-store",
     });
   } catch (err) {
     throw new Error(formatApiError(err));
+  }
+  if (res.status === 401) {
+    if (typeof window !== "undefined") {
+      clearAuthSession();
+      window.location.href = "/login";
+    }
+    throw new Error("登录状态已过期，请重新登录。");
   }
   if (!res.ok) {
     throw new Error(`请求失败：${res.status}`);
@@ -346,6 +363,26 @@ export const ragChatApi = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+    }),
+};
+
+export const authApi = {
+  register: (username: string, password: string) =>
+    request<ApiResponse<AuthResponse>>("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    }),
+  login: (username: string, password: string) =>
+    request<ApiResponse<AuthResponse>>("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password }),
+    }),
+  me: () => request<ApiResponse<AuthUser>>("/api/auth/me"),
+  logout: () =>
+    request<ApiResponse<null>>("/api/auth/logout", {
+      method: "POST",
     }),
 };
 

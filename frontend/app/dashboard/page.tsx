@@ -27,6 +27,8 @@ import TodayTrainingFocus from "@/components/TodayTrainingFocus";
 import DashboardNextActions from "@/components/DashboardNextActions";
 import ErrorStats from "@/components/ErrorStats";
 import KnowledgeTrainingEntry from "@/components/KnowledgeTrainingEntry";
+import SystemHealthPanel from "@/components/SystemHealthPanel";
+import AuthGate from "@/components/AuthGate";
 import {
   buildDashboardCoachAdvice,
   buildDashboardNextActions,
@@ -35,8 +37,6 @@ import {
   trainingPlanActivitySourceText,
   trainingPlanSourceLabel,
 } from "@/lib/learningView";
-
-const DEMO_USER_ID = 1;
 
 const emptyStats: DashboardStatsVO = {
   totalSubmissions: 0,
@@ -90,6 +90,10 @@ function sourceTypeSummary(counts: Record<string, number> | null | undefined) {
 }
 
 export default function DashboardPage() {
+  return <AuthGate>{(user) => <DashboardContent userId={user.id} />}</AuthGate>;
+}
+
+function DashboardContent({ userId }: { userId: number }) {
   const [stats, setStats] = useState<DashboardStatsVO>(emptyStats);
   const [weaknesses, setWeaknesses] = useState<UserWeakness[]>([]);
   const [mistakes, setMistakes] = useState<MistakeCardType[]>([]);
@@ -138,18 +142,18 @@ export default function DashboardPage() {
           cacheStatusResponse,
           ragHealthResponse,
         ] = await Promise.all([
-          userApi.stats(DEMO_USER_ID),
-          userApi.weaknesses(DEMO_USER_ID),
-          userApi.mistakes(DEMO_USER_ID),
-          userApi.latestPlan(DEMO_USER_ID),
-          userApi.trainingPlanHistory(DEMO_USER_ID),
-          userApi.trainingPlanActivities(DEMO_USER_ID),
-          userApi.trainingPlanTrace(DEMO_USER_ID).catch(() => null),
-          userApi.recentSubmissions(DEMO_USER_ID),
-          userApi.recentMockInterviews(DEMO_USER_ID).catch(() => null),
-          userApi.mockInterviewTrace(DEMO_USER_ID).catch(() => null),
-          userApi.mockInterviewTrends(DEMO_USER_ID).catch(() => null),
-          userApi.errorStats(DEMO_USER_ID),
+          userApi.stats(userId),
+          userApi.weaknesses(userId),
+          userApi.mistakes(userId),
+          userApi.latestPlan(userId),
+          userApi.trainingPlanHistory(userId),
+          userApi.trainingPlanActivities(userId),
+          userApi.trainingPlanTrace(userId).catch(() => null),
+          userApi.recentSubmissions(userId),
+          userApi.recentMockInterviews(userId).catch(() => null),
+          userApi.mockInterviewTrace(userId).catch(() => null),
+          userApi.mockInterviewTrends(userId).catch(() => null),
+          userApi.errorStats(userId),
           cacheApi.status().catch(() => null),
           ragMaintenanceApi.health().catch(() => null),
         ]);
@@ -188,7 +192,7 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
 
   const aggregatedWeaknesses = useMemo(() => groupWeaknesses(weaknesses), [weaknesses]);
   const aggregatedMistakeCards = useMemo(() => groupMistakeCards(mistakes), [mistakes]);
@@ -208,10 +212,10 @@ export default function DashboardPage() {
 
   const loadTrainingPlanState = async () => {
     const [planResponse, historyResponse, activitiesResponse, traceResponse] = await Promise.all([
-      userApi.latestPlan(DEMO_USER_ID),
-      userApi.trainingPlanHistory(DEMO_USER_ID),
-      userApi.trainingPlanActivities(DEMO_USER_ID),
-      userApi.trainingPlanTrace(DEMO_USER_ID).catch(() => null),
+      userApi.latestPlan(userId),
+      userApi.trainingPlanHistory(userId),
+      userApi.trainingPlanActivities(userId),
+      userApi.trainingPlanTrace(userId).catch(() => null),
     ]);
     setTrainingPlan(planResponse.data);
     setTrainingPlanHistory(historyResponse.data);
@@ -233,9 +237,9 @@ export default function DashboardPage() {
 
   const loadMockInterviewState = async () => {
     const [recentResponse, traceResponse, trendsResponse] = await Promise.all([
-      userApi.recentMockInterviews(DEMO_USER_ID).catch(() => null),
-      userApi.mockInterviewTrace(DEMO_USER_ID).catch(() => null),
-      userApi.mockInterviewTrends(DEMO_USER_ID).catch(() => null),
+      userApi.recentMockInterviews(userId).catch(() => null),
+      userApi.mockInterviewTrace(userId).catch(() => null),
+      userApi.mockInterviewTrends(userId).catch(() => null),
     ]);
     setMockInterviews(recentResponse?.data ?? []);
     setMockInterviewTrace(traceResponse?.data ?? null);
@@ -357,7 +361,7 @@ export default function DashboardPage() {
     setUpdatingItemId(itemId);
     setError(null);
     try {
-      await userApi.updateTrainingPlanItemStatus(DEMO_USER_ID, itemId, status);
+      await userApi.updateTrainingPlanItemStatus(userId, itemId, status);
       await refreshPlan();
     } catch (err) {
       setError(formatApiError(err, "dashboard"));
@@ -370,7 +374,7 @@ export default function DashboardPage() {
     setRegeneratingPlan(true);
     setError(null);
     try {
-      await userApi.regenerateTrainingPlan(DEMO_USER_ID);
+      await userApi.regenerateTrainingPlan(userId);
       await refreshPlan();
     } catch (err) {
       setError(formatApiError(err, "dashboard"));
@@ -380,7 +384,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="max-w-[1360px] mx-auto px-6 py-8">
       {/* 页面标题 */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-on-surface tracking-tight">学习中心</h1>
@@ -424,7 +428,7 @@ export default function DashboardPage() {
       </div>
 
       {/* 今日学习指挥台：主线内容 + sticky 辅助侧栏 */}
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.95fr)]">
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
         <div className="space-y-6">
           <TodayTrainingFocus
             plan={trainingPlan}
@@ -818,7 +822,7 @@ export default function DashboardPage() {
           </section>
         </div>
 
-        <aside className="space-y-6 lg:sticky lg:top-24 xl:sticky xl:top-24 self-start">
+        <aside className="space-y-6 lg:sticky lg:top-24 xl:sticky xl:top-24 self-start max-h-[calc(100vh-7rem)] overflow-y-auto overscroll-contain pr-1">
           <TrainingPlan
             plan={trainingPlan}
             updatingItemId={updatingItemId}
@@ -826,6 +830,7 @@ export default function DashboardPage() {
             onItemStatusChange={updatePlanItemStatus}
             onRegenerate={regeneratePlan}
           />
+          <SystemHealthPanel cacheStatus={cacheStatus} ragHealth={ragHealth}>
           <section className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5">
             <h2 className="text-base font-semibold text-on-surface">缓存层状态</h2>
             <p className="mt-1 text-xs text-on-surface-variant">
@@ -1098,6 +1103,7 @@ export default function DashboardPage() {
               </div>
             )}
           </section>
+          </SystemHealthPanel>
           <section className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-5">
             <h2 className="text-base font-semibold text-on-surface">训练计划历史</h2>
             <p className="mt-1 text-xs text-on-surface-variant">

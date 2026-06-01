@@ -27,7 +27,6 @@ type KnowledgeSelection = SharedKnowledgeSelection;
 type TopicTrainingStatus = "未练" | "已掌握" | "需复习";
 
 const categoryLabels: KnowledgeCategory[] = ["Java", "MySQL", "Redis", "Spring", "JVM", "AI"];
-const DEMO_USER_ID = 1;
 
 function isKnowledgeCategory(value: string): value is KnowledgeCategory {
   return categoryLabels.includes(value as KnowledgeCategory);
@@ -60,7 +59,7 @@ function matchesKeyword(topic: KnowledgeTopic, keyword: string): boolean {
     .includes(keyword);
 }
 
-export default function KnowledgeTrainingPage() {
+export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
   const searchParams = useSearchParams();
   const cardIdParam = searchParams.get("cardId");
   const linkedCardId = Number(cardIdParam);
@@ -376,7 +375,7 @@ export default function KnowledgeTrainingPage() {
                     topic={topic}
                     expanded={expandedId === topic.id}
                     mastered={masteredIds.has(topic.id)}
-                    userId={DEMO_USER_ID}
+                    userId={userId}
                     onToggle={() => toggleTopic(topic)}
                     onMarkMastered={() => markMastered(topic.id)}
                     onRecentScoreChange={updateRecentScore}

@@ -35,15 +35,16 @@ import {
 } from "@/lib/draft";
 import CodeEditor from "./CodeEditor";
 import ResultPanel from "./ResultPanel";
+import { getAuthToken } from "@/lib/auth";
 
 interface ProblemWorkspaceProps {
   problemId: number;
+  userId: number;
 }
-
-const DEMO_USER_ID = 1;
 
 export default function ProblemWorkspace({
   problemId,
+  userId,
 }: ProblemWorkspaceProps) {
   const [code, setCode] = useState("");
   const skipNextAutosaveRef = useRef(false);
@@ -80,7 +81,7 @@ export default function ProblemWorkspace({
         if (requestId !== templateRequestIdRef.current) {
           return;
         }
-        const draft = restoreDraft ? loadDraft(DEMO_USER_ID, problemId) : null;
+        const draft = restoreDraft ? loadDraft(userId, problemId) : null;
 
         if (draft) {
           setCode(draft.code);
@@ -108,7 +109,7 @@ export default function ProblemWorkspace({
         if (requestId !== templateRequestIdRef.current) {
           return;
         }
-        const draft = restoreDraft ? loadDraft(DEMO_USER_ID, problemId) : null;
+        const draft = restoreDraft ? loadDraft(userId, problemId) : null;
         if (draft) {
           setCode(draft.code);
           setSubmissionResult(draft.lastResult ?? null);
@@ -163,7 +164,7 @@ export default function ProblemWorkspace({
     }
 
     const timer = window.setTimeout(() => {
-      saveDraft(DEMO_USER_ID, problemId, {
+      saveDraft(userId, problemId, {
         code,
         language: "java",
       });
@@ -181,7 +182,7 @@ export default function ProblemWorkspace({
       return;
     }
 
-    clearDraft(DEMO_USER_ID, problemId);
+    clearDraft(userId, problemId);
     void loadTemplate(false);
   }, [loadTemplate, problemId]);
 
@@ -214,7 +215,7 @@ export default function ProblemWorkspace({
           ...result,
           codeSnapshot,
         };
-        saveDraft(DEMO_USER_ID, problemId, {
+        saveDraft(userId, problemId, {
           code: codeSnapshot,
           language: "java",
           lastResult: resultWithSnapshot,
@@ -241,6 +242,7 @@ export default function ProblemWorkspace({
           });
       };
 
+      const token = getAuthToken();
       streamControllerRef.current = agentApi.streamDiagnosis(
         resultWithSnapshot.submissionId,
         {
@@ -283,7 +285,8 @@ export default function ProblemWorkspace({
               setIsAnalyzing(false);
             }
           },
-        }
+        },
+        { token: token ?? undefined }
       );
     },
     [problemId]
@@ -305,7 +308,6 @@ export default function ProblemWorkspace({
 
     try {
       const { data: result } = await submissionApi.submit({
-        userId: 1,
         problemId,
         language: "java",
         code,
@@ -318,7 +320,7 @@ export default function ProblemWorkspace({
       };
 
       setSubmissionResult(resultWithSnapshot);
-      saveDraft(DEMO_USER_ID, problemId, {
+      saveDraft(userId, problemId, {
         code,
         language: "java",
         lastResult: resultWithSnapshot,

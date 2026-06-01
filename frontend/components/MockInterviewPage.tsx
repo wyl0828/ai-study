@@ -9,8 +9,6 @@ import InterviewConversation from "./InterviewConversation";
 import InterviewReport from "./InterviewReport";
 import InterviewSetupPanel from "./InterviewSetupPanel";
 
-const DEMO_USER_ID = 1;
-
 const categoryLabels: Record<string, string> = {
   JAVA: "Java 基础面试",
   JVM: "JVM 面试",
@@ -412,11 +410,11 @@ function MockInterviewStartView({
 }: StartViewProps) {
   return (
     <main className="min-h-screen bg-surface">
-      <div className="mx-auto w-full max-w-[1280px] px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8">
         <PageHeader />
         <ErrorBanner message={error} />
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
           <InterviewSetupPanel
             category={category}
             questionCount={questionCount}
@@ -427,10 +425,11 @@ function MockInterviewStartView({
             onInterviewerStyleChange={onInterviewerStyleChange}
             onStart={onStart}
           />
-          <InterviewPreviewCard />
+          <div>
+            <InterviewPreviewCard />
+            <InterviewBoundaryCard />
+          </div>
         </div>
-
-        <InterviewBoundaryCard />
       </div>
     </main>
   );
@@ -507,7 +506,7 @@ function MockInterviewWorkspace({
   );
 }
 
-export default function MockInterviewPage() {
+export default function MockInterviewPage({ userId }: { userId: number }) {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
   const [category, setCategory] = useState(() => categoryParam || "SPRING");
@@ -573,7 +572,7 @@ export default function MockInterviewPage() {
     setError(null);
     try {
       const response = await mockInterviewApi.create({
-        userId: DEMO_USER_ID,
+        userId: userId,
         category,
         questionCount,
         interviewerStyle,
