@@ -11,9 +11,11 @@ function read(relativePath) {
 
 test("problem page does not fetch the code template on the server", () => {
   const page = read("app/problem/[id]/page.tsx");
+  const authenticatedWorkspace = read("components/AuthenticatedProblemWorkspace.tsx");
 
   assert.doesNotMatch(page, /problemApi\.template/);
-  assert.match(page, /<ProblemWorkspace/);
+  assert.match(page, /<AuthenticatedProblemWorkspace/);
+  assert.match(authenticatedWorkspace, /<ProblemWorkspace/);
 });
 
 test("ProblemWorkspace fetches the template for the active problem", () => {
