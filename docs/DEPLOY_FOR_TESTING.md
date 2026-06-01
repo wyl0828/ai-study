@@ -14,6 +14,24 @@
 
 只把前端端口暴露给测试者。后端、MySQL、Piston、Redis、Qdrant 都留在部署机器本机或内网，不直接暴露给外部测试者。
 
+## 一键启动本地测试环境
+
+如果只是准备给局域网或内网穿透测试，可以先用辅助脚本拉起本地测试环境：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start_test_env.ps1
+```
+
+脚本会启动 Redis / Qdrant，检查 Piston，后台启动后端和前端，最后运行 `local_dependency_preflight.ps1`。它不会自动运行完整 `e2e_demo_smoke.ps1`，因为完整 smoke 会真实调用 AI / embedding 并写入提交、诊断和训练计划测试数据。
+
+默认前端监听 `0.0.0.0:4000`，便于同局域网设备访问。后台日志写入 `.local-test-env`。如果想用生产构建启动前端：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start_test_env.ps1 -Production
+```
+
+脚本输出 `READY_FOR_E2E_SMOKE=True` 和局域网访问地址后，再把地址发给测试者。
+
 ## 方式一：本机局域网测试
 
 适合先给同一 Wi-Fi 或同一局域网的人试用。
