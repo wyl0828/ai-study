@@ -45,7 +45,7 @@ export default function ProblemDescription({
   const presetHints = problem.presetHints ?? getProblemPresetHints(problem.id);
 
   return (
-    <section className="w-[25%] min-w-[280px] max-w-[420px] h-full border-r border-outline-variant/30 flex flex-col overflow-y-auto bg-surface-container-lowest">
+    <section className="flex w-full min-w-0 flex-col overflow-y-auto border-b border-outline-variant/30 bg-surface-container-lowest md:h-full md:w-[25%] md:min-w-[280px] md:max-w-[420px] md:border-b-0 md:border-r">
       <div className="p-5 flex-1">
         <div className="flex justify-between items-start mb-4">
           <div>

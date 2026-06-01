@@ -368,7 +368,7 @@ export default function ProblemWorkspace({
       )}
 
       {/* 中栏：代码编辑器 */}
-      <section className="flex-1 h-full flex flex-col bg-[#0d1117] relative min-w-0">
+      <section className="relative flex min-h-[520px] w-full min-w-0 flex-col bg-[#0d1117] md:h-full md:flex-1">
         <CodeEditor
           code={code}
           onChange={setCode}
@@ -388,7 +388,7 @@ export default function ProblemWorkspace({
       </section>
 
       {/* 右栏：结果面板 */}
-      <section className="w-[30%] min-w-[320px] max-w-[520px] h-full flex flex-col bg-surface-container-lowest">
+      <section className="flex min-h-[360px] w-full min-w-0 flex-col bg-surface-container-lowest md:h-full md:w-[30%] md:min-w-[320px] md:max-w-[520px]">
         <ResultPanel
           submissionResult={submissionResult as SubmissionResult | null}
           diagnosis={diagnosis as AgentAnalyzeVO | null}

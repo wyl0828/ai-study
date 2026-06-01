@@ -47,14 +47,14 @@ export default function CodeEditor({
   return (
     <div className="flex flex-col h-full">
       {/* 顶栏 - GitHub 暗色风格 */}
-      <div className="flex justify-between items-center bg-[#010409] text-gray-400 border-b border-[#30363d] shrink-0">
-        <div className="flex items-center">
-          <div className="flex items-center gap-2 text-gray-200 px-4 py-2 border-r border-[#30363d] border-t-2 border-t-blue-500 bg-[#0d1117]">
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-[#010409] text-gray-400 border-b border-[#30363d] shrink-0">
+        <div className="flex min-w-0 items-center">
+          <div className="flex min-w-0 items-center gap-2 text-gray-200 px-4 py-2 border-r border-[#30363d] border-t-2 border-t-blue-500 bg-[#0d1117]">
             <Code className="w-4 h-4 text-blue-400" />
-            <span className="font-mono text-xs tracking-wide">解题代码.java</span>
+            <span className="truncate font-mono text-xs tracking-wide">解题代码.java</span>
           </div>
         </div>
-        <div className="flex gap-2 mr-4">
+        <div className="flex flex-wrap justify-end gap-2 px-2 py-1 sm:mr-4 sm:px-0">
           <button
             onClick={onReset}
             disabled={disabled}

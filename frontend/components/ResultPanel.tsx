@@ -32,7 +32,7 @@ export default function ResultPanel({
   onTabChange,
 }: ResultPanelProps) {
   return (
-    <div className="flex flex-col h-full bg-surface-container-lowest border-l border-outline-variant/30">
+    <div className="flex h-full flex-col border-t border-outline-variant/30 bg-surface-container-lowest md:border-l md:border-t-0">
       {/* Tab 栏 */}
       <div className="flex border-b border-outline-variant/30 bg-surface-container-low shrink-0">
         {tabs.map(({ key, label, Icon }) => (

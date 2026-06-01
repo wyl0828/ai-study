@@ -378,6 +378,46 @@ test("problem list uses a wide layout with an isolated training sidebar", () => 
   assert.match(dashboard, /xl:grid-cols-\[minmax\(0,1\.15fr\)_minmax\(360px,0\.85fr\)\]/);
 });
 
+test("navbar keeps primary navigation available on mobile", () => {
+  const navbar = read("components/Navbar.tsx");
+
+  assert.match(navbar, /md:hidden/);
+  assert.match(navbar, /aria-label="移动端主导航"/);
+  assert.match(navbar, /题目/);
+  assert.match(navbar, /知识训练/);
+  assert.match(navbar, /模拟面试/);
+  assert.match(navbar, /学习中心/);
+});
+
+test("problem workspace stacks vertically on mobile", () => {
+  const page = read("app/problem/[id]/page.tsx");
+  const description = read("components/ProblemDescription.tsx");
+  const workspace = read("components/ProblemWorkspace.tsx");
+  const editor = read("components/CodeEditor.tsx");
+  const result = read("components/ResultPanel.tsx");
+
+  assert.match(page, /min-h-\[calc\(100dvh-88px\)\]/);
+  assert.match(page, /flex-col/);
+  assert.match(page, /md:h-\[calc\(100vh-56px\)\]/);
+  assert.match(page, /md:flex-row/);
+  assert.match(page, /md:overflow-hidden/);
+
+  assert.match(description, /w-full/);
+  assert.match(description, /min-w-0/);
+  assert.match(description, /md:w-\[25%\]/);
+  assert.match(description, /md:min-w-\[280px\]/);
+
+  assert.match(workspace, /min-h-\[520px\]/);
+  assert.match(workspace, /md:h-full/);
+  assert.match(workspace, /w-full/);
+  assert.match(workspace, /md:w-\[30%\]/);
+  assert.match(workspace, /md:min-w-\[320px\]/);
+
+  assert.match(editor, /flex-wrap/);
+  assert.match(editor, /min-w-0/);
+  assert.match(result, /md:border-l/);
+});
+
 test("Dashboard coach view avoids duplicate weak-point panels", () => {
   const dashboard = read("app/dashboard/page.tsx");
   const nextActions = read("components/DashboardNextActions.tsx");

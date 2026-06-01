@@ -269,6 +269,10 @@ http://你的地址
 
 更完整的测试说明见 `docs/MULTI_USER_TEST_GUIDE.md`。
 
+## 日常更新维护
+
+部署完成后的代码同步、构建重启、数据库迁移、systemd 命令和回滚流程见 `docs/MAINTENANCE.md`。
+
 ## 常见问题
 
 ### 别人打不开页面

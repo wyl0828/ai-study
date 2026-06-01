@@ -25,6 +25,7 @@ frontend/.next/
 frontend/out/
 frontend/dist/
 frontend/.turbo/
+frontend/test-results/
 
 # Backend / Java
 backend/target/
