@@ -197,9 +197,9 @@ export default function KnowledgeCard({
             核心标签
           </div>
           <div className="mb-4 flex flex-wrap gap-1.5">
-            {topic.tags.map((tag) => (
+            {topic.tags.map((tag, index) => (
               <span
-                key={tag}
+                key={`${tag}-${index}`}
                 className="rounded-full border border-outline-variant/30 bg-surface-container px-2 py-0.5 text-[11px] text-on-surface-variant"
               >
                 {tag}
@@ -277,8 +277,8 @@ export default function KnowledgeCard({
                   </div>
                   <div className="space-y-2">
                     {topic.keyPoints.length > 0 ? (
-                      topic.keyPoints.map((point) => (
-                        <div key={point} className="flex gap-2 text-sm text-on-surface-variant">
+                      topic.keyPoints.map((point, index) => (
+                        <div key={`${point}-${index}`} className="flex gap-2 text-sm text-on-surface-variant">
                           <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                           <span>{point}</span>
                         </div>
@@ -317,8 +317,8 @@ export default function KnowledgeCard({
                   </div>
                   <ul className="space-y-2">
                     {topic.followUpQuestions.length > 0 ? (
-                      topic.followUpQuestions.map((question) => (
-                        <li key={question} className="flex gap-2 text-sm text-on-surface-variant">
+                      topic.followUpQuestions.map((question, index) => (
+                        <li key={`${question}-${index}`} className="flex gap-2 text-sm text-on-surface-variant">
                           <HelpCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary/70" />
                           <span>{question}</span>
                         </li>

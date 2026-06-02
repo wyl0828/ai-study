@@ -119,13 +119,16 @@ function ErrorBanner({ message }: { message: string | null }) {
 
 function PageHeader() {
   return (
-    <section className="mb-5">
-      <div className="coach-pill mb-3 w-fit border-primary/20 bg-primary/5 text-primary">
+    <section className="coach-hero mb-5">
+      <div className="coach-pill mb-3 w-fit border-teal-300/25 bg-teal-300/10 text-teal-100">
         <Bot className="h-3.5 w-3.5" />
         模拟面试训练台
       </div>
-      <h1 className="text-2xl font-bold tracking-tight text-on-surface">模拟面试</h1>
-      <p className="mt-1 max-w-2xl text-sm leading-6 text-on-surface-variant">
+      <div className="coach-status mb-3 w-fit border-amber-300/25 bg-amber-300/10 text-amber-100">
+        面试控制台
+      </div>
+      <h1 className="text-2xl font-bold tracking-tight text-white">模拟面试</h1>
+      <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-300">
         一问一答追问式训练，模拟 Java 后端真实面试
       </p>
     </section>
@@ -417,7 +420,7 @@ function MockInterviewStartView({
   onStart,
 }: StartViewProps) {
   return (
-    <main className="min-h-screen bg-surface">
+    <main className="coach-workbench">
       <div className="coach-shell max-w-[1320px] py-8">
         <PageHeader />
         <ErrorBanner message={error} />
@@ -471,7 +474,7 @@ function MockInterviewWorkspace({
   onFinish,
 }: WorkspaceProps) {
   return (
-    <main className="min-h-screen bg-surface xl:flex xl:h-screen xl:flex-col">
+    <main className="coach-workbench xl:flex xl:h-screen xl:flex-col">
       <div className="coach-shell max-w-[1500px] shrink-0 px-6 pt-6 xl:px-10">
         <PageHeader />
         <ErrorBanner message={error} />

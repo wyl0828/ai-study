@@ -49,6 +49,9 @@ export default function ProblemDescription({
       <div className="flex-1 p-5">
         <div className="flex justify-between items-start mb-4">
           <div>
+            <div className="coach-status mb-3 w-fit">
+              训练任务说明
+            </div>
             <div className="flex items-center gap-2 mb-1">
               <DifficultyBadge difficulty={problem.difficulty} />
               <span className="text-outline text-xs">题目 #{problem.id}</span>

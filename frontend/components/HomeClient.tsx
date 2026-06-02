@@ -85,24 +85,31 @@ export default function HomeClient({ problems }: HomeClientProps) {
   ].filter(Boolean);
 
   return (
-    <div className="coach-shell max-w-[1440px] py-8">
+    <div className="coach-workbench">
+    <div className="coach-shell max-w-[1440px] py-6">
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="min-w-0">
-          <div className="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
+          <div className="coach-hero mb-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-stretch">
             <div>
-              <div className="coach-pill mb-3 w-fit border-primary/20 bg-primary/5 text-primary">
+              <div className="mb-3 inline-flex w-fit items-center gap-1 rounded-full border border-teal-300/25 bg-teal-300/10 px-2.5 py-1 text-xs font-semibold text-teal-100">
                 <BookOpenCheck className="h-3.5 w-3.5" />
                 Hot100 Java Solution 模式
               </div>
-              <h1 className="text-2xl font-bold tracking-tight text-on-surface">
+              <h1 className="text-3xl font-bold tracking-tight text-white">
                 题库训练台
               </h1>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-on-surface-variant">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
                 从高频算法题进入提交、诊断、记忆和训练计划闭环；优先练习能暴露 Java 后端面试表达的核心题型。
               </p>
+              <div className="mt-5 rounded-lg border border-amber-300/25 bg-amber-300/10 p-4">
+                <div className="text-xs font-semibold text-amber-100">今日训练任务</div>
+                <p className="mt-2 text-sm leading-6 text-slate-200">
+                  先选一道高频题写出可运行 Java 方案，再用测试结果触发 AI 诊断和后续训练计划。
+                </p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid content-end grid-cols-3 gap-2">
               <TrainingMetric
                 icon={<Target className="h-4 w-4" />}
                 label="题目总数"
@@ -197,6 +204,9 @@ export default function HomeClient({ problems }: HomeClientProps) {
 
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-xs text-on-surface-variant">
             <div className="flex flex-wrap items-center gap-2">
+              <span className="coach-status">
+                训练队列
+              </span>
               <span className="font-medium text-on-surface">
                 当前筛选：{activeFilterSummary.join(" / ")}
               </span>
@@ -229,8 +239,11 @@ export default function HomeClient({ problems }: HomeClientProps) {
           )}
         </section>
 
-        <ProblemTrainingSidebar userId={currentUser?.id} />
+        <div className="coach-rail p-0">
+          <ProblemTrainingSidebar userId={currentUser?.id} />
+        </div>
       </div>
+    </div>
     </div>
   );
 }

@@ -19,8 +19,10 @@ test("problem page presents a three-panel interview workbench on desktop", () =>
   const timeline = read("components/AgentTimeline.tsx");
 
   assert.match(page, /md:grid-cols-\[minmax\(280px,24vw\)_minmax\(0,1fr\)_minmax\(320px,30vw\)\]/);
+  assert.match(page, /coach-workbench/);
   assert.match(page, /md:overflow-hidden/);
   assert.match(description, /coach-panel/);
+  assert.match(description, /训练任务说明/);
   assert.doesNotMatch(description, /md:w-\[25%\]/);
   assert.match(workspace, /aria-label="代码编辑区"/);
   assert.match(workspace, /aria-label="运行结果和 AI 诊断"/);
@@ -30,6 +32,7 @@ test("problem page presents a three-panel interview workbench on desktop", () =>
   assert.match(editor, /title="重置代码"/);
   assert.match(editor, /title=\{buttonLabel\}/);
   assert.match(resultPanel, /执行观察/);
+  assert.match(resultPanel, /Agent 教练反馈/);
   assert.match(diagnosis, /Agent 诊断过程/);
   assert.match(timeline, /statusLabel/);
   assert.match(timeline, /formatDuration/);
@@ -40,11 +43,17 @@ test("global UI tokens provide reusable cards, buttons, tabs, and empty states",
   const nav = read("components/Navbar.tsx");
   const problemCard = read("components/ProblemCard.tsx");
 
+  assert.match(globals, /\.coach-workbench/);
+  assert.match(globals, /\.coach-hero/);
+  assert.match(globals, /\.coach-rail/);
+  assert.match(globals, /\.coach-status/);
   assert.match(globals, /\.coach-card/);
   assert.match(globals, /\.coach-primary-button/);
   assert.match(globals, /\.coach-secondary-button/);
   assert.match(globals, /\.coach-tab-list/);
   assert.match(globals, /\.coach-empty-state/);
+  assert.match(nav, /训练控制台/);
+  assert.match(nav, /bg-\[#0b1220\]/);
   assert.match(nav, /coach-shell/);
   assert.match(problemCard, /coach-card/);
 });
@@ -55,6 +64,11 @@ test("problem list behaves like a focused training entry page", () => {
   const sidebar = read("components/ProblemTrainingSidebar.tsx");
 
   assert.match(home, /题库训练台/);
+  assert.match(home, /今日训练任务/);
+  assert.match(home, /训练队列/);
+  assert.match(home, /coach-workbench/);
+  assert.match(home, /coach-hero/);
+  assert.match(home, /coach-rail/);
   assert.match(home, /Hot100 Java Solution 模式/);
   assert.match(home, /difficultyCounts/);
   assert.match(home, /当前筛选/);
@@ -78,12 +92,15 @@ test("knowledge training page behaves like a structured knowledge workbench", ()
   const card = read("components/KnowledgeCard.tsx");
 
   assert.match(page, /coach-shell/);
+  assert.match(page, /coach-workbench/);
+  assert.match(page, /coach-hero/);
   assert.match(page, /KnowledgeMetric/);
   assert.match(page, /知识卡总数/);
   assert.match(page, /当前专题/);
   assert.match(page, /需复习/);
   assert.match(page, /coach-empty-state/);
   assert.match(sidebar, /coach-panel/);
+  assert.match(sidebar, /知识地图/);
   assert.match(sidebar, /知识体系大纲/);
   assert.match(header, /知识训练台/);
   assert.match(header, /coach-pill/);
@@ -101,7 +118,10 @@ test("mock interview page behaves like an interview training workbench", () => {
   const report = read("components/InterviewReport.tsx");
 
   assert.match(page, /coach-shell/);
+  assert.match(page, /coach-workbench/);
+  assert.match(page, /coach-hero/);
   assert.match(page, /模拟面试训练台/);
+  assert.match(page, /面试控制台/);
   assert.match(page, /本场面试预览/);
   assert.match(page, /coach-pill/);
   assert.match(page, /coach-card/);
@@ -116,4 +136,15 @@ test("mock interview page behaves like an interview training workbench", () => {
   assert.match(conversation, /最近问答记录/);
   assert.match(report, /coach-card/);
   assert.match(report, /面试报告/);
+});
+
+test("dashboard behaves like a coach cockpit instead of a card pile", () => {
+  const dashboard = read("app/dashboard/page.tsx");
+
+  assert.match(dashboard, /coach-workbench/);
+  assert.match(dashboard, /coach-hero/);
+  assert.match(dashboard, /教练驾驶舱/);
+  assert.match(dashboard, /下一步最该做什么/);
+  assert.match(dashboard, /训练闭环总览/);
+  assert.match(dashboard, /今日行动区/);
 });

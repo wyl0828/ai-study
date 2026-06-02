@@ -38,6 +38,9 @@ export default function ResultPanel({
           执行观察
         </div>
         <div className="mt-1 text-sm font-semibold text-on-surface">
+          Agent 教练反馈
+        </div>
+        <div className="mt-1 text-xs text-on-surface-variant">
           测试反馈与教练诊断
         </div>
       </div>

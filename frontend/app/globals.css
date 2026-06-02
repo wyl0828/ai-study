@@ -6,21 +6,33 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #f6f8fb;
+  background-color: #eaf3f3;
   color: #0f172a;
 }
 
 @layer components {
+  .coach-workbench {
+    @apply min-h-screen bg-background text-on-surface;
+  }
+
   .coach-shell {
-    @apply mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-[1500px] px-4 sm:px-6 lg:px-8;
+  }
+
+  .coach-hero {
+    @apply rounded-lg border border-primary/20 bg-[#0f172a] p-5 text-white shadow-sm;
+  }
+
+  .coach-rail {
+    @apply rounded-lg border border-outline-variant/70 bg-surface-container-low p-4 shadow-sm;
   }
 
   .coach-panel {
-    @apply border-outline-variant/60 bg-surface-container-lowest;
+    @apply border-outline-variant/70 bg-surface-container-lowest;
   }
 
   .coach-card {
-    @apply rounded-lg border border-outline-variant/50 bg-surface-container-lowest shadow-sm transition-colors;
+    @apply rounded-lg border border-outline-variant/70 bg-surface-container-lowest shadow-sm transition-colors;
   }
 
   .coach-card-hover {
@@ -41,6 +53,10 @@ body {
 
   .coach-pill {
     @apply inline-flex items-center gap-1 rounded-full border border-outline-variant/50 bg-surface-container-low px-2.5 py-1 text-xs font-semibold text-on-surface-variant;
+  }
+
+  .coach-status {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary;
   }
 
   .coach-tab-list {

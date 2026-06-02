@@ -152,6 +152,9 @@ export default function KnowledgeSidebar({
   return (
     <aside className="coach-panel flex max-h-[calc(100vh-6.5rem)] flex-col rounded-lg border p-4 shadow-sm lg:sticky lg:top-20">
       <div className="mb-3">
+        <div className="coach-status mb-3 w-fit">
+          知识地图
+        </div>
         <h2 className="text-sm font-bold text-on-surface">知识体系大纲</h2>
         <p className="mt-1 text-xs text-on-surface-variant">
           按 Java 后端面试主题整理

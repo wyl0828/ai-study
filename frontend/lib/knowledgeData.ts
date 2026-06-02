@@ -125,8 +125,6 @@ export const baseKnowledgeOutline: KnowledgeOutlineNode[] = [
 export const knowledgeTopics: KnowledgeTopic[] = knowledgeSeedTopics;
 export const defaultKnowledgeSelection: KnowledgeSelection = {
   domain: "Java 核心",
-  section: "集合框架",
-  topic: "Map",
 };
 
 export const knowledgeTopicMeta: Record<string, KnowledgeTopicMeta> = {

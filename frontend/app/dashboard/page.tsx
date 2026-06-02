@@ -384,14 +384,39 @@ function DashboardContent({ userId }: { userId: number }) {
   };
 
   return (
-    <div className="max-w-[1360px] mx-auto px-6 py-8">
-      {/* 页面标题 */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-on-surface tracking-tight">学习中心</h1>
-        <p className="text-sm text-on-surface-variant mt-1">
-          追踪你的薄弱知识点、查看训练计划、回顾错题
-        </p>
-      </div>
+    <div className="coach-workbench">
+      <div className="coach-shell max-w-[1360px] py-6">
+        <section className="coach-hero mb-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div>
+            <div className="coach-pill mb-3 w-fit border-teal-300/25 bg-teal-300/10 text-teal-100">
+              教练驾驶舱
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">学习中心</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+              汇总做题诊断、训练计划、错题复盘、知识自测和模拟面试，优先告诉你下一步最该练什么。
+            </p>
+
+            <div className="mt-5 rounded-lg border border-amber-300/25 bg-amber-300/10 p-4">
+              <div className="text-xs font-semibold text-amber-100">下一步最该做什么</div>
+              <p className="mt-2 text-sm font-semibold text-white">
+                {nextActions[0]?.title || "从第一道 demo 题开始"}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-300">
+                {nextActions[0]?.description || "提交一次 Two Sum 错误代码，让诊断、记忆和训练计划先跑通。"}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid content-end gap-3">
+            <div className="text-xs font-semibold text-slate-300">训练闭环总览</div>
+            <div className="grid grid-cols-2 gap-3">
+              <DashboardHeroMetric label="总提交次数" value={statValue(stats.totalSubmissions)} />
+              <DashboardHeroMetric label="通过题目" value={statValue(stats.passedProblems)} tone="success" />
+              <DashboardHeroMetric label="薄弱知识点" value={statValue(weakPointCount)} tone="warning" />
+              <DashboardHeroMetric label="错题数量" value={statValue(stats.mistakeCount)} tone="error" />
+            </div>
+          </div>
+        </section>
 
       {error && (
         <div className="mb-6 rounded-lg border border-error/20 bg-error/5 px-4 py-3 text-sm text-error">
@@ -399,31 +424,12 @@ function DashboardContent({ userId }: { userId: number }) {
         </div>
       )}
 
-      {/* 统计概览卡片 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4">
-          <div className="text-xs text-on-surface-variant mb-1">总提交次数</div>
-          <div className="text-2xl font-bold text-on-surface">
-            {statValue(stats.totalSubmissions)}
-          </div>
-        </div>
-        <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4">
-          <div className="text-xs text-on-surface-variant mb-1">通过题目</div>
-          <div className="text-2xl font-bold text-emerald-600">
-            {statValue(stats.passedProblems)}
-          </div>
-        </div>
-        <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4">
-          <div className="text-xs text-on-surface-variant mb-1">薄弱知识点</div>
-          <div className="text-2xl font-bold text-amber-600">
-            {statValue(weakPointCount)}
-          </div>
-        </div>
-        <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-4">
-          <div className="text-xs text-on-surface-variant mb-1">错题数量</div>
-          <div className="text-2xl font-bold text-error">
-            {statValue(stats.mistakeCount)}
-          </div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="coach-status w-fit">今日行动区</div>
+          <p className="mt-2 text-sm text-on-surface-variant">
+            先处理最高优先级任务，再进入计划追踪和错题复盘。
+          </p>
         </div>
       </div>
 
@@ -1161,6 +1167,31 @@ function DashboardContent({ userId }: { userId: number }) {
       <section className="mt-8">
         <MistakeCards mistakes={aggregatedMistakeCards} />
       </section>
+      </div>
+    </div>
+  );
+}
+
+function DashboardHeroMetric({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: string | number;
+  tone?: "default" | "success" | "warning" | "error";
+}) {
+  const toneClass = {
+    default: "text-white",
+    success: "text-emerald-200",
+    warning: "text-amber-200",
+    error: "text-red-200",
+  }[tone];
+
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/10 p-4">
+      <div className="text-xs text-slate-300">{label}</div>
+      <div className={`mt-2 text-2xl font-bold ${toneClass}`}>{value}</div>
     </div>
   );
 }

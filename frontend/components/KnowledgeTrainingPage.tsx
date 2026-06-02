@@ -13,6 +13,11 @@ import KnowledgeSidebar from "./KnowledgeSidebar";
 import KnowledgeTopicHeader from "./KnowledgeTopicHeader";
 import { formatApiError, knowledgeApi } from "@/lib/api";
 import {
+  clearLastKnowledgeCardId,
+  readLastKnowledgeCardId,
+  saveLastKnowledgeCardId,
+} from "@/lib/knowledgeViewState";
+import {
   defaultKnowledgeSelection,
   inferKnowledgeSelection,
   knowledgeTopics,
@@ -64,9 +69,11 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
   const searchParams = useSearchParams();
   const cardIdParam = searchParams.get("cardId");
   const linkedCardId = Number(cardIdParam);
-  const targetCardId = Number.isFinite(linkedCardId) && linkedCardId > 0
+  const explicitTargetCardId = Number.isFinite(linkedCardId) && linkedCardId > 0
     ? linkedCardId
     : null;
+  const [storedTargetCardId, setStoredTargetCardId] = useState<number | null>(null);
+  const targetCardId = explicitTargetCardId ?? storedTargetCardId;
 
   const [selection, setSelection] =
     useState<KnowledgeSelection>(defaultKnowledgeSelection);
@@ -86,6 +93,10 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
   );
   const topicRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const pendingAnchorAdjustmentRef = useRef<{ cardId: number; top: number } | null>(null);
+
+  useEffect(() => {
+    setStoredTargetCardId(explicitTargetCardId ? null : readLastKnowledgeCardId(userId));
+  }, [explicitTargetCardId, userId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,9 +131,14 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
         setTopics(nextTopics);
         setMasteredIds(new Set());
         setDetailIds(new Set());
-        syncTargetSelection(nextTopics.find((topic) => topic.id === targetCardId));
+        const targetTopic = nextTopics.find((topic) => topic.id === targetCardId);
+        syncTargetSelection(targetTopic);
 
-        if (targetCardId && nextTopics.some((topic) => topic.id === targetCardId)) {
+        if (targetCardId && !targetTopic && !explicitTargetCardId) {
+          clearLastKnowledgeCardId(userId);
+        }
+
+        if (targetCardId && targetTopic) {
           setExpandedId(targetCardId);
 
           try {
@@ -148,8 +164,12 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
             new Set(knowledgeTopics.filter((topic) => topic.mastered).map((topic) => topic.id))
           );
           setDetailIds(new Set(knowledgeTopics.map((topic) => topic.id)));
-          syncTargetSelection(knowledgeTopics.find((topic) => topic.id === targetCardId));
-          if (targetCardId && knowledgeTopics.some((topic) => topic.id === targetCardId)) {
+          const targetTopic = knowledgeTopics.find((topic) => topic.id === targetCardId);
+          syncTargetSelection(targetTopic);
+          if (targetCardId && !targetTopic && !explicitTargetCardId) {
+            clearLastKnowledgeCardId(userId);
+          }
+          if (targetCardId && targetTopic) {
             setExpandedId(targetCardId);
           }
           setNotice(formatApiError(err, "knowledge"));
@@ -166,7 +186,7 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
     return () => {
       cancelled = true;
     };
-  }, [targetCardId]);
+  }, [explicitTargetCardId, targetCardId, userId]);
 
   const keyword = search.trim().toLowerCase();
 
@@ -275,6 +295,7 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
 
   const selectOutlineItem = (nextSelection: KnowledgeSelection) => {
     if (nextSelection.cardId) {
+      saveLastKnowledgeCardId(userId, nextSelection.cardId);
       setSelection({
         domain: nextSelection.domain,
         section: nextSelection.section,
@@ -292,6 +313,7 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
       return;
     }
 
+    clearLastKnowledgeCardId(userId);
     setSelection(nextSelection);
     setActiveCardId(null);
     setExpandedId(null);
@@ -299,6 +321,7 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
 
   const showAllKnowledge = () => {
     setSelection({ domain: "Java 核心" });
+    clearLastKnowledgeCardId(userId);
     setSearch("");
     setDifficulty("全部");
     setStatus("全部");
@@ -307,6 +330,7 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
   const toggleTopic = (topic: KnowledgeTopic) => {
     const opening = expandedId !== topic.id;
     if (opening) {
+      saveLastKnowledgeCardId(userId, topic.id);
       const target = topicRefs.current[topic.id];
       if (target) {
         pendingAnchorAdjustmentRef.current = {
@@ -326,7 +350,7 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
   };
 
   return (
-    <main className="min-h-screen bg-surface">
+    <main className="coach-workbench">
       <div className="coach-shell max-w-[1680px] py-6">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)]">
         <KnowledgeSidebar
@@ -337,24 +361,28 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
         />
 
         <section className="min-w-0">
-          <KnowledgeTopicHeader selection={selection} />
-
-          <div className="mb-5 grid gap-3 sm:grid-cols-3">
+          <div className="coach-hero mb-5">
+            <KnowledgeTopicHeader selection={selection} tone="hero" />
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <KnowledgeMetric
               icon={<BookOpenCheck className="h-4 w-4" />}
               label="知识卡总数"
               value={topics.length}
+              tone="hero"
             />
             <KnowledgeMetric
               icon={<Target className="h-4 w-4" />}
               label="当前专题"
               value={topicScopedTopics.length}
+              tone="hero"
             />
             <KnowledgeMetric
               icon={<Brain className="h-4 w-4" />}
               label="需复习"
               value={scopedStatusCounts.需复习}
+              tone="hero"
             />
+            </div>
           </div>
 
           <KnowledgeFilterBar
@@ -426,20 +454,24 @@ function KnowledgeMetric({
   icon,
   label,
   value,
+  tone = "surface",
 }: {
   icon: ReactNode;
   label: string;
   value: number;
+  tone?: "surface" | "hero";
 }) {
+  const isHero = tone === "hero";
+
   return (
-    <div className="coach-card p-4">
-      <div className="mb-2 flex items-center gap-1.5 text-primary">
+    <div className={isHero ? "rounded-lg border border-white/10 bg-white/10 p-4" : "coach-card p-4"}>
+      <div className={`mb-2 flex items-center gap-1.5 ${isHero ? "text-teal-100" : "text-primary"}`}>
         {icon}
-        <span className="text-xs font-semibold text-on-surface-variant">
+        <span className={`text-xs font-semibold ${isHero ? "text-slate-300" : "text-on-surface-variant"}`}>
           {label}
         </span>
       </div>
-      <div className="text-2xl font-bold text-on-surface">{value}</div>
+      <div className={`text-2xl font-bold ${isHero ? "text-white" : "text-on-surface"}`}>{value}</div>
     </div>
   );
 }

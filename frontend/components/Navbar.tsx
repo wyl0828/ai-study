@@ -34,14 +34,17 @@ export default function Navbar() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-outline-variant/60 bg-surface-container-lowest/95 shadow-sm backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#0b1220] text-white shadow-sm">
       <div className="coach-shell flex h-14 items-center justify-between">
         <div className="flex min-w-0 items-center gap-6">
-          <Link href="/" className="flex min-w-0 items-center gap-2 text-primary font-bold text-lg">
+          <Link href="/" className="flex min-w-0 items-center gap-2 text-white font-bold text-lg">
             <Terminal className="h-[22px] w-[22px] shrink-0" />
             <span className="truncate">AI 面试教练</span>
           </Link>
-          <nav className="hidden md:flex gap-6 ml-8" aria-label="桌面端主导航">
+          <span className="hidden rounded-full border border-teal-300/20 bg-teal-300/10 px-2.5 py-1 text-xs font-semibold text-teal-100 lg:inline-flex">
+            训练控制台
+          </span>
+          <nav className="hidden md:flex gap-2 ml-4" aria-label="桌面端主导航">
             {links.map((link) => {
               const active = isActive(link.href);
               return (
@@ -50,8 +53,8 @@ export default function Navbar() {
                   href={link.href}
                   className={
                     active
-                      ? "text-primary border-b-2 border-primary pb-0.5 text-sm font-semibold"
-                      : "text-on-surface-variant hover:text-primary transition-colors text-sm font-medium"
+                      ? "rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-[#0b1220]"
+                      : "rounded-full px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
                   }
                 >
                   {link.label}
@@ -69,12 +72,12 @@ export default function Navbar() {
           )}
           {user ? (
             <>
-              <span className="hidden text-sm text-on-surface-variant md:inline">
+              <span className="hidden text-sm text-slate-300 md:inline">
                 {user.username}
               </span>
               <button
                 onClick={handleLogout}
-                className="coach-icon-button"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-300 transition hover:bg-white/10 hover:text-white"
                 type="button"
                 aria-label="退出登录"
                 title="退出登录"
@@ -85,7 +88,7 @@ export default function Navbar() {
           ) : (
             <Link
               href="/login"
-              className="coach-primary-button px-3 py-1.5"
+              className="inline-flex items-center justify-center rounded-md bg-teal-400 px-3 py-1.5 text-sm font-semibold text-[#062322] transition hover:bg-teal-300"
             >
               登录
             </Link>
@@ -104,8 +107,8 @@ export default function Navbar() {
               href={link.href}
               className={
                 active
-                  ? "shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary"
-                  : "coach-pill shrink-0 px-3 py-1.5"
+                  ? "shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#0b1220]"
+                  : "shrink-0 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-300"
               }
             >
               {link.label}
