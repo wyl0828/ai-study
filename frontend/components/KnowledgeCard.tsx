@@ -133,15 +133,19 @@ export default function KnowledgeCard({
 
   return (
     <article
-      className={`overflow-hidden rounded-xl border bg-surface-container-lowest shadow-sm transition-all ${
+      className={`coach-card coach-card-hover overflow-hidden transition-all ${
         expanded
           ? "border-primary/25 border-l-4 border-l-primary shadow-md ring-1 ring-primary/10"
-          : "border-outline-variant/30 hover:border-primary/25 hover:shadow-md"
+          : ""
       }`}
     >
       <div className="p-5">
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
+              <span className="coach-pill border-primary/20 bg-primary/5 text-primary">
+                <BookOpenText className="h-3.5 w-3.5" />
+                面试题卡
+              </span>
               <span
                 className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
                   difficultyStyle[topic.difficulty]
@@ -189,6 +193,9 @@ export default function KnowledgeCard({
             </p>
           </button>
 
+          <div className="mb-2 text-xs font-semibold text-on-surface-variant">
+            核心标签
+          </div>
           <div className="mb-4 flex flex-wrap gap-1.5">
             {topic.tags.map((tag) => (
               <span
@@ -211,7 +218,7 @@ export default function KnowledgeCard({
             <button
               type="button"
               onClick={onToggle}
-              className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary shadow-sm transition hover:bg-primary-container"
+              className="coach-primary-button px-3 py-2 text-xs"
               aria-expanded={expanded}
             >
               {actionLabel}

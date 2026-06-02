@@ -41,9 +41,9 @@ export default function InterviewSetupPanel({
   onStart,
 }: Props) {
   return (
-    <section className="rounded-xl border border-outline-variant/70 bg-surface-container-lowest p-6 shadow-sm">
+    <section className="coach-card p-5">
       <div>
-        <div className="flex items-center gap-2 text-primary font-semibold">
+        <div className="flex items-center gap-2 font-semibold text-primary">
           <SlidersHorizontal className="h-4 w-4" />
           面试配置
         </div>
@@ -61,7 +61,7 @@ export default function InterviewSetupPanel({
               <button
                 key={item.value}
                 type="button"
-                className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${
+                className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
                   active
                     ? "border-primary bg-primary text-on-primary shadow-sm"
                     : "border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:border-primary hover:text-primary"
@@ -84,7 +84,7 @@ export default function InterviewSetupPanel({
               <button
                 key={item.value}
                 type="button"
-                className={`min-h-28 rounded-xl border p-4 text-left transition-colors ${
+                className={`min-h-28 rounded-lg border p-4 text-left transition-colors ${
                   active
                     ? "border-primary bg-primary/5 text-primary shadow-sm"
                     : "border-outline-variant bg-surface-container-lowest text-on-surface hover:border-primary/60"
@@ -115,7 +115,7 @@ export default function InterviewSetupPanel({
               <button
                 key={count}
                 type="button"
-                className={`rounded-lg border px-5 py-2 text-sm font-semibold transition-colors ${
+                className={`rounded-full border px-5 py-2 text-sm font-semibold transition-colors ${
                   active
                     ? "border-primary bg-primary text-on-primary shadow-sm"
                     : "border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:border-primary hover:text-primary"
@@ -130,7 +130,7 @@ export default function InterviewSetupPanel({
       </div>
 
       <button
-        className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-on-primary shadow-sm transition-colors hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-60"
+        className="coach-primary-button mt-7 w-full py-3 font-bold"
         disabled={loading}
         onClick={onStart}
         type="button"

@@ -352,7 +352,8 @@ test("problem list uses a wide layout with an isolated training sidebar", () => 
   assert.match(home, /max-w-\[1440px\]/);
   assert.match(home, /xl:grid-cols-\[minmax\(0,1fr\)_320px\]/);
   assert.match(home, /<section className="min-w-0"/);
-  assert.match(home, /<ProblemTrainingSidebar userId=\{getStoredUser\(\)\?\.id\} \/>/);
+  assert.match(home, /const currentUser = getAuthToken\(\) \? getStoredUser\(\) : null;/);
+  assert.match(home, /<ProblemTrainingSidebar userId=\{currentUser\?\.id\} \/>/);
   assert.match(home, /grid-cols-1 md:grid-cols-2 2xl:grid-cols-3/);
   assert.doesNotMatch(home, /userApi\./);
 
@@ -397,21 +398,22 @@ test("problem workspace stacks vertically on mobile", () => {
   const result = read("components/ResultPanel.tsx");
 
   assert.match(page, /min-h-\[calc\(100dvh-88px\)\]/);
-  assert.match(page, /flex-col/);
+  assert.match(page, /grid-cols-1/);
   assert.match(page, /md:h-\[calc\(100vh-56px\)\]/);
-  assert.match(page, /md:flex-row/);
+  assert.match(page, /md:grid-cols-\[minmax\(280px,24vw\)_minmax\(0,1fr\)_minmax\(320px,30vw\)\]/);
   assert.match(page, /md:overflow-hidden/);
 
   assert.match(description, /w-full/);
   assert.match(description, /min-w-0/);
-  assert.match(description, /md:w-\[25%\]/);
-  assert.match(description, /md:min-w-\[280px\]/);
+  assert.match(description, /md:max-w-none/);
+  assert.doesNotMatch(description, /md:w-\[25%\]/);
 
-  assert.match(workspace, /min-h-\[520px\]/);
+  assert.match(workspace, /min-h-\[560px\]/);
   assert.match(workspace, /md:h-full/);
   assert.match(workspace, /w-full/);
-  assert.match(workspace, /md:w-\[30%\]/);
-  assert.match(workspace, /md:min-w-\[320px\]/);
+  assert.match(workspace, /aria-label="代码编辑区"/);
+  assert.match(workspace, /aria-label="运行结果和 AI 诊断"/);
+  assert.doesNotMatch(workspace, /md:w-\[30%\]/);
 
   assert.match(editor, /flex-wrap/);
   assert.match(editor, /min-w-0/);

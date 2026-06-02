@@ -18,7 +18,7 @@ export default function KnowledgeTopicHeader({ selection }: KnowledgeTopicHeader
   return (
     <section className="mb-5">
       <nav
-        className="mb-5 flex flex-wrap items-center gap-2 text-sm text-on-surface-variant"
+        className="mb-4 flex flex-wrap items-center gap-2 text-xs text-on-surface-variant"
         aria-label="知识训练路径"
       >
         {breadcrumb.map((item, index) => (
@@ -33,15 +33,16 @@ export default function KnowledgeTopicHeader({ selection }: KnowledgeTopicHeader
         ))}
       </nav>
 
-      <div className="flex items-start gap-4">
-        <div className="mt-1 rounded-xl bg-primary/10 p-2 text-primary">
-          <BookOpenCheck className="h-7 w-7" aria-label={meta.iconLabel} />
-        </div>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div className="min-w-0">
-          <h1 className="text-3xl font-bold tracking-tight text-on-surface">
+          <div className="coach-pill mb-3 w-fit border-primary/20 bg-primary/5 text-primary">
+            <BookOpenCheck className="h-3.5 w-3.5" aria-label={meta.iconLabel} />
+            知识训练台
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-on-surface">
             {meta.title}
           </h1>
-          <p className="mt-3 max-w-3xl text-base leading-relaxed text-on-surface-variant">
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-on-surface-variant">
             {meta.description}
           </p>
         </div>

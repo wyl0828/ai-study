@@ -46,19 +46,26 @@ export default function CodeEditor({
 
   return (
     <div className="flex flex-col h-full">
-      {/* 顶栏 - GitHub 暗色风格 */}
-      <div className="flex flex-wrap items-center justify-between gap-2 bg-[#010409] text-gray-400 border-b border-[#30363d] shrink-0">
-        <div className="flex min-w-0 items-center">
-          <div className="flex min-w-0 items-center gap-2 text-gray-200 px-4 py-2 border-r border-[#30363d] border-t-2 border-t-blue-500 bg-[#0d1117]">
-            <Code className="w-4 h-4 text-blue-400" />
-            <span className="truncate font-mono text-xs tracking-wide">解题代码.java</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#243047] bg-[#0b1020] px-3 py-2 text-slate-300 shrink-0">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2 rounded-md border border-[#334155] bg-[#111827] px-3 py-1.5 text-slate-100">
+            <Code className="h-4 w-4 shrink-0 text-sky-400" />
+            <span className="truncate font-mono text-xs tracking-wide">Solution.java</span>
           </div>
+          <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[11px] font-semibold text-sky-200">
+            Java 17
+          </span>
+          <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-200">
+            自动保存
+          </span>
         </div>
-        <div className="flex flex-wrap justify-end gap-2 px-2 py-1 sm:mr-4 sm:px-0">
+        <div className="flex flex-wrap justify-end gap-2">
           <button
             onClick={onReset}
             disabled={disabled}
-            className="text-xs px-3 py-1.5 rounded text-gray-400 hover:text-white hover:bg-[#21262d] transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 rounded-md border border-[#334155] bg-[#111827] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-sky-500/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            type="button"
+            title="重置代码"
           >
             <RefreshCw className="w-4 h-4" />
             重置代码
@@ -66,7 +73,9 @@ export default function CodeEditor({
           <button
             onClick={onSubmit}
             disabled={disabled}
-            className="bg-[#238636] hover:bg-[#2ea043] text-white text-xs px-4 py-1.5 rounded font-medium transition-all flex items-center gap-1 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 rounded-md bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+            type="button"
+            title={buttonLabel}
           >
             {isSubmitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />

@@ -6,8 +6,50 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #faf8ff;
-  color: #131b2e;
+  background-color: #f6f8fb;
+  color: #0f172a;
+}
+
+@layer components {
+  .coach-shell {
+    @apply mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8;
+  }
+
+  .coach-panel {
+    @apply border-outline-variant/60 bg-surface-container-lowest;
+  }
+
+  .coach-card {
+    @apply rounded-lg border border-outline-variant/50 bg-surface-container-lowest shadow-sm transition-colors;
+  }
+
+  .coach-card-hover {
+    @apply hover:border-primary/35 hover:shadow-md;
+  }
+
+  .coach-primary-button {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .coach-secondary-button {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-outline-variant/70 bg-surface-container-lowest px-3 py-2 text-sm font-semibold text-on-surface transition hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .coach-icon-button {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-md text-on-surface-variant transition hover:bg-surface-container hover:text-primary disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .coach-pill {
+    @apply inline-flex items-center gap-1 rounded-full border border-outline-variant/50 bg-surface-container-low px-2.5 py-1 text-xs font-semibold text-on-surface-variant;
+  }
+
+  .coach-tab-list {
+    @apply grid rounded-lg border border-outline-variant/60 bg-surface-container p-1;
+  }
+
+  .coach-empty-state {
+    @apply flex h-full min-h-[260px] flex-col items-center justify-center rounded-lg border border-dashed border-outline-variant/70 bg-surface-container-lowest p-6 text-center text-on-surface-variant;
+  }
 }
 
 ::-webkit-scrollbar {
@@ -18,7 +60,7 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c0c7d2;
+  background: #cbd5e1;
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {

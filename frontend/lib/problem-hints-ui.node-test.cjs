@@ -95,8 +95,10 @@ test("accepted code analysis shows live agent steps while review is generating",
 
   assert.match(
     diagnosis,
-    /AI 正在生成面试点评\.\.\.[\s\S]{0,250}agentSteps\.length > 0 && <AgentTimeline steps=\{agentSteps\}/
+    /AI 正在生成面试点评\.\.\.[\s\S]{0,300}agentSteps\.length > 0 && \([\s\S]{0,120}<AgentProcessCard steps=\{agentSteps\}/
   );
+  assert.match(diagnosis, /function AgentProcessCard/);
+  assert.match(diagnosis, /<AgentTimeline steps=\{steps\} showSummary \/>/);
 });
 
 test("reference solution panel exposes a copy code action", () => {

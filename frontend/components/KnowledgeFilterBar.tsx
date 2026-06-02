@@ -35,61 +35,76 @@ export default function KnowledgeFilterBar({
   onStatusChange,
 }: KnowledgeFilterBarProps) {
   return (
-    <section className="mb-5 rounded-xl border border-outline-variant/30 bg-surface-container-lowest px-4 py-3 shadow-sm">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <span className="inline-flex items-center gap-1.5 font-medium text-on-surface-variant">
-            <SlidersHorizontal className="h-4 w-4" />
-            难度：
+    <section className="coach-card mb-5 p-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold text-on-surface">
+            筛选与搜索
+          </h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-on-surface-variant">
+          <span className="coach-pill px-2 py-0.5 text-[11px]">
+            共 {total} 张卡
           </span>
-          <div className="flex flex-wrap gap-1.5">
-            {knowledgeDifficulties.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => onDifficultyChange(item)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  difficulty === item
-                    ? "bg-on-surface text-surface"
-                    : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"
-                }`}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
+          {loading && <span>加载中...</span>}
+        </div>
+      </div>
 
-          <div className="hidden h-5 w-px bg-outline-variant/40 sm:block" />
-
-          <span className="font-medium text-on-surface-variant">状态：</span>
-          <div className="flex flex-wrap gap-1.5">
-            {statusFilters.map((item) => {
-              const label =
-                item === "全部" ? item : `${item} (${statusCounts[item]})`;
-              return (
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+        <div className="flex min-w-0 flex-wrap items-center gap-3 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-on-surface-variant">
+              难度
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {knowledgeDifficulties.map((item) => (
                 <button
                   key={item}
                   type="button"
-                  onClick={() => onStatusChange(item)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    status === item
+                  onClick={() => onDifficultyChange(item)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    difficulty === item
                       ? "bg-primary text-on-primary"
                       : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"
                   }`}
                 >
-                  {label}
+                  {item}
                 </button>
-              );
-            })}
+              ))}
+            </div>
           </div>
 
-          <span className="rounded-lg bg-surface-container px-3 py-1.5 text-xs font-semibold text-on-surface-variant">
-            共 {total} 题
-          </span>
-          {loading && <span className="text-xs text-on-surface-variant">加载中...</span>}
+          <div className="hidden h-5 w-px bg-outline-variant/40 sm:block" />
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-on-surface-variant">
+              状态
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {statusFilters.map((item) => {
+                const label =
+                  item === "全部" ? item : `${item} (${statusCounts[item]})`;
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => onStatusChange(item)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      status === item
+                        ? "bg-primary text-on-primary"
+                        : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        <div className="relative w-full xl:w-80">
+        <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-outline" />
           <input
             type="text"

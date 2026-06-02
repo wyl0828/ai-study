@@ -45,8 +45,8 @@ export default function ProblemDescription({
   const presetHints = problem.presetHints ?? getProblemPresetHints(problem.id);
 
   return (
-    <section className="flex w-full min-w-0 flex-col overflow-y-auto border-b border-outline-variant/30 bg-surface-container-lowest md:h-full md:w-[25%] md:min-w-[280px] md:max-w-[420px] md:border-b-0 md:border-r">
-      <div className="p-5 flex-1">
+    <section className="coach-panel flex w-full min-w-0 flex-col overflow-y-auto border-b md:h-full md:min-w-0 md:max-w-none md:border-b-0 md:border-r">
+      <div className="flex-1 p-5">
         <div className="flex justify-between items-start mb-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -60,7 +60,7 @@ export default function ProblemDescription({
           <ProblemNavigator currentProblemId={problem.id} />
         </div>
 
-        <div className="mb-4 grid grid-cols-3 rounded-lg border border-outline-variant/40 bg-surface-container p-1">
+        <div className="coach-tab-list mb-4 grid-cols-3">
           {tabs.map(({ key, label, Icon }) => (
             <button
               key={key}

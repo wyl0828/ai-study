@@ -32,9 +32,17 @@ export default function ResultPanel({
   onTabChange,
 }: ResultPanelProps) {
   return (
-    <div className="flex h-full flex-col border-t border-outline-variant/30 bg-surface-container-lowest md:border-l md:border-t-0">
-      {/* Tab 栏 */}
-      <div className="flex border-b border-outline-variant/30 bg-surface-container-low shrink-0">
+    <div className="coach-panel flex h-full flex-col border-t md:border-l md:border-t-0">
+      <div className="shrink-0 border-b border-outline-variant/60 bg-surface-container-lowest px-4 py-3">
+        <div className="text-xs font-semibold uppercase tracking-wide text-outline">
+          执行观察
+        </div>
+        <div className="mt-1 text-sm font-semibold text-on-surface">
+          测试反馈与教练诊断
+        </div>
+      </div>
+
+      <div className="grid shrink-0 grid-cols-2 border-b border-outline-variant/60 bg-surface-container-low">
         {tabs.map(({ key, label, Icon }) => (
           <button
             key={key}
@@ -51,7 +59,6 @@ export default function ResultPanel({
         ))}
       </div>
 
-      {/* Tab 内容 */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {activeTab === "test" &&
           (submissionResult ? (
@@ -79,8 +86,8 @@ export default function ResultPanel({
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-on-surface-variant p-6">
-      <ClipboardCheck className="w-10 h-10 mb-3" />
+    <div className="coach-empty-state m-4">
+      <ClipboardCheck className="w-10 h-10 mb-3 text-outline" />
       <p className="text-sm">{text}</p>
     </div>
   );

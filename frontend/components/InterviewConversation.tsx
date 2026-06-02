@@ -46,7 +46,7 @@ function CurrentQuestionCard({ session, displayState }: {
 }) {
   if (displayState === "EVALUATING") {
     return (
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-5">
         <div className="flex items-center gap-2 text-sm font-bold text-primary">
           <Loader2 className="h-5 w-5 animate-spin" />
           面试官正在分析你的回答
@@ -60,7 +60,7 @@ function CurrentQuestionCard({ session, displayState }: {
 
   if (displayState === "REPORTED") {
     return (
-      <div className="rounded-xl border border-outline-variant/50 bg-surface-container-low p-5">
+      <div className="rounded-lg border border-outline-variant/50 bg-surface-container-low p-5">
         <div className="flex items-center gap-2 text-sm font-bold text-on-surface-variant">
           <Bot className="h-5 w-5" />
           面试已结束
@@ -75,7 +75,7 @@ function CurrentQuestionCard({ session, displayState }: {
   const question = session.currentQuestion;
 
   return (
-    <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
+    <div className="rounded-lg border border-primary/20 bg-primary/5 p-5">
       <div className="flex items-center gap-2 text-sm font-bold text-primary">
         <Bot className="h-5 w-5" />
         当前问题
@@ -114,9 +114,9 @@ function AnswerComposer({
   return (
     <div className="shrink-0 border-t border-outline-variant/70 bg-surface-container-lowest p-4">
       <div className="mb-2 text-sm font-bold text-on-surface">你的回答</div>
-      <div className="relative rounded-xl border border-outline-variant bg-surface-container-lowest transition focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
+      <div className="relative rounded-lg border border-outline-variant bg-surface-container-lowest transition focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
         <textarea
-          className="min-h-[88px] w-full resize-none rounded-xl border-0 bg-transparent px-4 py-3 pr-16 text-sm leading-6 text-on-surface outline-none placeholder:text-on-surface-variant focus:ring-0"
+          className="min-h-[88px] w-full resize-none rounded-lg border-0 bg-transparent px-4 py-3 pr-16 text-sm leading-6 text-on-surface outline-none placeholder:text-on-surface-variant focus:ring-0"
           placeholder={
             displayState === "EVALUATING" ? "面试官正在分析..." :
             displayState === "REPORTED" ? "面试已结束" :
@@ -154,7 +154,7 @@ function ReviewTurnCard({
   note?: string;
 }) {
   return (
-    <div className="rounded-xl border border-outline-variant/70 bg-surface-container-lowest p-4 shadow-sm">
+    <div className="coach-card p-4">
       <div className="text-xs font-semibold text-on-surface-variant">面试官</div>
       <p className="mt-1 text-sm leading-6 text-on-surface">{question}</p>
 
@@ -190,7 +190,7 @@ export default function InterviewConversation({
   }, [session.turns.length, session.currentQuestion, pendingAnswer]);
 
   return (
-    <section className="grid h-[calc(100dvh-300px)] min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-xl border border-outline-variant/70 bg-surface-container-lowest shadow-sm">
+    <section className="coach-card grid h-[calc(100dvh-300px)] min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
       {/* 当前问题 — 固定顶部 */}
       <div className="shrink-0 bg-surface-container-lowest p-4 pb-3 sm:p-5 sm:pb-3">
         <CurrentQuestionCard session={session} displayState={displayState} />

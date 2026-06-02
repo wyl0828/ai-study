@@ -42,12 +42,12 @@ export default function InterviewReport({ report, turns }: Props) {
   const hasRecommendedCards = report.recommendedCardIds.length > 0;
 
   return (
-    <section className="h-full overflow-y-auto rounded-lg border border-outline-variant/50 bg-white p-5">
+    <section className="coach-card h-full overflow-y-auto p-5">
       <div className="flex items-center gap-2 font-semibold text-primary">
         <BarChart3 className="h-4 w-4" />
         面试报告
       </div>
-      <div className="mt-4 rounded-lg bg-primary/5 p-4">
+      <div className="mt-4 rounded-lg border border-primary/15 bg-primary/5 p-4">
         <p className="text-sm text-on-surface-variant">总体表现</p>
         <p className="mt-1 text-3xl font-bold text-primary">{report.averageScore}</p>
       </div>
@@ -99,7 +99,7 @@ export default function InterviewReport({ report, turns }: Props) {
             <li>3. 如果复测出现低分或缺失要点，再回到学习中心查看下一步动作。</li>
           </ol>
         )}
-        <p className="mt-3 rounded-md bg-white px-3 py-2 text-xs leading-5 text-on-surface-variant">
+        <p className="mt-3 rounded-md bg-surface-container-lowest px-3 py-2 text-xs leading-5 text-on-surface-variant">
           训练计划联动：{report.trainingPlanLinked ? `已生成 ${report.trainingPlanItemCount} 个复盘项` : "暂未生成复盘项"}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -123,7 +123,7 @@ export default function InterviewReport({ report, turns }: Props) {
           )}
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-1 rounded-md border border-primary/20 bg-white px-2.5 py-1.5 text-xs font-medium text-primary transition hover:bg-primary/10"
+            className="inline-flex items-center gap-1 rounded-md border border-primary/20 bg-surface-container-lowest px-2.5 py-1.5 text-xs font-medium text-primary transition hover:bg-primary/10"
           >
             查看下一步动作
             <ArrowRight className="h-3.5 w-3.5" />

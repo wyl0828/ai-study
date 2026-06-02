@@ -1,12 +1,21 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, SearchX } from "lucide-react";
+import type { ReactNode } from "react";
+import {
+  BarChart3,
+  BookOpenCheck,
+  Filter,
+  Layers3,
+  Search,
+  SearchX,
+  Target,
+} from "lucide-react";
 import type { HomeProblem } from "@/lib/types";
 import { categoryName, problemDescription, problemTitle } from "@/lib/i18n";
 import ProblemCard from "./ProblemCard";
 import ProblemTrainingSidebar from "./ProblemTrainingSidebar";
-import { getStoredUser } from "@/lib/auth";
+import { getAuthToken, getStoredUser } from "@/lib/auth";
 
 interface HomeClientProps {
   problems: HomeProblem[];
@@ -31,6 +40,16 @@ export default function HomeClient({ problems }: HomeClientProps) {
   const categories = useMemo(() => {
     const set = new Set(problems.map((p) => p.category));
     return ["ALL", ...Array.from(set)];
+  }, [problems]);
+
+  const difficultyCounts = useMemo(() => {
+    return problems.reduce<Record<string, number>>(
+      (counts, problem) => {
+        counts[problem.difficulty] = (counts[problem.difficulty] ?? 0) + 1;
+        return counts;
+      },
+      { EASY: 0, MEDIUM: 0, HARD: 0 }
+    );
   }, [problems]);
 
   const filtered = useMemo(() => {
@@ -58,23 +77,73 @@ export default function HomeClient({ problems }: HomeClientProps) {
 
   const passedCount = 0;
   const attemptedCount = 0;
+  const currentUser = getAuthToken() ? getStoredUser() : null;
+  const activeFilterSummary = [
+    difficulty === "ALL" ? "全部难度" : difficulties.find((d) => d.key === difficulty)?.label,
+    category === "ALL" ? "全部专题" : categoryName(category),
+    search.trim() ? `关键词：${search.trim()}` : null,
+  ].filter(Boolean);
 
   return (
-    <div className="max-w-[1440px] mx-auto px-6 py-8">
+    <div className="coach-shell max-w-[1440px] py-8">
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="min-w-0">
-          {/* 页面标题 */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-on-surface tracking-tight">算法题库</h1>
-            <p className="text-sm text-on-surface-variant mt-1">
-              Java 后端面试高频题目，AI 教练实时诊断你的代码
-            </p>
+          <div className="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
+            <div>
+              <div className="coach-pill mb-3 w-fit border-primary/20 bg-primary/5 text-primary">
+                <BookOpenCheck className="h-3.5 w-3.5" />
+                Hot100 Java Solution 模式
+              </div>
+              <h1 className="text-2xl font-bold tracking-tight text-on-surface">
+                题库训练台
+              </h1>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-on-surface-variant">
+                从高频算法题进入提交、诊断、记忆和训练计划闭环；优先练习能暴露 Java 后端面试表达的核心题型。
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <TrainingMetric
+                icon={<Target className="h-4 w-4" />}
+                label="题目总数"
+                value={problems.length}
+              />
+              <TrainingMetric
+                icon={<BarChart3 className="h-4 w-4" />}
+                label="当前筛选"
+                value={filtered.length}
+              />
+              <TrainingMetric
+                icon={<Layers3 className="h-4 w-4" />}
+                label="知识专题"
+                value={Math.max(categories.length - 1, 0)}
+              />
+            </div>
           </div>
 
-          {/* 筛选栏 */}
-          <div className="mb-6 grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+          <div className="coach-card mb-5 p-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-semibold text-on-surface">
+                  筛选与搜索
+                </h2>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-on-surface-variant">
+                <span className="coach-pill px-2 py-0.5 text-[11px]">
+                  简单 {difficultyCounts.EASY}
+                </span>
+                <span className="coach-pill px-2 py-0.5 text-[11px]">
+                  中等 {difficultyCounts.MEDIUM}
+                </span>
+                <span className="coach-pill px-2 py-0.5 text-[11px]">
+                  困难 {difficultyCounts.HARD}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              {/* 难度筛选 */}
               <div className="flex items-center gap-1.5">
                 {difficulties.map((d) => (
                   <button
@@ -111,7 +180,6 @@ export default function HomeClient({ problems }: HomeClientProps) {
               </div>
             </div>
 
-            {/* 搜索 */}
             <div className="w-full lg:w-[280px]">
               <div className="relative">
                 <Search className="w-[18px] h-[18px] text-outline absolute left-3 top-1/2 -translate-y-1/2" />
@@ -124,11 +192,17 @@ export default function HomeClient({ problems }: HomeClientProps) {
                 />
               </div>
             </div>
+            </div>
           </div>
 
-          {/* 统计信息 */}
-          <div className="flex items-center gap-4 mb-4 text-xs text-on-surface-variant">
-            <span>共 {filtered.length} 道题</span>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-xs text-on-surface-variant">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium text-on-surface">
+                当前筛选：{activeFilterSummary.join(" / ")}
+              </span>
+              <span>共 {filtered.length} 道题</span>
+            </div>
+            <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
               已通过 {passedCount}
@@ -137,13 +211,14 @@ export default function HomeClient({ problems }: HomeClientProps) {
               <span className="w-2 h-2 rounded-full bg-amber-500" />
               尝试过 {attemptedCount}
             </span>
+            </div>
           </div>
 
-          {/* 卡片网格 */}
           {filtered.length === 0 ? (
-            <div className="text-center py-20 text-on-surface-variant">
-              <SearchX className="w-10 h-10 mx-auto mb-2" />
-              没有匹配的题目
+            <div className="coach-empty-state">
+              <SearchX className="w-10 h-10 mb-2 text-outline" />
+              <p className="text-sm font-semibold text-on-surface">没有匹配的题目</p>
+              <p className="mt-1 text-xs">换一个知识专题或清空搜索关键词再试。</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-4">
@@ -154,8 +229,30 @@ export default function HomeClient({ problems }: HomeClientProps) {
           )}
         </section>
 
-        <ProblemTrainingSidebar userId={getStoredUser()?.id} />
+        <ProblemTrainingSidebar userId={currentUser?.id} />
       </div>
+    </div>
+  );
+}
+
+function TrainingMetric({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="coach-card p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-primary">
+        {icon}
+        <span className="text-[11px] font-semibold text-on-surface-variant">
+          {label}
+        </span>
+      </div>
+      <div className="text-xl font-bold text-on-surface">{value}</div>
     </div>
   );
 }

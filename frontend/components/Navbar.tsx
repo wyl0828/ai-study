@@ -34,8 +34,8 @@ export default function Navbar() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-outline-variant/30 bg-surface/90 shadow-sm backdrop-blur-md">
-      <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+    <header className="sticky top-0 z-50 w-full border-b border-outline-variant/60 bg-surface-container-lowest/95 shadow-sm backdrop-blur-md">
+      <div className="coach-shell flex h-14 items-center justify-between">
         <div className="flex min-w-0 items-center gap-6">
           <Link href="/" className="flex min-w-0 items-center gap-2 text-primary font-bold text-lg">
             <Terminal className="h-[22px] w-[22px] shrink-0" />
@@ -74,9 +74,10 @@ export default function Navbar() {
               </span>
               <button
                 onClick={handleLogout}
-                className="p-1.5 rounded-full hover:bg-surface-variant text-on-surface-variant transition-colors"
+                className="coach-icon-button"
                 type="button"
                 aria-label="退出登录"
+                title="退出登录"
               >
                 <LogOut className="w-5 h-5" />
               </button>
@@ -84,7 +85,7 @@ export default function Navbar() {
           ) : (
             <Link
               href="/login"
-              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white"
+              className="coach-primary-button px-3 py-1.5"
             >
               登录
             </Link>
@@ -92,7 +93,7 @@ export default function Navbar() {
         </div>
       </div>
       <nav
-        className="md:hidden flex gap-2 overflow-x-auto px-4 pb-2"
+        className="coach-shell md:hidden flex gap-2 overflow-x-auto pb-2"
         aria-label="移动端主导航"
       >
         {links.map((link) => {
@@ -104,7 +105,7 @@ export default function Navbar() {
               className={
                 active
                   ? "shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary"
-                  : "shrink-0 rounded-full border border-outline-variant/40 bg-surface-container px-3 py-1.5 text-xs font-medium text-on-surface-variant"
+                  : "coach-pill shrink-0 px-3 py-1.5"
               }
             >
               {link.label}

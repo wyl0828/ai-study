@@ -150,8 +150,13 @@ export default function KnowledgeSidebar({
   };
 
   return (
-    <aside className="flex max-h-[calc(100vh-6.5rem)] flex-col rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-4 shadow-sm lg:sticky lg:top-20">
-      <h2 className="mb-3 text-sm font-bold text-on-surface-variant">知识体系大纲</h2>
+    <aside className="coach-panel flex max-h-[calc(100vh-6.5rem)] flex-col rounded-lg border p-4 shadow-sm lg:sticky lg:top-20">
+      <div className="mb-3">
+        <h2 className="text-sm font-bold text-on-surface">知识体系大纲</h2>
+        <p className="mt-1 text-xs text-on-surface-variant">
+          按 Java 后端面试主题整理
+        </p>
+      </div>
       <nav className="min-h-0 overflow-y-auto pr-1" aria-label="知识体系大纲">
         <div className="min-w-[260px] space-y-1 lg:min-w-0">
           {outline.map((node) => (

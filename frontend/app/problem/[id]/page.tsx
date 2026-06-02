@@ -25,7 +25,7 @@ export default async function ProblemPage({ params }: ProblemPageProps) {
   }
 
   return (
-    <main className="flex min-h-[calc(100dvh-88px)] flex-col overflow-visible bg-background md:h-[calc(100vh-56px)] md:min-h-0 md:flex-row md:overflow-hidden">
+    <main className="grid min-h-[calc(100dvh-88px)] grid-cols-1 overflow-visible bg-background md:h-[calc(100vh-56px)] md:min-h-0 md:grid-cols-[minmax(280px,24vw)_minmax(0,1fr)_minmax(320px,30vw)] md:overflow-hidden">
       <ProblemDescription problem={problem} />
       <AuthenticatedProblemWorkspace problemId={problem.id} />
     </main>

@@ -64,7 +64,9 @@ export default function AiDiagnosis({
             <Loader2 className="w-4 h-4 animate-spin" />
             AI 正在生成面试点评...
           </div>
-          {agentSteps.length > 0 && <AgentTimeline steps={agentSteps} />}
+          {agentSteps.length > 0 && (
+            <AgentProcessCard steps={agentSteps} />
+          )}
         </div>
       );
     }
@@ -95,7 +97,7 @@ export default function AiDiagnosis({
           AI 正在诊断错误原因并生成训练建议...
         </div>
         {agentSteps.length > 0 && (
-          <AgentTimeline steps={agentSteps} />
+          <AgentProcessCard steps={agentSteps} />
         )}
       </div>
     );
@@ -193,7 +195,7 @@ export default function AiDiagnosis({
       {d.steps?.length > 0 && (
         <details className="group">
           <summary className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide cursor-pointer hover:text-on-surface transition-colors">
-            诊断执行步骤 ({d.steps.length})
+            Agent 诊断过程 ({d.steps.length})
           </summary>
           <div className="mt-2">
             <AgentTimeline steps={d.steps} />
@@ -359,13 +361,24 @@ function CodeReviewPanel({
       {steps?.length > 0 && (
         <details className="group">
           <summary className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide cursor-pointer hover:text-on-surface transition-colors">
-            执行步骤 ({steps.length})
+            Agent 诊断过程 ({steps.length})
           </summary>
           <div className="mt-2">
             <AgentTimeline steps={steps} />
           </div>
         </details>
       )}
+    </div>
+  );
+}
+
+function AgentProcessCard({ steps }: { steps: AgentStepVO[] }) {
+  return (
+    <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+      <h3 className="mb-3 text-sm font-semibold text-on-surface">
+        Agent 诊断过程
+      </h3>
+      <AgentTimeline steps={steps} showSummary />
     </div>
   );
 }

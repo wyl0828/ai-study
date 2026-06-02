@@ -52,24 +52,33 @@ function formatCreatedAt(createdAt: string | null) {
 
 export default function ProblemTrainingSidebar({ userId }: ProblemTrainingSidebarProps) {
   const [planState, setPlanState] = useState<CardState<TrainingPlan | null>>({
-    loading: true,
+    loading: Boolean(userId),
     error: null,
     data: null,
   });
   const [submissionState, setSubmissionState] = useState<CardState<SubmissionHistoryVO[]>>({
-    loading: true,
+    loading: Boolean(userId),
     error: null,
     data: [],
   });
   const [weaknessState, setWeaknessState] = useState<CardState<UserWeakness[]>>({
-    loading: true,
+    loading: Boolean(userId),
     error: null,
     data: [],
   });
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setPlanState({ loading: false, error: null, data: null });
+      setSubmissionState({ loading: false, error: null, data: [] });
+      setWeaknessState({ loading: false, error: null, data: [] });
+      return;
+    }
     let cancelled = false;
+
+    setPlanState({ loading: true, error: null, data: null });
+    setSubmissionState({ loading: true, error: null, data: [] });
+    setWeaknessState({ loading: true, error: null, data: [] });
 
     userApi.latestPlan(userId)
       .then((response) => {
@@ -134,7 +143,13 @@ export default function ProblemTrainingSidebar({ userId }: ProblemTrainingSideba
           loading={planLoading}
           error={planError}
           empty={!planState.data || !todayItem}
-          emptyText={planState.data ? "今日训练暂无待办，可以去学习中心复盘最近错题。" : "完成一次诊断后会生成今日训练建议。"}
+          emptyText={
+            !userId
+              ? "登录后会显示今日训练建议。"
+              : planState.data
+              ? "今日训练暂无待办，可以去学习中心复盘最近错题。"
+              : "完成一次诊断后会生成今日训练建议。"
+          }
         >
           {todayItem && <TodayPlanContent item={todayItem} />}
         </SidebarCard>
@@ -145,7 +160,11 @@ export default function ProblemTrainingSidebar({ userId }: ProblemTrainingSideba
           loading={submissionsLoading}
           error={submissionsError}
           empty={!recentSubmission}
-          emptyText="提交一次代码后，这里会显示最近诊断摘要。"
+          emptyText={
+            userId
+              ? "提交一次代码后，这里会显示最近诊断摘要。"
+              : "登录后会显示最近诊断摘要。"
+          }
         >
           {recentSubmission && <RecentSubmissionContent submission={recentSubmission} />}
         </SidebarCard>
@@ -156,7 +175,11 @@ export default function ProblemTrainingSidebar({ userId }: ProblemTrainingSideba
           loading={weaknessLoading}
           error={weaknessError}
           empty={topWeaknesses.length === 0}
-          emptyText="触发 AI 诊断或知识自测后会沉淀薄弱知识点。"
+          emptyText={
+            userId
+              ? "触发 AI 诊断或知识自测后会沉淀薄弱知识点。"
+              : "登录后会显示薄弱知识点。"
+          }
         >
           <div className="space-y-3">
             {topWeaknesses.map((weakness) => (
@@ -240,7 +263,7 @@ function SidebarCard({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-4 shadow-sm">
+    <section className="coach-card p-4">
       <div className="mb-3 flex items-center gap-2">
         {icon}
         <h2 className="text-sm font-semibold text-on-surface">{title}</h2>
@@ -269,7 +292,7 @@ function SidebarLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-primary hover:text-on-primary"
+      className="coach-primary-button mt-3 w-full py-2 text-xs"
     >
       {label}
       <ArrowRight className="h-3.5 w-3.5" />

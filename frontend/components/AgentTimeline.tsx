@@ -29,6 +29,7 @@ export default function AgentTimeline({
         const isRunning = step.status === "RUNNING";
         const isSuccess = step.status === "SUCCESS";
         const isFailed = step.status === "FAILED";
+        const statusLabel = agentStepStatusLabel(step.status);
 
         return (
           <div key={step.stepName} className="relative flex gap-3">
@@ -93,9 +94,22 @@ export default function AgentTimeline({
                     {step.toolName}
                   </span>
                 )}
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                    isRunning
+                      ? "bg-primary/10 text-primary"
+                      : isSuccess
+                      ? "bg-emerald-50 text-emerald-700"
+                      : isFailed
+                      ? "bg-red-50 text-error"
+                      : "bg-surface-container text-on-surface-variant"
+                  }`}
+                >
+                  {statusLabel}
+                </span>
                 {step.durationMs != null && (
                   <span className="text-[10px] text-on-surface-variant/60 ml-auto">
-                    {step.durationMs}ms
+                    {formatDuration(step.durationMs)}
                   </span>
                 )}
               </div>
@@ -118,9 +132,23 @@ export default function AgentTimeline({
       {totalDuration > 0 && (
         <div className="flex items-center gap-2 text-[10px] text-on-surface-variant/50 pt-1">
           <div className="w-6" />
-          <span>总耗时 {totalDuration}ms</span>
+          <span>总耗时 {formatDuration(totalDuration)}</span>
         </div>
       )}
     </div>
   );
+}
+
+function agentStepStatusLabel(status: string) {
+  if (status === "RUNNING") return "执行中";
+  if (status === "SUCCESS") return "完成";
+  if (status === "FAILED") return "失败";
+  return "等待";
+}
+
+function formatDuration(durationMs: number) {
+  if (durationMs < 1000) {
+    return `${durationMs}ms`;
+  }
+  return `${(durationMs / 1000).toFixed(1)}s`;
 }

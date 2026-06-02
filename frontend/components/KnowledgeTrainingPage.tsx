@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
-import { AlertCircle, SearchX } from "lucide-react";
+import { AlertCircle, BookOpenCheck, Brain, SearchX, Target } from "lucide-react";
 import KnowledgeCard from "./KnowledgeCard";
 import KnowledgeFilterBar, {
   type KnowledgeDifficultyFilter,
@@ -174,6 +175,17 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
     [selection, topics]
   );
 
+  const scopedStatusCounts = useMemo(() => {
+    return topicScopedTopics.reduce(
+      (counts, topic) => {
+        const nextStatus = getTrainingStatus(topic.id, masteredIds, recentScores);
+        counts[nextStatus] += 1;
+        return counts;
+      },
+      { 未练: 0, 已掌握: 0, 需复习: 0 }
+    );
+  }, [masteredIds, recentScores, topicScopedTopics]);
+
   const filterBaseTopics = useMemo(
     () =>
       topicScopedTopics.filter((topic) => {
@@ -314,8 +326,9 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
   };
 
   return (
-    <main className="min-h-screen bg-surface px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto grid w-full max-w-[1680px] grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)]">
+    <main className="min-h-screen bg-surface">
+      <div className="coach-shell max-w-[1680px] py-6">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)]">
         <KnowledgeSidebar
           selection={selection}
           activeCardId={activeCardId}
@@ -325,6 +338,24 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
 
         <section className="min-w-0">
           <KnowledgeTopicHeader selection={selection} />
+
+          <div className="mb-5 grid gap-3 sm:grid-cols-3">
+            <KnowledgeMetric
+              icon={<BookOpenCheck className="h-4 w-4" />}
+              label="知识卡总数"
+              value={topics.length}
+            />
+            <KnowledgeMetric
+              icon={<Target className="h-4 w-4" />}
+              label="当前专题"
+              value={topicScopedTopics.length}
+            />
+            <KnowledgeMetric
+              icon={<Brain className="h-4 w-4" />}
+              label="需复习"
+              value={scopedStatusCounts.需复习}
+            />
+          </div>
 
           <KnowledgeFilterBar
             search={search}
@@ -346,7 +377,7 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
           )}
 
           {filteredTopics.length === 0 ? (
-            <div className="rounded-xl border border-outline-variant/30 bg-surface-container-lowest py-14 text-center text-on-surface-variant">
+            <div className="coach-empty-state">
               <SearchX className="mx-auto mb-3 h-10 w-10" />
               <p className="text-sm font-semibold text-on-surface">当前专题暂无知识卡</p>
               <p className="mt-2 text-sm">
@@ -355,7 +386,7 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
               <button
                 type="button"
                 onClick={showAllKnowledge}
-                className="mt-5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition hover:bg-primary-container"
+                className="coach-primary-button mt-5"
               >
                 查看全部知识点
               </button>
@@ -385,7 +416,30 @@ export default function KnowledgeTrainingPage({ userId }: { userId: number }) {
             </div>
           )}
         </section>
+        </div>
       </div>
     </main>
+  );
+}
+
+function KnowledgeMetric({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="coach-card p-4">
+      <div className="mb-2 flex items-center gap-1.5 text-primary">
+        {icon}
+        <span className="text-xs font-semibold text-on-surface-variant">
+          {label}
+        </span>
+      </div>
+      <div className="text-2xl font-bold text-on-surface">{value}</div>
+    </div>
   );
 }

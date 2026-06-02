@@ -368,7 +368,10 @@ export default function ProblemWorkspace({
       )}
 
       {/* 中栏：代码编辑器 */}
-      <section className="relative flex min-h-[520px] w-full min-w-0 flex-col bg-[#0d1117] md:h-full md:flex-1">
+      <section
+        className="relative flex min-h-[560px] w-full min-w-0 flex-col bg-[#0d1117] md:h-full md:min-h-0"
+        aria-label="代码编辑区"
+      >
         <CodeEditor
           code={code}
           onChange={setCode}
@@ -388,7 +391,10 @@ export default function ProblemWorkspace({
       </section>
 
       {/* 右栏：结果面板 */}
-      <section className="flex min-h-[360px] w-full min-w-0 flex-col bg-surface-container-lowest md:h-full md:w-[30%] md:min-w-[320px] md:max-w-[520px]">
+      <section
+        className="flex min-h-[420px] w-full min-w-0 flex-col bg-surface-container-lowest md:h-full md:min-h-0"
+        aria-label="运行结果和 AI 诊断"
+      >
         <ResultPanel
           submissionResult={submissionResult as SubmissionResult | null}
           diagnosis={diagnosis as AgentAnalyzeVO | null}
